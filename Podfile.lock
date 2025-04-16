@@ -1,0 +1,66 @@
+PODS:
+  - GradientView (2.3.4)
+  - R.swift (7.2.4)
+  - RxBluetoothKit (6.0.0):
+    - RxSwift (~> 5.1)
+  - RxCocoa (5.1.3):
+    - RxRelay (~> 5)
+    - RxSwift (~> 5)
+  - RxRelay (5.1.3):
+    - RxSwift (~> 5)
+  - RxSwift (5.1.3)
+  - RxViewController (1.0.0):
+    - RxCocoa (~> 5.0)
+    - RxSwift (~> 5.0)
+  - SnapKit (5.6.0)
+  - Then (3.0.0)
+  - UICircleProgressView (0.6.1)
+  - Zetara (0.0.1):
+    - RxBluetoothKit (~> 6.0.0)
+    - RxCocoa
+
+DEPENDENCIES:
+  - GradientView (~> 2.3.4)
+  - R.swift (~> 7.2.0)
+  - RxBluetoothKit (~> 6.0.0)
+  - RxCocoa (~> 5.1)
+  - RxSwift (~> 5.1)
+  - RxViewController (~> 1.0.0)
+  - SnapKit (~> 5.6.0)
+  - Then (= 3.0.0)
+  - UICircleProgressView (= 0.6.1)
+  - Zetara (from `./Zetara`)
+
+SPEC REPOS:
+  trunk:
+    - GradientView
+    - R.swift
+    - RxBluetoothKit
+    - RxCocoa
+    - RxRelay
+    - RxSwift
+    - RxViewController
+    - SnapKit
+    - Then
+    - UICircleProgressView
+
+EXTERNAL SOURCES:
+  Zetara:
+    :path: "./Zetara"
+
+SPEC CHECKSUMS:
+  GradientView: 61d79cc948bf66f9d453865794ace916c2ba0918
+  R.swift: 681bb9135f482e7a81d9d27445b837fef5467e11
+  RxBluetoothKit: dad22912b15b74a40df8f60057f218d4e851746d
+  RxCocoa: e2ed092d5432e4296aa818021d27de4090ac0354
+  RxRelay: 5a18c2eb2d68326ebaf0112f80d837ae41b92b97
+  RxSwift: 915abbdfb62214aa89ccd0b194d44fb478019b27
+  RxViewController: 7330a46e5c31cd680db169da4c9fc8676e975a81
+  SnapKit: e01d52ebb8ddbc333eefe2132acf85c8227d9c25
+  Then: 844265ae87834bbe1147d91d5d41a404da2ec27d
+  UICircleProgressView: 9312181d3e4ba5d2a5bdb06e9852118bc2e2f057
+  Zetara: 61aaac7d6b8ae62aa03d7b11f3e815a2342f4613
+
+PODFILE CHECKSUM: c3adfecf7c3a1c5bd2fc92a6b36907f35aa54a60
+
+COCOAPODS: 1.16.2
