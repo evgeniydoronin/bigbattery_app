@@ -81,6 +81,11 @@ public class ZetaraManager: NSObject {
     
     public static func setup(_ configuration: Configuration) {
         ZetaraManager.configuration = configuration
+        
+        // Если есть фейковые данные, запускаем обновление данных
+        if configuration.mockData != nil {
+            shared.startRefreshBMSData()
+        }
     }
     
     public func connectedPeripheral() -> ConnectedPeripheral? {
@@ -185,8 +190,13 @@ public class ZetaraManager: NSObject {
     
     func cleanConnection() {
         connectionDisposable?.dispose()
-        timer?.invalidate()
-        timer = nil
+        
+        // Если не используются фейковые данные, останавливаем таймер
+        if Self.configuration.mockData == nil {
+            timer?.invalidate()
+            timer = nil
+        }
+        
         connectedPeripheralSubject.onNext(nil)
     }
     
@@ -224,16 +234,7 @@ public class ZetaraManager: NSObject {
     
     var getBMSDataDisposeBag: DisposeBag?
     func getBMSData() -> Maybe<Data.BMS> {
-        guard let peripheral = try? connectedPeripheralSubject.value(),
-              let writeCharacteristic = writeCharacteristic,
-              let notifyCharacteristic = notifyCharacteristic else {
-            print("send data error. no connected peripheral")
-            // 清理连接状态
-            cleanConnection()
-            return Maybe.error(ZetaraManager.Error.connectionError)
-        }
-        
-        // mock 数据
+        // Сначала проверяем наличие фейковых данных
         if let mockBMSData = Self.configuration.mockData {
             return Maybe.create { [weak self] observer in
                 if let data = self?.bmsDataHandler.append([UInt8](mockBMSData)) {
@@ -242,6 +243,16 @@ public class ZetaraManager: NSObject {
                 
                 return Disposables.create {}
             }
+        }
+        
+        // Если фейковых данных нет, проверяем наличие подключенного устройства
+        guard let peripheral = try? connectedPeripheralSubject.value(),
+              let writeCharacteristic = writeCharacteristic,
+              let notifyCharacteristic = notifyCharacteristic else {
+            print("send data error. no connected peripheral")
+            // 清理连接状态
+            cleanConnection()
+            return Maybe.error(ZetaraManager.Error.connectionError)
         }
         
         getBMSDataDisposeBag = nil

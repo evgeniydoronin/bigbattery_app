@@ -17,8 +17,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         RxBluetoothKitLog.setLogLevel(.info)
+        // Используем фейковые данные для тестирования без реального устройства
+        // mockNormalBMSData - нормальные данные батареи
+        // mockInChargingBMSData - данные батареи во время зарядки
+        // mockCellTempsData - данные с четырьмя температурами ячеек
+        // mockBMSData1 - данные с отрицательными температурами
         let config = Configuration(identifiers: [.v1, .v2],
-                                   refreshBMSTimeInterval: 2)
+                                   refreshBMSTimeInterval: 2,
+                                   mockData: Foundation.Data.mockCellTempsData)
         ZetaraManager.setup(config)
         
         UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor.black]
