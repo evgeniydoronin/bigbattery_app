@@ -1,0 +1,378 @@
+//
+//  ZetaraManager.swift
+//  Zetara
+//
+//  Created by xxtx on 2022/12/3.
+//
+
+import Foundation
+import CoreBluetooth
+import RxSwift
+import RxBluetoothKit
+import RxCocoa
+import UIKit
+
+public class ZetaraManager: NSObject {
+    
+    public enum Error: Swift.Error {
+        case connectionError
+        case notZetaraPeripheralError
+        case writeControlDataError
+    }
+    
+    public typealias ConnectedPeripheral = Peripheral
+    
+    private let manager = CentralManager(queue: DispatchQueue(label: "com.zetara.radar"))
+    
+    private var scanningDisposable: Disposable?
+    public var scannedPeripheralsSubject = BehaviorSubject<[ScannedPeripheral]>(value: [])
+    
+    private var connectionDisposable: Disposable?
+    public var connectedPeripheralSubject = BehaviorSubject<ConnectedPeripheral?>(value: nil)
+    
+    public var observableState: Observable<BluetoothState> {
+        manager.observeStateWithInitialValue().observeOn(MainScheduler.instance)
+    }
+    
+    public var bmsDataSubject = BehaviorSubject<Data.BMS>(value: Data.BMS())
+    private var refreshBMSDataDisposable: Disposable?
+    private var disposeBag = DisposeBag()
+
+    
+    private var identifier: Identifier?
+    private var writeCharacteristic: Characteristic?
+    private var notifyCharacteristic: Characteristic?
+    
+    private static var configuration: Configuration = .default
+    
+    public static let shared = ZetaraManager()
+    
+    private override init() {
+        super.init()
+        
+        manager.observeState()
+            .observeOn(MainScheduler.instance)
+            .subscribeOn(MainScheduler.instance)
+            .subscribe { [weak self] (state: BluetoothState) in
+            switch state {
+                case .poweredOn:
+                    return
+                default:
+                    self?.cleanData()
+                    self?.cleanScanning()
+                    self?.cleanConnection()
+            }
+        }.disposed(by: disposeBag)
+        
+        NotificationCenter.default.rx.notification(UIApplication.didEnterBackgroundNotification)
+            .subscribe { [weak self] (noti: Notification) in
+                self?.pauseRefreshBMSData()
+            }.disposed(by: disposeBag)
+        
+        NotificationCenter.default.rx.notification(UIApplication.willEnterForegroundNotification)
+            .subscribe { [weak self] (_ : Notification) in
+                self?.resumeRefreshBMSData()
+            }.disposed(by: disposeBag)
+    }
+    
+    deinit {
+        shutDown()
+    }
+    
+    public static func setup(_ configuration: Configuration) {
+        ZetaraManager.configuration = configuration
+    }
+    
+    public func connectedPeripheral() -> ConnectedPeripheral? {
+        return try? connectedPeripheralSubject.value()
+    }
+    
+    public func startScan() -> Observable<[ScannedPeripheral]> {
+        print("start scan")
+        let managerIsOn = manager.observeStateWithInitialValue()
+            .filter { $0 == .poweredOn }
+            .compactMap { [weak self] _ in self?.manager }
+
+        scannedPeripheralsSubject.dispose()
+        scannedPeripheralsSubject = BehaviorSubject<[ScannedPeripheral]>(value: [])
+        
+        scanningDisposable?.dispose()
+        scanningDisposable = managerIsOn
+            .flatMap { $0.scanForPeripherals(withServices: nil) }
+            .filter { $0.peripheral.name != nil }
+            .timeout(.seconds(7), scheduler: MainScheduler.instance)
+            .subscribe { [weak self] (scannedPeripheral: ScannedPeripheral) in
+                if var current = try? self?.scannedPeripheralsSubject.value(),
+                   !current.contains(scannedPeripheral) {
+                    current.append(scannedPeripheral)
+                    self?.scannedPeripheralsSubject.onNext(current)
+                }
+            } onError: { [weak self] _ in
+                self?.scannedPeripheralsSubject.onNext([])
+            } onDisposed: { [weak self] in
+                self?.scannedPeripheralsSubject.onNext([])
+            }
+
+        return scannedPeripheralsSubject.asObservable().observeOn(MainScheduler.instance)
+    }
+    
+    public func shutDown() {
+        print("stop scan")
+        scanningDisposable?.dispose()
+    }
+    
+    public func connect(_ peripheral: Peripheral) -> Observable<ConnectedPeripheral> {
+        
+        print("try to connect peripheral: \(peripheral.name ?? ""), identifier: \(peripheral.identifier.uuidString)")
+        
+        // 先释放之前的
+        cleanConnection()
+        
+        let serviceUUIDs = ZetaraManager.configuration.identifiers.map { $0.service.uuid }
+        
+        self.connectionDisposable = peripheral.establishConnection()
+            .flatMap { $0.discoverServices(serviceUUIDs) }
+            .flatMap { Observable.from($0) }
+            .flatMap { Identifier.asSingle(service: $0) }
+            .flatMap {
+                $0.service.discoverCharacteristics([$0.identifer.writeCharacteristic.uuid,
+                                                    $0.identifer.notifyCharacteristic.uuid])
+                    .observeOn(MainScheduler.instance)
+            }
+            .subscribeOn(MainScheduler.instance)
+            .subscribe { [weak self] event in
+                let observer = self!.connectedPeripheralSubject.asObserver()
+                switch event {
+                    case .error(let error):
+                        observer.onError(error)
+                    case .next(let characteristics):
+                        if let identifier = Identifier.identifier(of: characteristics.first!),
+                           let writeCharacteristic = characteristics[characteristicOf: identifier.writeCharacteristic],
+                           let notifyCharacteristic = characteristics[characteristicOf: identifier.notifyCharacteristic]
+                            {
+                            self?.writeCharacteristic = writeCharacteristic
+                            self?.notifyCharacteristic = notifyCharacteristic
+                            self?.identifier = identifier
+                            observer.onNext(peripheral)
+                            self?.startRefreshBMSData()
+                        } else {
+                            // 一般不会走到这里
+                            observer.onError(ZetaraManager.Error.notZetaraPeripheralError)
+                        }
+                    case .completed:
+                        observer.onCompleted()
+                }
+            }
+        
+        return self.connectedPeripheralSubject
+            .compactMap{ $0 }
+            .asObservable()
+            .observeOn(MainScheduler.instance)
+    }
+    
+    public func disconnect(_ peripheral: Peripheral) {
+        print("disconnect peripheral: \(peripheral.name ?? ""), identifier: \(peripheral.identifier.uuidString)")
+    }
+    
+    func cleanData() {
+        self.bmsDataSubject.onNext(Data.BMS())
+    }
+    
+    func cleanScanning() {
+        self.scannedPeripheralsSubject.onNext([])
+        self.scanningDisposable?.dispose()
+    }
+    
+    func cleanConnection() {
+        connectionDisposable?.dispose()
+        timer?.invalidate()
+        timer = nil
+        connectedPeripheralSubject.onNext(nil)
+    }
+    
+    public func observeDisconect() -> Observable<Peripheral> {
+        return manager.observeDisconnect()
+            .flatMap { (peripheral, _) in Observable.of(peripheral) }
+            .observeOn(MainScheduler.instance)
+    }
+    
+    let bmsDataHandler = Data.BMSDataHandler()
+    
+    var timer: Timer?
+    func startRefreshBMSData() {
+        self.timer = Timer.scheduledTimer(withTimeInterval: Self.configuration.refreshBMSTimeInterval, repeats: true) { [weak self] _ in
+            self?.getBMSData()
+                .subscribeOn(MainScheduler.instance)
+                .subscribe(onSuccess: { [weak self] _data in
+                    self?.bmsDataSubject.asObserver().onNext(_data)
+                }).disposed(by: self!.disposeBag)
+        }
+        self.timer?.fire()
+    }
+    
+    public func pauseRefreshBMSData() {
+        print("stop refresh bms data")
+        self.timer?.invalidate()
+    }
+    
+    public func resumeRefreshBMSData() {
+        print("resume refresh bms data")
+        self.timer?.invalidate()
+        self.timer = nil
+        self.startRefreshBMSData()
+    }
+    
+    var getBMSDataDisposeBag: DisposeBag?
+    func getBMSData() -> Maybe<Data.BMS> {
+        guard let peripheral = try? connectedPeripheralSubject.value(),
+              let writeCharacteristic = writeCharacteristic,
+              let notifyCharacteristic = notifyCharacteristic else {
+            print("send data error. no connected peripheral")
+            // 清理连接状态
+            cleanConnection()
+            return Maybe.error(ZetaraManager.Error.connectionError)
+        }
+        
+        // mock 数据
+        if let mockBMSData = Self.configuration.mockData {
+            return Maybe.create { [weak self] observer in
+                if let data = self?.bmsDataHandler.append([UInt8](mockBMSData)) {
+                    observer(.success(data))
+                }
+                
+                return Disposables.create {}
+            }
+        }
+        
+        getBMSDataDisposeBag = nil
+        getBMSDataDisposeBag = DisposeBag()
+        
+        let data = Foundation.Data.getBMSData
+        print("getting bms data, write data: \(data.toHexString())")
+        peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
+            .subscribe()
+            .disposed(by: getBMSDataDisposeBag!)
+        
+        return Maybe.create { observer in
+            peripheral.observeValueUpdateAndSetNotification(for: notifyCharacteristic)
+                .compactMap { $0.value }
+                .do { print("recevie bms data: \($0.toHexString())") }
+                .map { [UInt8]($0) }
+                .filter { $0.crc16Verify() && Data.BMS.isBMSData($0) }
+                .compactMap { [weak self] _bytes in
+                    return self?.bmsDataHandler.append(_bytes)
+                }
+                .flatMap { Observable.of($0) }
+                .observeOn(MainScheduler.instance)
+                .subscribeOn(MainScheduler.instance)
+                .subscribe { bmsEvent in
+                    switch bmsEvent {
+                        case .next(let data):
+                            observer(.success(data))
+                        default:
+                            return
+                    }
+                }.disposed(by: self.getBMSDataDisposeBag!)
+            
+            return Disposables.create { [weak self] in
+                self?.getBMSDataDisposeBag = nil
+            }
+        }
+    }
+    
+    public func getModuleId() -> Maybe<Data.ModuleIdControlData> {
+        writeControlData(.getModuleId).compactMap { Data.ModuleIdControlData($0) }
+    }
+    
+    public func setModuleId(_ number: Int) -> Maybe<Bool> {
+        let data = [0x10, 0x07, 0x01, UInt8(number)]
+        let hexString = data.crc16().toHexString()
+        return writeControlData(.init(hex: hexString)).compactMap { Data.ResponseData($0)?.success ?? false }
+    }
+    
+    public func getRS485() -> Maybe<Data.RS485ControlData> {
+        writeControlData(.getRS485).compactMap { Data.RS485ControlData($0) }
+    }
+    
+    public func setRS485(_ number: Int) -> Maybe<Bool> {
+        let data = [0x10, 0x05, 0x01, UInt8(number)].crc16().toHexString()
+        return writeControlData(.init(hex: data)).compactMap { Data.ResponseData($0)?.success ?? false }
+    }
+    
+    public func getCAN() -> Maybe<Data.CANControlData> {
+        writeControlData(.getCAN).compactMap {
+            if let data = Data.CANControlData($0) {
+                return data
+            } else {
+                return nil
+            }
+        }
+    }
+    
+    public func setCAN(_ number: Int) -> Maybe<Bool> {
+        let data = [0x10, 0x06, 0x01, UInt8(number)].crc16().toHexString()
+        return writeControlData(.init(hex: data)).compactMap { Data.ResponseData($0)?.success ?? false }
+    }
+    
+    var moduleIdDisposeBag: DisposeBag?
+    func writeControlData(_ data: Foundation.Data) -> Maybe<[UInt8]> {
+        guard let peripheral = try? connectedPeripheralSubject.value(),
+              let writeCharacteristic = writeCharacteristic,
+              let notifyCharacteristic = notifyCharacteristic else {
+            print("send data error. no connected peripheral")
+            cleanConnection()
+            return Maybe.error(Error.writeControlDataError)
+        }
+        
+        moduleIdDisposeBag = nil
+        moduleIdDisposeBag = DisposeBag()
+        
+        print("write control data: \(data.toHexString())")
+        
+        peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
+            .subscribe()
+            .disposed(by: moduleIdDisposeBag!)
+        
+        return Maybe.create { observer in
+            peripheral.observeValueUpdateAndSetNotification(for: notifyCharacteristic)
+                .compactMap { $0.value }
+                .map { [UInt8]($0) }
+                .filter { Data.isControlData($0) }
+                .do { print("receive control data: \($0.toHexString())") }
+                .observeOn(MainScheduler.instance)
+                .subscribeOn(MainScheduler.instance)
+                .subscribe { event in
+                    switch event {
+                        case .next(let _data):
+                            observer(.success(_data))
+                        default:
+                            return observer(.error(ZetaraManager.Error.writeControlDataError))
+                    }
+                }
+            
+            return Disposables.create { [weak self] in
+                self?.moduleIdDisposeBag = nil
+            }
+        }
+    }
+}
+
+extension Characteristic {
+    var writeType: CBCharacteristicWriteType {
+        if properties.contains(.write) {
+            return .withResponse
+        } else {
+            return .withoutResponse
+        }
+    }
+}
+
+extension RxBluetoothKit.ScannedPeripheral: Hashable {
+    public static func == (lhs: RxBluetoothKit.ScannedPeripheral, rhs: RxBluetoothKit.ScannedPeripheral) -> Bool {
+        return lhs.peripheral.identifier.uuidString == rhs.peripheral.identifier.uuidString
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self.peripheral.identifier.uuidString)
+    }
+}
