@@ -254,9 +254,14 @@ public class ZetaraManager: NSObject {
         print("!!! МЕТОД getBMSData() ВЫЗВАН !!!")
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         
-        // Сначала проверяем наличие мок-данных
-        if let mockBMSData = Self.configuration.mockData {
-            print("!!! Используем мок-данные: \(mockBMSData.toHexString()) !!!")
+        // Проверяем наличие подключенного устройства
+        let isDeviceConnected = (try? connectedPeripheralSubject.value()) != nil &&
+                                writeCharacteristic != nil &&
+                                notifyCharacteristic != nil
+        
+        // Используем мок-данные только если нет подключенного устройства
+        if !isDeviceConnected, let mockBMSData = Self.configuration.mockData {
+            print("!!! Нет подключенного устройства, используем мок-данные: \(mockBMSData.toHexString()) !!!")
             return Maybe.create { [weak self] observer in
                 let bytes = [UInt8](mockBMSData)
                 print("!!! Длина мок-данных: \(bytes.count) байт !!!")
@@ -301,7 +306,7 @@ public class ZetaraManager: NSObject {
             }
         }
         
-        // Если нет мок-данных, проверяем наличие подключенного устройства
+        // Если есть подключенное устройство, используем реальные данные
         guard let peripheral = try? connectedPeripheralSubject.value(),
               let writeCharacteristic = writeCharacteristic,
               let notifyCharacteristic = notifyCharacteristic else {
@@ -310,6 +315,8 @@ public class ZetaraManager: NSObject {
             cleanConnection()
             return Maybe.error(ZetaraManager.Error.connectionError)
         }
+        
+        print("!!! Используем реальные данные от подключенного устройства !!!")
 
         getBMSDataDisposeBag = nil
         getBMSDataDisposeBag = DisposeBag()
