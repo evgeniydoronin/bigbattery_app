@@ -43,6 +43,7 @@ class SettingsViewController: UIViewController {
         
         versionItemView?.title = "Version"
         versionItemView?.label = version()
+        versionItemView?.options = [] // Явно устанавливаем пустой массив опций, чтобы скрыть стрелочку
         
         canProtocolView?.title = "CAN Protocol"
         canProtocolView?.options = []
