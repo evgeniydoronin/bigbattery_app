@@ -138,8 +138,19 @@ class SettingItemView: UIView {
     
     
     fileprivate func update(options: [String]?) {
-        if let options = options, !options.isEmpty {
-            // Если есть опции, показываем кнопку и настраиваем меню
+        // Специальная обработка для ячейки версии
+        if self.title == "Version" {
+            // Для ячейки версии всегда скрываем кнопку с опциями
+            self.optionsButton.isHidden = true
+            optionsButton.menu = nil
+            
+            // Обновляем constraints для selectedButton, чтобы он был привязан к правому краю
+            selectedButton.snp.remakeConstraints { make in
+                make.centerY.equalToSuperview()
+                make.trailing.equalToSuperview().offset(-24)
+            }
+        } else {
+            // Для всех остальных ячеек всегда показываем кнопку с опциями
             self.optionsButton.isHidden = false
             
             // Обновляем constraints для selectedButton, чтобы он был привязан к optionsButton
@@ -148,22 +159,16 @@ class SettingItemView: UIView {
                 make.trailing.equalTo(optionsButton.snp.leading).offset(-18)
             }
             
-            let menu = UIMenu(title: "", options: [], children: options.map({
-                UIAction(title: $0) { [weak self] action in
-                    self?.onOptionTapped(action.title)
-                }
-            }))
-            optionsButton.menu = menu
-            optionsButton.showsMenuAsPrimaryAction = true
-        } else {
-            // Если опций нет, полностью скрываем кнопку и обновляем constraints
-            self.optionsButton.isHidden = true
-            optionsButton.menu = nil
-            
-            // Обновляем constraints для selectedButton, чтобы он был привязан к правому краю
-            selectedButton.snp.remakeConstraints { make in
-                make.centerY.equalToSuperview()
-                make.trailing.equalToSuperview().offset(-24)
+            if let options = options {
+                let menu = UIMenu(title: "", options: [], children: options.map({
+                    UIAction(title: $0) { [weak self] action in
+                        self?.onOptionTapped(action.title)
+                    }
+                }))
+                optionsButton.menu = menu
+                optionsButton.showsMenuAsPrimaryAction = true
+            } else {
+                optionsButton.menu = nil
             }
         }
     }
