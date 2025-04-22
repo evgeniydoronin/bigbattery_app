@@ -12,7 +12,7 @@ import Combine
 import SnapKit
 import CoreBluetooth
 import RxSwift
-import RxBluetoothKit
+import RxBluetoothKit2
 
 class ConnectivityViewController : UIViewController {
     

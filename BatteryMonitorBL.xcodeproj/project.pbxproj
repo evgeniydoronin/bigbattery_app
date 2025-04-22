@@ -26,11 +26,10 @@
 		324213D52A1A37B800DC7FFC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 32049E86260774F000058371 /* Assets.xcassets */; };
 		324213D62A1A37B800DC7FFC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 32049E88260774F000058371 /* LaunchScreen.storyboard */; };
 		324213D72A1A37B800DC7FFC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 32049E83260774EF00058371 /* Main.storyboard */; };
-		3DC96B9B5FB877990356F487 /* Pods_BatteryMonitorBL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11E4180D338921C4D814AFD9 /* Pods_BatteryMonitorBL.framework */; };
+		4ADCF3E5870DF851190206F7 /* Pods_BatteryMonitorBL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F9A2BDB4DCDEB49487D3DCF0 /* Pods_BatteryMonitorBL.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		11E4180D338921C4D814AFD9 /* Pods_BatteryMonitorBL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BatteryMonitorBL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		32049E7A260774EF00058371 /* BatteryMonitorBL.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BatteryMonitorBL.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		32049E84260774EF00058371 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		32049E86260774F000058371 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -52,8 +51,9 @@
 		324213BA2A1A359300DC7FFC /* Array+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Array+Extensions.swift"; sourceTree = "<group>"; };
 		324213BB2A1A359300DC7FFC /* UIView+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIView+Extensions.swift"; sourceTree = "<group>"; };
 		324213C22A1A359300DC7FFC /* SettingsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
-		652DCF1E59EF390FF70C8D66 /* Pods-BatteryMonitorBL.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.release.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.release.xcconfig"; sourceTree = "<group>"; };
-		E2E3B42A68784FADCAB317EA /* Pods-BatteryMonitorBL.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.debug.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.debug.xcconfig"; sourceTree = "<group>"; };
+		4DD148754BC3E68BD751DD64 /* Pods-BatteryMonitorBL.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.debug.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.debug.xcconfig"; sourceTree = "<group>"; };
+		D66A4BD0B8978044385B3013 /* Pods-BatteryMonitorBL.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.release.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.release.xcconfig"; sourceTree = "<group>"; };
+		F9A2BDB4DCDEB49487D3DCF0 /* Pods_BatteryMonitorBL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BatteryMonitorBL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,7 +61,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3DC96B9B5FB877990356F487 /* Pods_BatteryMonitorBL.framework in Frameworks */,
+				4ADCF3E5870DF851190206F7 /* Pods_BatteryMonitorBL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,7 +75,7 @@
 				32049E7B260774EF00058371 /* Products */,
 				32049E7C260774EF00058371 /* BatteryMonitorBL */,
 				B46BF61A1A5F2489B1081840 /* Pods */,
-				EC94F0C8D7A0C30073F70B18 /* Frameworks */,
+				C3FE3232BD733F7D7CBCE225 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -148,16 +148,16 @@
 		B46BF61A1A5F2489B1081840 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				E2E3B42A68784FADCAB317EA /* Pods-BatteryMonitorBL.debug.xcconfig */,
-				652DCF1E59EF390FF70C8D66 /* Pods-BatteryMonitorBL.release.xcconfig */,
+				4DD148754BC3E68BD751DD64 /* Pods-BatteryMonitorBL.debug.xcconfig */,
+				D66A4BD0B8978044385B3013 /* Pods-BatteryMonitorBL.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		EC94F0C8D7A0C30073F70B18 /* Frameworks */ = {
+		C3FE3232BD733F7D7CBCE225 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				11E4180D338921C4D814AFD9 /* Pods_BatteryMonitorBL.framework */,
+				F9A2BDB4DCDEB49487D3DCF0 /* Pods_BatteryMonitorBL.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -169,12 +169,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 32049E8E260774F000058371 /* Build configuration list for PBXNativeTarget "BatteryMonitorBL" */;
 			buildPhases = (
-				5AF4254BE65E4EE887C10FFC /* [CP] Check Pods Manifest.lock */,
+				E7B9DD45BE92D3B418B67500 /* [CP] Check Pods Manifest.lock */,
 				324213A82A1A34F700DC7FFC /* R.swift */,
 				32049E76260774EF00058371 /* Sources */,
 				32049E77260774EF00058371 /* Frameworks */,
 				32049E78260774EF00058371 /* Resources */,
-				176B9BE21386FDECEB512BD8 /* [CP] Embed Pods Frameworks */,
+				1D7A4CDC344F494B9BC4A8C5 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -232,7 +232,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		176B9BE21386FDECEB512BD8 /* [CP] Embed Pods Frameworks */ = {
+		1D7A4CDC344F494B9BC4A8C5 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -240,9 +240,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -267,7 +271,7 @@
 			shellPath = /bin/sh;
 			shellScript = "\"$PODS_ROOT/R.swift/rswift\" generate \"$SRCROOT/R.generated.swift\"\n";
 		};
-		5AF4254BE65E4EE887C10FFC /* [CP] Check Pods Manifest.lock */ = {
+		E7B9DD45BE92D3B418B67500 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -457,14 +461,14 @@
 		};
 		32049E8F260774F000058371 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E2E3B42A68784FADCAB317EA /* Pods-BatteryMonitorBL.debug.xcconfig */;
+			baseConfigurationReference = 4DD148754BC3E68BD751DD64 /* Pods-BatteryMonitorBL.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 5;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 8WJJB8HG42;
 				GCC_PREFIX_HEADER = "";
@@ -476,7 +480,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.evgenedoronin.bigbattery;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -490,14 +494,14 @@
 		};
 		32049E90260774F000058371 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 652DCF1E59EF390FF70C8D66 /* Pods-BatteryMonitorBL.release.xcconfig */;
+			baseConfigurationReference = D66A4BD0B8978044385B3013 /* Pods-BatteryMonitorBL.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 5;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 8WJJB8HG42;
 				GCC_PREFIX_HEADER = "";
@@ -509,7 +513,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.evgenedoronin.bigbattery;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

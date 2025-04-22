@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 import Zetara
 import RxSwift
-import RxBluetoothKit
+import RxBluetoothKit2
 
 class DetailsViewController: UIViewController {
     
@@ -195,4 +195,3 @@ extension DetailsViewController: UICollectionViewDelegateFlowLayout,
         }
     }
 }
-

@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 import Zetara
 import RxSwift
-import RxBluetoothKit
+import RxBluetoothKit2
 import RxViewController
 
 class SettingsViewController: UIViewController {

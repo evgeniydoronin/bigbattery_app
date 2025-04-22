@@ -7,7 +7,7 @@
 
 import UIKit
 import Zetara
-import RxBluetoothKit
+import RxBluetoothKit2
 import RxSwift
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -77,4 +77,3 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
 }
-

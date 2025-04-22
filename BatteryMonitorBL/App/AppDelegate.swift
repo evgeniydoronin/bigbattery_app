@@ -7,7 +7,7 @@
 
 import UIKit
 import Zetara
-import RxBluetoothKit
+import RxBluetoothKit2
 import RxSwift
 
 let appColor = UIColor(red: 0.1, green: 0.4, blue: 0.6, alpha: 1)

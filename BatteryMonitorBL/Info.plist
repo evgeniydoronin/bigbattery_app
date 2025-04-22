@@ -24,6 +24,8 @@
 	<string>BigBattery requires bluetooth to connect to your devices.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>BigBattery requires bluetooth to connect to your devices.</string>
+	<key>NSPrivacyAccessoryFileLocation</key>
+	<string>PrivacyInfo.xcprivacy</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

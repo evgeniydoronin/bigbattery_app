@@ -11,7 +11,7 @@ import GradientView
 import SnapKit
 import RxSwift
 import RxCocoa
-import RxBluetoothKit
+import RxBluetoothKit2
 
 class TitleButton: UIButton {
     override var intrinsicContentSize: CGSize {
@@ -190,4 +190,3 @@ extension Float {
         return self * 9/5 + 32
     }
 }
-
