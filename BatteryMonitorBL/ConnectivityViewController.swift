@@ -35,8 +35,14 @@ class ConnectivityViewController : UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        makeGradientBackgroundView(in: self)
-//        view.backgroundColor = UIColor.
+        
+        // Добавляем фоновое изображение
+        let backgroundImageView = UIImageView(image: R.image.background())
+        backgroundImageView.contentMode = .scaleAspectFill
+        backgroundImageView.frame = view.bounds
+        backgroundImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(backgroundImageView)
+        view.sendSubviewToBack(backgroundImageView)
         
         bluetoothSwitch.onTintColor = appColor
         let rightBarButtonItem = UIBarButtonItem(customView: bluetoothSwitch)

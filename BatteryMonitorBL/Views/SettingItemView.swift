@@ -66,19 +66,39 @@ class SettingItemView: UIView {
     }
     
     func setupUI() {
-        addSubview(titleLabel)
-        addSubview(optionsButton)
-        addSubview(selectedButton)
+        // Добавляем полупрозрачный фон
+        backgroundColor = UIColor.white.withAlphaComponent(0.7)
+        
+        // Добавляем скругление углов
+        layer.cornerRadius = 12
+        clipsToBounds = true
+        
+        // Добавляем тень для эффекта глубины (по гайдлайнам Apple)
+        layer.shadowColor = UIColor.black.cgColor
+        layer.shadowOffset = CGSize(width: 0, height: 1)
+        layer.shadowOpacity = 0.1
+        layer.shadowRadius = 2
+        layer.masksToBounds = false
+        
+        // Создаем контейнер для контента с отступами
+        let contentView = UIView()
+        addSubview(contentView)
+        contentView.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0))
+        }
+        
+        contentView.addSubview(titleLabel)
+        contentView.addSubview(optionsButton)
+        contentView.addSubview(selectedButton)
         
         let action = UIAction {[weak self] _ in
             self?.expandOptionsMenu()
         }
         selectedButton.addAction(action, for: .touchUpInside)
         
-        backgroundColor = R.color.settingsCell() ?? .clear
-        layer.cornerRadius = 2
-        layer.borderColor = R.color.detailsCellVoltageBorder()?.cgColor
-        layer.borderWidth = 1
+        // Обновляем стиль шрифтов
+        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        selectedButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
         
         titleLabel.snp.makeConstraints { make in
             make.centerY.equalToSuperview()
@@ -88,6 +108,7 @@ class SettingItemView: UIView {
         optionsButton.snp.makeConstraints { make in
             make.centerY.equalToSuperview()
             make.trailing.equalToSuperview().offset(-24)
+            make.width.height.equalTo(24) // Фиксированный размер для кнопки
         }
         
         selectedButton.snp.makeConstraints { make in
@@ -117,10 +138,16 @@ class SettingItemView: UIView {
     
     
     fileprivate func update(options: [String]?) {
-        self.optionsButton.isHidden = options == nil
-        //self.options = options ?? []
-        
-        if let options = options {
+        if let options = options, !options.isEmpty {
+            // Если есть опции, показываем кнопку и настраиваем меню
+            self.optionsButton.isHidden = false
+            
+            // Обновляем constraints для selectedButton, чтобы он был привязан к optionsButton
+            selectedButton.snp.remakeConstraints { make in
+                make.centerY.equalToSuperview()
+                make.trailing.equalTo(optionsButton.snp.leading).offset(-18)
+            }
+            
             let menu = UIMenu(title: "", options: [], children: options.map({
                 UIAction(title: $0) { [weak self] action in
                     self?.onOptionTapped(action.title)
@@ -129,7 +156,15 @@ class SettingItemView: UIView {
             optionsButton.menu = menu
             optionsButton.showsMenuAsPrimaryAction = true
         } else {
+            // Если опций нет, полностью скрываем кнопку и обновляем constraints
+            self.optionsButton.isHidden = true
             optionsButton.menu = nil
+            
+            // Обновляем constraints для selectedButton, чтобы он был привязан к правому краю
+            selectedButton.snp.remakeConstraints { make in
+                make.centerY.equalToSuperview()
+                make.trailing.equalToSuperview().offset(-24)
+            }
         }
     }
     

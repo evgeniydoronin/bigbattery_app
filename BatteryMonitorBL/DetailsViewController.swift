@@ -22,6 +22,14 @@ class DetailsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Добавляем фоновое изображение
+        let backgroundImageView = UIImageView(image: R.image.background())
+        backgroundImageView.contentMode = .scaleAspectFill
+        backgroundImageView.frame = view.bounds
+        backgroundImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(backgroundImageView)
+        view.sendSubviewToBack(backgroundImageView)
+        
         // Явно назначаем делегат и источник данных
         collectionView.delegate = self
         collectionView.dataSource = self
@@ -44,8 +52,8 @@ class DetailsViewController: UIViewController {
             ])
         }
         
-        // Устанавливаем фон
-        makeGradientBackgroundView(in: self)
+        // Делаем фон collectionView прозрачным
+        collectionView.backgroundColor = .clear
         
         // Регистрируем ячейки и заголовки
         collectionView.register(VoltageCell.self, forCellWithReuseIdentifier: "voltage")
@@ -85,13 +93,29 @@ extension DetailsViewController {
         
         override init(frame: CGRect) {
             super.init(frame: .zero)
+            
+            // Добавляем полупрозрачный фон
+            contentView.backgroundColor = UIColor.white.withAlphaComponent(0.7)
+            
+            // Добавляем скругление углов
+            contentView.layer.cornerRadius = 8
+            contentView.clipsToBounds = true
+            
+            // Добавляем тонкую рамку
+            contentView.layer.borderColor = R.color.detailsCellVoltageBorder()!.cgColor
+            contentView.layer.borderWidth = 1
+            
+            // Добавляем тень для эффекта глубины (по гайдлайнам Apple)
+            layer.shadowColor = UIColor.black.cgColor
+            layer.shadowOffset = CGSize(width: 0, height: 1)
+            layer.shadowOpacity = 0.1
+            layer.shadowRadius = 2
+            layer.masksToBounds = false
+            
             contentView.addSubview(label)
             label.snp.makeConstraints { make in
                 make.center.equalToSuperview()
             }
-            
-            contentView.layer.borderColor = R.color.detailsCellVoltageBorder()!.cgColor
-            contentView.layer.borderWidth = 1
         }
         
         required init?(coder: NSCoder) {
@@ -114,9 +138,30 @@ extension DetailsViewController {
         override init(frame: CGRect) {
             super.init(frame: .zero)
             
-            contentView.addSubview(iconImageView)
-            contentView.addSubview(titleLabel)
-            contentView.addSubview(temperatureLabel)
+            // Добавляем полупрозрачный фон
+            contentView.backgroundColor = UIColor.white.withAlphaComponent(0.7)
+            
+            // Добавляем скругление углов
+            contentView.layer.cornerRadius = 12
+            contentView.clipsToBounds = true
+            
+            // Добавляем тень для эффекта глубины (по гайдлайнам Apple)
+            layer.shadowColor = UIColor.black.cgColor
+            layer.shadowOffset = CGSize(width: 0, height: 1)
+            layer.shadowOpacity = 0.1
+            layer.shadowRadius = 2
+            layer.masksToBounds = false
+            
+            // Добавляем отступы для контента
+            let paddingView = UIView()
+            contentView.addSubview(paddingView)
+            paddingView.snp.makeConstraints { make in
+                make.edges.equalToSuperview().inset(UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12))
+            }
+            
+            paddingView.addSubview(iconImageView)
+            paddingView.addSubview(titleLabel)
+            paddingView.addSubview(temperatureLabel)
             
             iconImageView.snp.makeConstraints { make in
                 make.leading.centerY.equalToSuperview()

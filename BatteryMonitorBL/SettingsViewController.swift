@@ -24,7 +24,14 @@ class SettingsViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        makeGradientBackgroundView(in: self)
+        
+        // Добавляем фоновое изображение
+        let backgroundImageView = UIImageView(image: R.image.background())
+        backgroundImageView.contentMode = .scaleAspectFill
+        backgroundImageView.frame = view.bounds
+        backgroundImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(backgroundImageView)
+        view.sendSubviewToBack(backgroundImageView)
         
         moduleIdSettingItemView?.title = "Module ID"
         moduleIdSettingItemView?.options = Zetara.Data.ModuleIdControlData.readableIds()
