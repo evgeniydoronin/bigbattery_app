@@ -22,18 +22,45 @@ class DetailsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let flowLayout = collectionView.collectionViewLayout as! UICollectionViewFlowLayout
+        // Явно назначаем делегат и источник данных
+        collectionView.delegate = self
+        collectionView.dataSource = self
         
+        // Настраиваем flowLayout
+        let flowLayout = collectionView.collectionViewLayout as! UICollectionViewFlowLayout
         flowLayout.sectionInset = .init(top: 0, left: 30, bottom: 20, right: 30)
         flowLayout.headerReferenceSize = CGSize(width: self.view.frame.size.width - 60, height: 60)
+        flowLayout.minimumInteritemSpacing = 10
+        flowLayout.minimumLineSpacing = 10
         
+        // Убеждаемся, что collectionView имеет правильные ограничения
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        if collectionView.constraints.isEmpty {
+            NSLayoutConstraint.activate([
+                collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+        }
+        
+        // Устанавливаем фон
         makeGradientBackgroundView(in: self)
         
+        // Регистрируем ячейки и заголовки
         collectionView.register(VoltageCell.self, forCellWithReuseIdentifier: "voltage")
         collectionView.register(TemperatureCell.self, forCellWithReuseIdentifier: "temperature")
         collectionView.register(SectionHeader.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "header")
         
+        // Настраиваем наблюдателей
         setupObservers()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        // Перезагружаем данные при появлении экрана
+        collectionView.reloadData()
     }
     
     var disposeBag = DisposeBag()

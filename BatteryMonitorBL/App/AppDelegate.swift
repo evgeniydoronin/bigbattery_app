@@ -17,8 +17,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         RxBluetoothKitLog.setLogLevel(.info)
+        // Активируем мок-данные mockCellTempsData для отображения данных на главном экране и экране деталей
+        // Это позволяет тестировать приложение без физического подключения к батарее
+        // mockCellTempsData содержит данные о температуре ячеек
+        // 
+        // ВАЖНО: Мы добавили отладочную информацию в метод getBMSData() в ZetaraManager.swift,
+        // чтобы понять, что происходит при обработке мок-данных. Если bmsDataHandler.append()
+        // возвращает nil, то теперь мы создаем фейковый объект BMS с данными для отладки.
         let config = Configuration(identifiers: [.v1, .v2],
-                                   refreshBMSTimeInterval: 2)
+                                   refreshBMSTimeInterval: 2,
+                                   mockData: Foundation.Data.mockCellTempsData)
         ZetaraManager.setup(config)
         
         UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor.black]

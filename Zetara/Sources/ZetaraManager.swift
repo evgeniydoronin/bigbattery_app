@@ -78,7 +78,24 @@ public class ZetaraManager: NSObject {
     }
 
     public static func setup(_ configuration: Configuration) {
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!!! МЕТОД setup() ВЫЗВАН !!!")
+        print("!!! Конфигурация: \(configuration) !!!")
+        if let mockData = configuration.mockData {
+            print("!!! Мок-данные установлены: \(mockData.toHexString()) !!!")
+            print("!!! Длина мок-данных: \([UInt8](mockData).count) байт !!!")
+        } else {
+            print("!!! Мок-данные НЕ установлены !!!")
+        }
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        
         ZetaraManager.configuration = configuration
+        
+        // Если установлены мок-данные, запускаем обновление данных сразу
+        if configuration.mockData != nil {
+            print("!!! Запускаем обновление данных сразу, так как установлены мок-данные !!!")
+            shared.startRefreshBMSData()
+        }
     }
 
     public func connectedPeripheral() -> ConnectedPeripheral? {
@@ -198,14 +215,25 @@ public class ZetaraManager: NSObject {
 
     var timer: Timer?
     func startRefreshBMSData() {
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!!! МЕТОД startRefreshBMSData() ВЫЗВАН !!!")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        
         self.timer = Timer.scheduledTimer(withTimeInterval: Self.configuration.refreshBMSTimeInterval, repeats: true) { [weak self] _ in
+            print("!!! ТАЙМЕР СРАБОТАЛ, ВЫЗЫВАЕМ getBMSData() !!!")
             self?.getBMSData()
                 .subscribeOn(MainScheduler.instance)
                 .subscribe(onSuccess: { [weak self] _data in
+                    print("!!! ПОЛУЧЕНЫ ДАННЫЕ BMS: \(_data) !!!")
                     self?.bmsDataSubject.asObserver().onNext(_data)
+                }, onError: { error in
+                    print("!!! ОШИБКА ПРИ ПОЛУЧЕНИИ ДАННЫХ BMS: \(error) !!!")
+                }, onCompleted: {
+                    print("!!! ПОЛУЧЕНИЕ ДАННЫХ BMS ЗАВЕРШЕНО !!!")
                 }).disposed(by: self!.disposeBag)
         }
         self.timer?.fire()
+        print("!!! ТАЙМЕР ЗАПУЩЕН !!!")
     }
 
     public func pauseRefreshBMSData() {
@@ -222,24 +250,65 @@ public class ZetaraManager: NSObject {
 
     var getBMSDataDisposeBag: DisposeBag?
     func getBMSData() -> Maybe<Data.BMS> {
-        guard let peripheral = try? connectedPeripheralSubject.value(),
-              let writeCharacteristic = writeCharacteristic,
-              let notifyCharacteristic = notifyCharacteristic else {
-            print("send data error. no connected peripheral")
-            // 清理连接状态
-            cleanConnection()
-            return Maybe.error(ZetaraManager.Error.connectionError)
-        }
-
-        // mock 数据
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!!! МЕТОД getBMSData() ВЫЗВАН !!!")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        
+        // Сначала проверяем наличие мок-данных
         if let mockBMSData = Self.configuration.mockData {
+            print("!!! Используем мок-данные: \(mockBMSData.toHexString()) !!!")
             return Maybe.create { [weak self] observer in
-                if let data = self?.bmsDataHandler.append([UInt8](mockBMSData)) {
+                let bytes = [UInt8](mockBMSData)
+                print("!!! Длина мок-данных: \(bytes.count) байт !!!")
+                
+                // Проверяем, является ли первый байт нормальным
+                let isNormal = Data.BMS.FunctionCode.isNormal(of: bytes)
+                print("!!! Является ли первый байт нормальным: \(isNormal) !!!")
+                
+                // Проверяем cellCount
+                let cellCount = bytes.cellCount()
+                print("!!! Количество ячеек: \(cellCount) !!!")
+                
+                // Пробуем обработать текущие мок-данные
+                if let data = self?.bmsDataHandler.append(bytes) {
+                    print("!!! Мок-данные успешно обработаны !!!")
                     observer(.success(data))
+                } else {
+                    print("!!! Ошибка при обработке мок-данных, пробуем другой набор !!!")
+                    
+                    // Пробуем использовать другой готовый набор мок-данных
+                    print("!!! Пробуем использовать mockInChargingBMSData !!!")
+                    let inChargingBytes = [UInt8](Foundation.Data.mockInChargingBMSData)
+                    
+                    if let data = self?.bmsDataHandler.append(inChargingBytes) {
+                        print("!!! mockInChargingBMSData успешно обработан !!!")
+                        observer(.success(data))
+                    } else {
+                        print("!!! Пробуем использовать mockNormalBMSData !!!")
+                        let normalBytes = [UInt8](Foundation.Data.mockNormalBMSData)
+                        
+                        if let data = self?.bmsDataHandler.append(normalBytes) {
+                            print("!!! mockNormalBMSData успешно обработан !!!")
+                            observer(.success(data))
+                        } else {
+                            print("!!! Все наборы мок-данных не удалось обработать !!!")
+                            observer(.completed)
+                        }
+                    }
                 }
 
                 return Disposables.create {}
             }
+        }
+        
+        // Если нет мок-данных, проверяем наличие подключенного устройства
+        guard let peripheral = try? connectedPeripheralSubject.value(),
+              let writeCharacteristic = writeCharacteristic,
+              let notifyCharacteristic = notifyCharacteristic else {
+            print("!!! ОШИБКА: Нет подключенного устройства !!!")
+            // 清理连接状态
+            cleanConnection()
+            return Maybe.error(ZetaraManager.Error.connectionError)
         }
 
         getBMSDataDisposeBag = nil

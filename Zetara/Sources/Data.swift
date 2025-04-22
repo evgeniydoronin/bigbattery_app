@@ -36,7 +36,21 @@ public struct Data {
             case settingControl = 0x10
             
             static func isNormal(of bytes: [UInt8]) -> Bool {
-                return bytes.intValue(at: .function) == FunctionCode.normal.rawValue
+                print("!!! isNormal() ВЫЗВАН !!!")
+                print("!!! bytes.count: \(bytes.count) !!!")
+                if bytes.count > 0 {
+                    print("!!! Первый байт: \(bytes[0]) !!!")
+                }
+                if bytes.count > 1 {
+                    print("!!! Второй байт: \(bytes[1]) !!!")
+                }
+                
+                let functionValue = bytes.intValue(at: .function)
+                print("!!! functionValue: \(functionValue) !!!")
+                print("!!! FunctionCode.normal.rawValue: \(FunctionCode.normal.rawValue) !!!")
+                print("!!! Результат: \(functionValue == FunctionCode.normal.rawValue) !!!")
+                
+                return functionValue == FunctionCode.normal.rawValue
             }
             
             static func isSplit(of bytes: [UInt8]) -> Bool {
@@ -143,30 +157,52 @@ public struct Data {
         var data: BMS?
         
         func append(_ bytes: [UInt8]) -> BMS? {
+            print("!!! BMSDataHandler.append() ВЫЗВАН !!!")
+            print("!!! Длина байтов: \(bytes.count) !!!")
+            print("!!! Первые 10 байтов: \(Array(bytes.prefix(10))) !!!")
+            
             if BMS.FunctionCode.isNormal(of: bytes) {
+                print("!!! Первый байт нормальный !!!")
                 let cellCount = bytes.cellCount(offset: BMS.Constant.bleDataOffset.rawValue)
+                print("!!! Количество ячеек: \(cellCount) !!!")
+                
                 if cellCount < 0 {
+                    print("!!! ОШИБКА: cellCount < 0 !!!")
                     reset()
                     return nil
                 }
                 
                 let realBytes = Array(bytes[BMS.Constant.bleDataOffset.rawValue ..< bytes.count - 5])
+                print("!!! Длина realBytes: \(realBytes.count) !!!")
+                
                 if let data = BMS(realBytes) {
+                    print("!!! BMS объект создан успешно !!!")
+                    print("!!! data.cellCount: \(data.cellCount), BMS.Constant.normalCellCount.rawValue: \(BMS.Constant.normalCellCount.rawValue) !!!")
+                    
                     if data.cellCount <= BMS.Constant.normalCellCount.rawValue {
+                        print("!!! Возвращаем data !!!")
                         reset()
                         return data
                     } else {
+                        print("!!! data.cellCount > BMS.Constant.normalCellCount.rawValue, сохраняем data и возвращаем nil !!!")
                         self.data = data
                         return nil
                     }
                 } else {
+                    print("!!! ОШИБКА: Не удалось создать BMS объект из realBytes !!!")
                     reset()
                     return nil
                 }
             } else if var _data = self.data {
+                print("!!! Первый байт НЕ нормальный, но self.data существует !!!")
                 let frameNo = Int(bytes[2])
+                print("!!! frameNo: \(frameNo) !!!")
+                
                 let cellCountLeft = min(_data.cellCount - frameNo * BMS.Constant.normalCellCount.rawValue, BMS.Constant.normalCellCount.rawValue)
+                print("!!! cellCountLeft: \(cellCountLeft) !!!")
+                
                 if cellCountLeft > 0 {
+                    print("!!! cellCountLeft > 0, добавляем cellVoltages !!!")
                     let cellVoltages = bytes.voltagesFromOtherFrame(at: .cellVoltage, cellCount: cellCountLeft)
                     for index in frameNo * BMS.Constant.normalCellCount.rawValue ..< (frameNo * BMS.Constant.normalCellCount.rawValue + cellCountLeft) {
                         _data.cellVoltages.insert(cellVoltages[index - frameNo * BMS.Constant.normalCellCount.rawValue], at: index)
@@ -174,15 +210,20 @@ public struct Data {
                 }
                 
                 let totalFrame = (_data.cellCount + BMS.Constant.normalCellCount.rawValue - 1)/BMS.Constant.normalCellCount.rawValue
+                print("!!! totalFrame: \(totalFrame) !!!")
+                
                 if frameNo == totalFrame - 1 {
+                    print("!!! frameNo == totalFrame - 1, возвращаем _data !!!")
                     defer {
                         reset()
                     }
                     return _data
                 }
                 
+                print("!!! frameNo != totalFrame - 1, возвращаем nil !!!")
                 return nil
             } else {
+                print("!!! Первый байт НЕ нормальный и self.data НЕ существует, возвращаем nil !!!")
                 return nil
             }
         }
@@ -237,10 +278,18 @@ extension Data.BMS.Index {
 
 extension Array where Element == UInt8 {
     func intValue(at index: Int, additionalOffset: Int = 0) -> Int {
+        print("!!! intValue() ВЫЗВАН с index: \(index), additionalOffset: \(additionalOffset) !!!")
+        print("!!! self.count: \(self.count) !!!")
+        print("!!! index + additionalOffset: \(index + additionalOffset) !!!")
+        
         if self.count <= index + additionalOffset {
+            print("!!! ОШИБКА: self.count <= index + additionalOffset, возвращаем -1 !!!")
             return -1
         }
-        return Int(self[index + additionalOffset])
+        
+        let result = Int(self[index + additionalOffset])
+        print("!!! Результат intValue: \(result) !!!")
+        return result
     }
     
     func intValue(at index: Data.BMS.Index, additionalOffset: Int = 0) -> Int {
@@ -274,11 +323,19 @@ extension Array where Element == UInt8 {
     }
     
     func cellCount(offset: Int = 0) -> Int {
+        print("!!! cellCount() ВЫЗВАН с offset: \(offset) !!!")
+        print("!!! self.count: \(self.count) !!!")
+        print("!!! Data.BMS.Index.cellCount.rawValue: \(Data.BMS.Index.cellCount.rawValue) !!!")
+        print("!!! Data.BMS.Index.cellCount.rawValue + 1 + offset: \(Data.BMS.Index.cellCount.rawValue + 1 + offset) !!!")
+        
         if self.count <= Data.BMS.Index.cellCount.rawValue + 1 + offset {
+            print("!!! ОШИБКА: self.count <= Data.BMS.Index.cellCount.rawValue + 1 + offset, возвращаем -1 !!!")
             return -1
         }
         
-        return intValue2Bytes(at: Data.BMS.Index.cellCount, additionalOffset: offset)
+        let result = intValue2Bytes(at: Data.BMS.Index.cellCount, additionalOffset: offset)
+        print("!!! Результат cellCount: \(result) !!!")
+        return result
     }
     
     func voltagesFromOtherFrame(at index: Data.BMS.Index, cellCount: Int) -> [Float] {
