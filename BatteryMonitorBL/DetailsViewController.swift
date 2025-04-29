@@ -236,7 +236,8 @@ extension DetailsViewController: UICollectionViewDelegateFlowLayout,
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if section == 0 {
-            return cellVoltages.count
+            // Возвращаем 0 вместо cellVoltages.count, чтобы скрыть секцию
+            return 0
         } else if section == 1 {
             let cellTempsCount = cellVoltages.count == 16 ? cellTemps.count : 2
             return 1 + min(cellTempsCount, cellTemps.count)
@@ -279,7 +280,8 @@ extension DetailsViewController: UICollectionViewDelegateFlowLayout,
     func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "header", for: indexPath) as! SectionHeader
         if indexPath.section == 0 {
-            view.label.text = "Cell Voltage（V)"//"Cell Voltage（mV)"
+            // Скрываем заголовок для секции Cell Voltage
+            view.label.text = ""
         } else if indexPath.section == 1 {
             view.label.text = "Temperature"
         } else {

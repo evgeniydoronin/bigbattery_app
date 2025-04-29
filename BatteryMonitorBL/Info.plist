@@ -12,6 +12,8 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>BigBattery Husky 2</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -21,9 +23,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>BigBattery uses Bluetooth to connect to your battery monitoring devices, allowing real-time monitoring of battery status, voltage, current, and temperature. Bluetooth connection is essential for all core functionality of the app.</string>
+	<string>BigBattery Husky 2 uses Bluetooth to connect to your battery monitoring devices, allowing real-time monitoring of battery status, voltage, current, and temperature. Bluetooth connection is essential for all core functionality of the app.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>BigBattery uses Bluetooth to connect to your battery monitoring devices, allowing real-time monitoring of battery status, voltage, current, and temperature. Without Bluetooth access, the app will not be able to display battery information or configure device settings.</string>
+	<string>BigBattery Husky 2 uses Bluetooth to connect to your battery monitoring devices, allowing real-time monitoring of battery status, voltage, current, and temperature. Without Bluetooth access, the app will not be able to display battery information or configure device settings.</string>
 	<key>NSPrivacyAccessoryFileLocation</key>
 	<string>PrivacyInfo.xcprivacy</string>
 	<key>UIApplicationSceneManifest</key>
