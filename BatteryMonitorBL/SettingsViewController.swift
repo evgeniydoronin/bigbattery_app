@@ -18,6 +18,8 @@ class SettingsViewController: UIViewController {
     @IBOutlet weak var canProtocolView: SettingItemView?
     @IBOutlet weak var rs485ProtocolView: SettingItemView?
     
+    private var logoImageView: UIImageView?
+    
     private var moduleIdData: Zetara.Data.ModuleIdControlData?
     private var rs485Data: Zetara.Data.RS485ControlData?
     private var canData: Zetara.Data.CANControlData?
@@ -44,6 +46,25 @@ class SettingsViewController: UIViewController {
         versionItemView?.title = "Version"
         versionItemView?.label = version()
         versionItemView?.options = [] // Явно устанавливаем пустой массив опций, чтобы скрыть стрелочку
+        
+        // Добавляем логотип под строкой Version
+        if let versionView = versionItemView {
+            // Создаем изображение
+            logoImageView = UIImageView(image: .init(named: "LogoColor"))
+            if let logoImageView = logoImageView {
+                logoImageView.contentMode = .scaleAspectFit
+                logoImageView.translatesAutoresizingMaskIntoConstraints = false
+                view.addSubview(logoImageView)
+                
+                // Настраиваем ограничения
+                NSLayoutConstraint.activate([
+                    logoImageView.topAnchor.constraint(equalTo: versionView.bottomAnchor, constant: 20),
+                    logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                    logoImageView.widthAnchor.constraint(equalToConstant: 150),
+                    logoImageView.heightAnchor.constraint(equalToConstant: 150)
+                ])
+            }
+        }
         
         canProtocolView?.title = "CAN Protocol"
         canProtocolView?.options = []

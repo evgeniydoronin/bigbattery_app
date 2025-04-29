@@ -11,6 +11,7 @@ import SnapKit
 
 @IBDesignable
 final class BatteryView: UIView {
+    fileprivate let backgroundImageView = UIImageView(image: .init(named: "BatteryBackground"))
     fileprivate let maskImageView = UIImageView(image: .init(named: "BatteryMask"))
     fileprivate let batteryImageView = UIImageView(image: .init(named: "BatteryFull"))
     fileprivate let batteryContainerView = UIView()
@@ -38,15 +39,20 @@ final class BatteryView: UIView {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        addSubview(maskImageView)
-        backgroundColor = .clear
-        addSubview(batteryContainerView)
-        batteryContainerView.addSubview(batteryImageView)
-        bringSubviewToFront(maskImageView)
+        setupViews()
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        setupViews()
+    }
+    
+    private func setupViews() {
+        // Настраиваем фоновое изображение
+        backgroundImageView.contentMode = .scaleAspectFill
+        addSubview(backgroundImageView)
+        
+        // Добавляем остальные элементы
         addSubview(maskImageView)
         backgroundColor = .clear
         addSubview(batteryContainerView)
@@ -64,6 +70,13 @@ final class BatteryView: UIView {
     override func updateConstraints() {
         
         if !didSetupConstraints {
+            // Настраиваем ограничения для фонового изображения
+            backgroundImageView.snp.remakeConstraints { make in
+                make.center.equalToSuperview()
+                // Делаем квадрат немного больше, чем сама батарея
+                make.width.height.equalTo(max(self.bounds.width, self.bounds.height) + 70)
+            }
+            
             maskImageView.snp.remakeConstraints { make in
                 make.edges.equalToSuperview()
             }

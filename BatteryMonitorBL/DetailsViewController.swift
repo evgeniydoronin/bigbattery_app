@@ -58,6 +58,7 @@ class DetailsViewController: UIViewController {
         // Регистрируем ячейки и заголовки
         collectionView.register(VoltageCell.self, forCellWithReuseIdentifier: "voltage")
         collectionView.register(TemperatureCell.self, forCellWithReuseIdentifier: "temperature")
+        collectionView.register(LogoCell.self, forCellWithReuseIdentifier: "logo")
         collectionView.register(SectionHeader.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "header")
         
         // Настраиваем наблюдателей
@@ -85,6 +86,26 @@ class DetailsViewController: UIViewController {
 }
 
 extension DetailsViewController {
+    class LogoCell: UICollectionViewCell {
+        var logoImageView = UIImageView(image: .init(named: "LogoColor"))
+        
+        override init(frame: CGRect) {
+            super.init(frame: .zero)
+            
+            // Настраиваем изображение
+            logoImageView.contentMode = .scaleAspectFit
+            contentView.addSubview(logoImageView)
+            
+            logoImageView.snp.makeConstraints { make in
+                make.center.equalToSuperview()
+                make.width.height.equalTo(150) // Размер можно настроить
+            }
+        }
+        
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+    }
     class VoltageCell: UICollectionViewCell {
         var label = UILabel().then {
             $0.font = .systemFont(ofSize: 16, weight: .bold)
@@ -210,15 +231,17 @@ extension DetailsViewController: UICollectionViewDelegateFlowLayout,
                                  UICollectionViewDataSource {
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        2
+        3 // Добавляем третью секцию для логотипа
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if section == 0 {
             return cellVoltages.count
-        } else {
+        } else if section == 1 {
             let cellTempsCount = cellVoltages.count == 16 ? cellTemps.count : 2
             return 1 + min(cellTempsCount, cellTemps.count)
+        } else {
+            return 1 // Одна ячейка для логотипа
         }
     }
     
@@ -227,7 +250,7 @@ extension DetailsViewController: UICollectionViewDelegateFlowLayout,
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "voltage", for: indexPath) as! VoltageCell
             cell.label.text = String(format: "%.3f", self.cellVoltages[indexPath.item])
             return cell
-        } else {
+        } else if indexPath.section == 1 {
             
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "temperature", for: indexPath) as! TemperatureCell
             
@@ -246,6 +269,10 @@ extension DetailsViewController: UICollectionViewDelegateFlowLayout,
             }
             
             return cell
+        } else {
+            // Секция для логотипа
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "logo", for: indexPath) as! LogoCell
+            return cell
         }
     }
     
@@ -253,8 +280,10 @@ extension DetailsViewController: UICollectionViewDelegateFlowLayout,
         let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "header", for: indexPath) as! SectionHeader
         if indexPath.section == 0 {
             view.label.text = "Cell Voltage（V)"//"Cell Voltage（mV)"
-        } else {
+        } else if indexPath.section == 1 {
             view.label.text = "Temperature"
+        } else {
+            view.label.text = "" // Пустой заголовок для секции логотипа
         }
         return view
     }
@@ -262,8 +291,10 @@ extension DetailsViewController: UICollectionViewDelegateFlowLayout,
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         if indexPath.section == 0 {
             return CGSize(width: 60, height: 28)
-        } else {
+        } else if indexPath.section == 1 {
             return CGSize(width: collectionView.frame.width - 60, height: 60)
+        } else {
+            return CGSize(width: collectionView.frame.width - 60, height: 100) // Размер ячейки для логотипа
         }
     }
 }

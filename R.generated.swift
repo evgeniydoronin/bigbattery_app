@@ -105,7 +105,7 @@ struct _R {
     var settingsCell: RswiftResources.ColorResource { .init(name: "Settings.Cell", path: [], bundle: bundle) }
   }
 
-  /// This `_R.image` struct is generated, and contains static references to 23 images.
+  /// This `_R.image` struct is generated, and contains static references to 25 images.
   struct image {
     let bundle: Foundation.Bundle
 
@@ -114,6 +114,9 @@ struct _R {
 
     /// Image `Background`.
     var background: RswiftResources.ImageResource { .init(name: "Background", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `BatteryBackground`.
+    var batteryBackground: RswiftResources.ImageResource { .init(name: "BatteryBackground", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
 
     /// Image `BatteryCharging`.
     var batteryCharging: RswiftResources.ImageResource { .init(name: "BatteryCharging", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
@@ -162,6 +165,9 @@ struct _R {
 
     /// Image `LaunchScreen-V2`.
     var launchScreenV2: RswiftResources.ImageResource { .init(name: "LaunchScreen-V2", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `LogoColor`.
+    var logoColor: RswiftResources.ImageResource { .init(name: "LogoColor", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
 
     /// Image `Setting`.
     var setting: RswiftResources.ImageResource { .init(name: "Setting", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
