@@ -13,11 +13,7 @@ import RxSwift
 import RxCocoa
 import RxBluetoothKit2
 
-class TitleButton: UIButton {
-    override var intrinsicContentSize: CGSize {
-        UIView.layoutFittingExpandedSize
-    }
-}
+// Класс TitleButton перемещен в BatteryInfoView.swift
 
 class HomeViewController: UIViewController {
     
@@ -53,16 +49,7 @@ class HomeViewController: UIViewController {
         super.viewWillDisappear(animated)
     }
     
-    lazy var titleButton: TitleButton = {
-        let b = TitleButton()
-        b.translatesAutoresizingMaskIntoConstraints = false
-        b.setImage(R.image.homeBluetooth(), for: .normal)
-        b.imageView?.contentMode = .scaleAspectFill
-        b.titleLabel?.font = .systemFont(ofSize: 20, weight: .medium)
-        b.setTitleColor(.black, for: .normal)
-        b.imageEdgeInsets = UIEdgeInsets(top: 4, left: 0, bottom: 0, right: 12)
-        return b
-    }()
+    // Удаляем titleButton, так как теперь используем bluetoothButton из batteryInfoView
 
     @IBOutlet weak var timerLabel: UILabel!
     @IBOutlet weak var logoImageView: UIImageView!
@@ -107,11 +94,6 @@ class HomeViewController: UIViewController {
         // Добавляем шапку и логотип
         setupHeaderView()
         
-        componentsStackView.addArrangedSubview(voltageComponentView)
-        componentsStackView.addArrangedSubview(currentComponentView)
-        componentsStackView.addArrangedSubview(tempComponentView)
-        componentsStackView.setCustomSpacing(36, after: tempComponentView)
-        
         setupObservers()
         timerLabel.isHidden = true
     }
@@ -145,7 +127,8 @@ class HomeViewController: UIViewController {
             }.disposed(by: disposeBag)
         
         
-        titleButton.rx.tap.subscribe(onNext: { [weak self] _ in
+        // Используем bluetoothButton из batteryInfoView вместо titleButton
+        batteryInfoView.bluetoothButton.rx.tap.subscribe(onNext: { [weak self] _ in
             self?.performSegue(withIdentifier: R.segue.homeViewController.pushConnectivityPage, sender: self?.navigationController)
         }).disposed(by: disposeBag)
     }
@@ -155,20 +138,86 @@ class HomeViewController: UIViewController {
         if let peripheral = peripheral,
            let name = peripheral.name {
             timerLabel.isHidden = false
-            titleButton.setTitle(name, for: .normal)
+            batteryInfoView.updateBluetoothButton(title: name)
         } else {
             timerLabel.isHidden = true
-            titleButton.setTitle(nil, for: .normal)
+            batteryInfoView.updateBluetoothButton(title: nil)
         }
     }
     
     // Настройка шапки и логотипа
     private func setupHeaderView() {
+        // Очищаем все существующие ограничения
+        for subview in view.subviews {
+            subview.removeFromSuperview()
+        }
+        
+        // Добавляем фоновое изображение
+        let backgroundImageView = UIImageView(image: R.image.background())
+        backgroundImageView.contentMode = .scaleAspectFill
+        backgroundImageView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(backgroundImageView)
+        
         // Добавляем шапку на экран
         view.addSubview(headerView)
         
         // Добавляем логотип в шапку
         headerView.addSubview(headerLogoImageView)
+        
+        // Создаем скроллируемый контейнер для всего контента под шапкой
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.showsVerticalScrollIndicator = true
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.alwaysBounceVertical = true
+        view.addSubview(scrollView)
+        
+        // Создаем вертикальный стек для размещения контейнеров с контентом
+        let contentStackView = UIStackView()
+        contentStackView.translatesAutoresizingMaskIntoConstraints = false
+        contentStackView.axis = .vertical
+        contentStackView.alignment = .fill
+        contentStackView.distribution = .fill
+        contentStackView.spacing = 16
+        scrollView.addSubview(contentStackView)
+        
+        // Создаем контейнеры для разных секций контента
+        let timerContainer = UIView()
+        timerContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        let batteryInfoContainer = UIView()
+        batteryInfoContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        let batteryContainer = UIView()
+        batteryContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        let componentsContainer = UIView()
+        componentsContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        let logoContainer = UIView()
+        logoContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Добавляем контейнеры в стек
+        contentStackView.addArrangedSubview(timerContainer)
+        contentStackView.addArrangedSubview(batteryInfoContainer)
+        contentStackView.addArrangedSubview(batteryContainer)
+        contentStackView.addArrangedSubview(componentsContainer)
+        contentStackView.addArrangedSubview(logoContainer)
+        
+        // Добавляем элементы в соответствующие контейнеры
+        timerContainer.addSubview(timerLabel)
+        batteryInfoContainer.addSubview(batteryInfoView)
+        batteryContainer.addSubview(batteryView)
+        componentsContainer.addSubview(componentsStackView)
+        logoContainer.addSubview(logoImageView)
+        
+        // Настраиваем ограничения для фонового изображения
+        NSLayoutConstraint.activate([
+            backgroundImageView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+            backgroundImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            backgroundImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            backgroundImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
         
         // Настраиваем ограничения для шапки с учетом safeArea
         NSLayoutConstraint.activate([
@@ -188,25 +237,70 @@ class HomeViewController: UIViewController {
             headerLogoImageView.heightAnchor.constraint(equalToConstant: 60) // Высота логотипа
         ])
         
-        // Обновляем ограничения для существующих элементов
-        if let firstConstraint = timerLabel.constraints.first(where: { $0.firstAttribute == .top }) {
-            timerLabel.removeConstraint(firstConstraint)
-        }
+        // Настраиваем ограничения для скроллируемого контейнера
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: headerView.bottomAnchor), // Начинаем под шапкой
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
         
-        // Обновляем ограничение для timerLabel, чтобы он располагался под шапкой
+        // Настраиваем ограничения для стека с контентом
+        NSLayoutConstraint.activate([
+            contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentStackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentStackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor) // Важно для правильного скроллинга
+        ])
+        
+        // Обновляем ограничения для timerLabel
         timerLabel.snp.remakeConstraints { make in
-            make.top.equalTo(headerView.snp.bottom).offset(16)
-            make.leading.equalTo(view.safeAreaLayoutGuide).offset(16)
-            make.trailing.equalTo(view.safeAreaLayoutGuide).offset(-16)
+            make.top.equalToSuperview().offset(16)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().offset(-16)
+            make.bottom.equalToSuperview().offset(-16)
         }
         
-        // Добавляем кнопку Bluetooth в шапку
-        headerView.addSubview(titleButton)
-        titleButton.snp.makeConstraints { make in
-            make.trailing.equalTo(headerView.safeAreaLayoutGuide).offset(-16)
-            make.centerY.equalTo(headerLogoImageView)
-            make.height.equalTo(44)
+        // Обновляем ограничения для batteryInfoView
+        batteryInfoView.snp.remakeConstraints { make in
+            make.top.equalToSuperview().offset(16)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().offset(-16)
+            make.bottom.equalToSuperview().offset(-16)
+            make.height.equalTo(84) // Увеличиваем высоту, чтобы вместить кнопку Bluetooth
         }
+        
+        // Обновляем ограничения для batteryView
+        batteryView.snp.remakeConstraints { make in
+            make.center.equalToSuperview()
+            make.width.equalTo(120)
+            make.height.equalTo(300)
+            make.top.equalToSuperview().offset(16)
+            make.bottom.equalToSuperview().offset(-16)
+        }
+        
+        // Обновляем ограничения для componentsStackView
+        componentsStackView.snp.remakeConstraints { make in
+            make.top.equalToSuperview().offset(16)
+            make.leading.equalToSuperview().offset(30)
+            make.trailing.equalToSuperview().offset(-30)
+            make.bottom.equalToSuperview().offset(-16)
+            make.height.equalTo(120)
+        }
+        
+        // Обновляем ограничения для logoImageView
+        logoImageView.snp.remakeConstraints { make in
+            make.centerX.equalToSuperview()
+            make.top.equalToSuperview().offset(16)
+            make.bottom.equalToSuperview().offset(-16)
+        }
+        
+        // Добавляем компоненты в componentsStackView
+        componentsStackView.addArrangedSubview(voltageComponentView)
+        componentsStackView.addArrangedSubview(currentComponentView)
+        componentsStackView.addArrangedSubview(tempComponentView)
+        componentsStackView.setCustomSpacing(36, after: tempComponentView)
     }
     
     func updateUI(_ data: Zetara.Data.BMS) {

@@ -10,6 +10,12 @@ import Then
 import SnapKit
 import UICircleProgressView
 
+class TitleButton: UIButton {
+    override var intrinsicContentSize: CGSize {
+        UIView.layoutFittingExpandedSize
+    }
+}
+
 class BatteryInfoView: UIView {
     
     fileprivate var chargingImageView = UIImageView(image: R.image.batteryCharging())
@@ -28,6 +34,16 @@ class BatteryInfoView: UIView {
     let statusLabel = UILabel().then {
         $0.font = .systemFont(ofSize: 18, weight: .medium)
         $0.textColor = .black
+    }
+    
+    // Добавляем кнопку Bluetooth
+    let bluetoothButton = TitleButton().then {
+        $0.translatesAutoresizingMaskIntoConstraints = false
+        $0.setImage(R.image.homeBluetooth(), for: .normal)
+        $0.imageView?.contentMode = .scaleAspectFill
+        $0.titleLabel?.font = .systemFont(ofSize: 20, weight: .medium)
+        $0.setTitleColor(.black, for: .normal)
+        $0.imageEdgeInsets = UIEdgeInsets(top: 4, left: 0, bottom: 0, right: 12)
     }
     
     var charging: Bool = false {
@@ -54,10 +70,16 @@ class BatteryInfoView: UIView {
     }
     
     func setupUI() {
+        // Добавляем фон с закругленными углами для карточки
+        backgroundColor = UIColor.white.withAlphaComponent(0.8)
+        layer.cornerRadius = 12
+        layer.masksToBounds = true
+        
         addSubview(chargingImageView)
         addSubview(progressView)
         addSubview(batteryLabel)
         addSubview(statusLabel)
+        addSubview(bluetoothButton)
         chargingImageView.isHidden = true
     }
     
@@ -65,6 +87,11 @@ class BatteryInfoView: UIView {
         progressView.progress = battery
         batteryLabel.text = "\(Int(battery * 100))%"
         statusLabel.text = status
+    }
+    
+    // Метод для обновления текста кнопки Bluetooth
+    func updateBluetoothButton(title: String?) {
+        bluetoothButton.setTitle(title, for: .normal)
     }
     
     fileprivate var didSetupConstraints = false
@@ -78,9 +105,10 @@ class BatteryInfoView: UIView {
             }
             
             progressView.snp.remakeConstraints { make in
-                make.top.leading.equalToSuperview()
+                make.top.equalToSuperview().offset(12)
+                make.leading.equalToSuperview().offset(12)
                 make.width.height.equalTo(60)
-                make.bottom.lessThanOrEqualToSuperview()
+                make.bottom.lessThanOrEqualToSuperview().offset(-12)
             }
             
             batteryLabel.snp.remakeConstraints { make in
@@ -96,9 +124,15 @@ class BatteryInfoView: UIView {
             
             statusLabel.snp.remakeConstraints { make in
                 make.leading.equalTo(progressView.snp.trailing).offset(24)
-                make.trailing.equalToSuperview()
+                make.trailing.equalTo(bluetoothButton.snp.leading).offset(-12)
                 make.centerY.equalTo(progressView)
-                make.bottom.lessThanOrEqualToSuperview()
+            }
+            
+            bluetoothButton.snp.remakeConstraints { make in
+                make.centerY.equalTo(progressView)
+                make.trailing.equalToSuperview().offset(-12)
+                make.width.equalTo(44)
+                make.height.equalTo(44)
             }
             
             didSetupConstraints = true
