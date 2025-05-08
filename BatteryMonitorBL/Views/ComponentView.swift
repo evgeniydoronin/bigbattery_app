@@ -11,12 +11,12 @@ import SnapKit
 
 class ComponentView: UIView {
     
-    fileprivate var iconImageView: UIImageView = {
+    var iconImageView: UIImageView = {
         let image = UIImageView(frame: .init(x: 0, y: 0, width: 40, height: 40))
         return image
     }()
     
-    fileprivate var valueLabel: UILabel = {
+    var valueLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 16, weight: .bold)
         label.textColor = R.color.homeComponentValue()
@@ -24,7 +24,7 @@ class ComponentView: UIView {
         return label
     }()
     
-    fileprivate var titleLabel: UILabel = {
+    var titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 14, weight: .bold)
         label.textColor = .black //R.color.homeComponentTitle()
@@ -106,5 +106,43 @@ class ComponentView: UIView {
         didSet {
             self.titleLabel.text = title
         }
+    }
+    
+    // Метод для настройки горизонтального отображения компонента
+    func configureForHorizontalLayout() {
+        // Сбрасываем существующие ограничения
+        iconImageView.snp.removeConstraints()
+        valueLabel.snp.removeConstraints()
+        titleLabel.snp.removeConstraints()
+        
+        // Настраиваем значение (верхняя строка)
+        valueLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        valueLabel.textAlignment = .center
+        valueLabel.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(12)
+            make.centerX.equalToSuperview()
+            make.leading.trailing.equalToSuperview().inset(8)
+        }
+        
+        // Настраиваем иконку (нижняя строка, слева)
+        iconImageView.snp.makeConstraints { make in
+            make.top.equalTo(valueLabel.snp.bottom).offset(8)
+            make.leading.equalToSuperview().offset(16)
+            make.width.height.equalTo(24)
+            make.bottom.equalToSuperview().offset(-12)
+        }
+        
+        // Настраиваем заголовок (нижняя строка, справа от иконки)
+        titleLabel.font = .systemFont(ofSize: 16, weight: .medium)
+        titleLabel.textColor = .darkGray
+        titleLabel.textAlignment = .left
+        titleLabel.snp.makeConstraints { make in
+            make.centerY.equalTo(iconImageView)
+            make.leading.equalTo(iconImageView.snp.trailing).offset(8)
+            make.trailing.equalToSuperview().offset(-8)
+        }
+        
+        // Сбрасываем флаг, чтобы updateConstraints не перезаписал наши изменения
+        didSetupConstraints = true
     }
 }

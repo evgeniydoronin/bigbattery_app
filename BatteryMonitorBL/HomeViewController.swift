@@ -60,9 +60,9 @@ class HomeViewController: UIViewController {
     @IBOutlet weak var batteryInfoView: BatteryInfoView!
     @IBOutlet weak var batteryView: BatteryView!
     
-    var voltageComponentView: ComponentView = ComponentView(icon: R.image.homeComponentVoltage()!, title:"Voltage" , value: "0")
-    var currentComponentView: ComponentView = ComponentView(icon: R.image.homeComponentCurrent()!, title: "Current", value: "0")
-    var tempComponentView: ComponentView = ComponentView(icon: R.image.homeComponentTemperature()!, title: "Temperature", value: "0°C/0°F")
+    var voltageComponentView: ComponentView = ComponentView(icon: R.image.homeComponentVoltage()!, title:"Total Voltage" , value: "0V")
+    var currentComponentView: ComponentView = ComponentView(icon: R.image.homeComponentCurrent()!, title: "Total Current", value: "0A")
+    var tempComponentView: ComponentView = ComponentView(icon: R.image.homeComponentTemperature()!, title: "Total Temp.", value: "0°C/0°F")
     
     // Свойства для новой плашки Bluetooth
     private var bluetoothConnectionView: UIView!
@@ -171,6 +171,16 @@ class HomeViewController: UIViewController {
     
     // Настройка шапки и логотипа
     private func setupHeaderView() {
+        // Структура экрана:
+        // 1. Шапка с логотипом (headerView)
+        // 2. Скроллируемый контейнер (scrollView) с вертикальным стеком (contentStackView), содержащим:
+        //    - Плашка Bluetooth для подключения устройства
+        //    - Контейнер с параметрами батареи (напряжение, ток, температура)
+        //    - Контейнер с временем последнего обновления
+        //    - Информация о батарее (процент заряда и статус)
+        //    - Визуализация уровня заряда батареи
+        //    - Логотип внизу экрана
+        
         // Очищаем все существующие ограничения
         for subview in view.subviews {
             subview.removeFromSuperview()
@@ -202,36 +212,44 @@ class HomeViewController: UIViewController {
         contentStackView.axis = .vertical
         contentStackView.alignment = .fill
         contentStackView.distribution = .fill
-        contentStackView.spacing = 16
+        contentStackView.spacing = 0  // Убираем отступ между контейнерами полностью
         scrollView.addSubview(contentStackView)
         
         // Создаем контейнеры для разных секций контента
-        // Создаем контейнер для новой плашки Bluetooth
+        // 1. Контейнер для плашки Bluetooth - отображает статус подключения и имя устройства
         let bluetoothConnectionContainer = UIView()
         bluetoothConnectionContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        let timerContainer = UIView()
-        timerContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        let batteryInfoContainer = UIView()
-        batteryInfoContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        let batteryContainer = UIView()
-        batteryContainer.translatesAutoresizingMaskIntoConstraints = false
-        
+        // 2. Контейнер для параметров батареи - отображает напряжение, ток и температуру
         let componentsContainer = UIView()
         componentsContainer.translatesAutoresizingMaskIntoConstraints = false
         
+        // 3. Контейнер для времени последнего обновления данных
+        let timerContainer = UIView()
+        timerContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 4. Контейнер для информации о батарее - процент заряда и статус (зарядка/разрядка)
+        let batteryInfoContainer = UIView()
+        batteryInfoContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 5. Контейнер для визуализации уровня заряда батареи
+        let batteryContainer = UIView()
+        batteryContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 6. Контейнер для логотипа внизу экрана
         let logoContainer = UIView()
         logoContainer.translatesAutoresizingMaskIntoConstraints = false
         
         // Добавляем контейнеры в стек
-        contentStackView.addArrangedSubview(bluetoothConnectionContainer) // Добавляем новый контейнер в самый верх
-        contentStackView.addArrangedSubview(timerContainer)
-        contentStackView.addArrangedSubview(batteryInfoContainer)
-        contentStackView.addArrangedSubview(batteryContainer)
-        contentStackView.addArrangedSubview(componentsContainer)
-        contentStackView.addArrangedSubview(logoContainer)
+        contentStackView.addArrangedSubview(bluetoothConnectionContainer) // 1. Плашка для подключения Bluetooth
+        contentStackView.addArrangedSubview(componentsContainer)         // 2. Контейнер с параметрами батареи (напряжение, ток, температура)
+        contentStackView.addArrangedSubview(timerContainer)              // 3. Контейнер с временем последнего обновления
+        contentStackView.addArrangedSubview(batteryInfoContainer)        // 4. Информация о батарее (процент заряда и статус)
+        contentStackView.addArrangedSubview(batteryContainer)            // 5. Визуализация уровня заряда батареи
+        contentStackView.addArrangedSubview(logoContainer)               // 6. Логотип внизу экрана
+        
+        // Добавляем отрицательный отступ между первым и вторым контейнером
+        contentStackView.setCustomSpacing(-1, after: bluetoothConnectionContainer)
         
         // Создаем и настраиваем bluetoothConnectionView
         bluetoothConnectionView = UIView()
@@ -323,11 +341,11 @@ class HomeViewController: UIViewController {
         
         // Настраиваем ограничения для bluetoothConnectionView
         bluetoothConnectionView.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(26)
+            make.top.equalToSuperview().offset(16) // Верхний отступ
             make.leading.equalToSuperview().offset(56)
             make.trailing.equalToSuperview().offset(-56)
-            make.bottom.equalToSuperview().offset(-16)
-            make.height.equalTo(50) // Высота плашки
+            make.bottom.equalToSuperview().offset(0) // Убираем нижний отступ полностью
+            make.height.equalTo(40) // Высота плашки
         }
         
         // Настраиваем ограничения для элементов внутри bluetoothConnectionView
@@ -375,13 +393,28 @@ class HomeViewController: UIViewController {
             make.bottom.equalToSuperview().offset(-16)
         }
         
+        // Настраиваем componentsStackView для горизонтального отображения
+        componentsStackView.axis = .horizontal // Меняем ось на горизонтальную
+        componentsStackView.distribution = .fillEqually // Равномерное распределение
+        componentsStackView.spacing = 10 // Отступ между компонентами
+        
+        // Настраиваем внешний вид компонентов
+        [voltageComponentView, currentComponentView, tempComponentView].forEach { view in
+            view.backgroundColor = UIColor.white
+            view.layer.cornerRadius = 10 // Увеличиваем скругление углов
+            view.layer.masksToBounds = true
+            view.layer.borderWidth = 1
+            view.layer.borderColor = UIColor.black.withAlphaComponent(0.1).cgColor // Делаем границу светлее
+            view.configureForHorizontalLayout() // Настраиваем для нового макета
+        }
+        
         // Обновляем ограничения для componentsStackView
         componentsStackView.snp.remakeConstraints { make in
-            make.top.equalToSuperview().offset(16)
-            make.leading.equalToSuperview().offset(30)
-            make.trailing.equalToSuperview().offset(-30)
-            make.bottom.equalToSuperview().offset(-16)
-            make.height.equalTo(120)
+            make.top.equalToSuperview().offset(0) // Убираем верхний отступ полностью
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().offset(-16)
+            make.bottom.equalToSuperview().offset(-8)
+            make.height.equalTo(80) // Высота плашек
         }
         
         // Обновляем ограничения для logoImageView
@@ -395,7 +428,6 @@ class HomeViewController: UIViewController {
         componentsStackView.addArrangedSubview(voltageComponentView)
         componentsStackView.addArrangedSubview(currentComponentView)
         componentsStackView.addArrangedSubview(tempComponentView)
-        componentsStackView.setCustomSpacing(36, after: tempComponentView)
     }
     
     func updateUI(_ data: Zetara.Data.BMS) {
@@ -414,7 +446,21 @@ class HomeViewController: UIViewController {
         /// Информация о параметрах
         voltageComponentView.value = "\(data.voltage)V"
         currentComponentView.value = "\(data.current)A"
-        tempComponentView.value = "\(data.tempEnv)°C/\(data.tempEnv.celsiusToFahrenheit())°F"
+        tempComponentView.value = "\(data.tempEnv.celsiusToFahrenheit())°F/\(data.tempEnv)°C"
+    }
+    
+    // Метод для изменения порядка компонентов
+    func reorderComponents(order: [ComponentView]) {
+        // Удаляем все существующие компоненты
+        for view in componentsStackView.arrangedSubviews {
+            componentsStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        
+        // Добавляем компоненты в новом порядке
+        for view in order {
+            componentsStackView.addArrangedSubview(view)
+        }
     }
     
     var formatter: DateFormatter = {
