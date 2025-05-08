@@ -68,6 +68,19 @@ class HomeViewController: UIViewController {
     private var bluetoothConnectionView: UIView!
     private var deviceNameLabel: UILabel!
     
+    // Свойства для табов
+    private var tabsContainer: UIView!
+    private var tabButtonsStackView: UIStackView!
+    private var tabContentContainer: UIView!
+    
+    private var summaryTabButton: UIButton!
+    private var cellVoltageTabButton: UIButton!
+    private var temperatureTabButton: UIButton!
+    
+    private var summaryTabContent: UIView!
+    private var cellVoltageTabContent: UIView!
+    private var temperatureTabContent: UIView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -212,7 +225,7 @@ class HomeViewController: UIViewController {
         contentStackView.axis = .vertical
         contentStackView.alignment = .fill
         contentStackView.distribution = .fill
-        contentStackView.spacing = 0  // Убираем отступ между контейнерами полностью
+        contentStackView.spacing = 16  // Возвращаем отступ между контейнерами
         scrollView.addSubview(contentStackView)
         
         // Создаем контейнеры для разных секций контента
@@ -224,7 +237,11 @@ class HomeViewController: UIViewController {
         let componentsContainer = UIView()
         componentsContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        // 3. Контейнер для времени последнего обновления данных
+        // 3. Контейнер для табов (Summary, Cell Voltage, Temperature)
+        let tabsContainer = UIView()
+        tabsContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 4. Контейнер для времени последнего обновления данных
         let timerContainer = UIView()
         timerContainer.translatesAutoresizingMaskIntoConstraints = false
         
@@ -243,13 +260,14 @@ class HomeViewController: UIViewController {
         // Добавляем контейнеры в стек
         contentStackView.addArrangedSubview(bluetoothConnectionContainer) // 1. Плашка для подключения Bluetooth
         contentStackView.addArrangedSubview(componentsContainer)         // 2. Контейнер с параметрами батареи (напряжение, ток, температура)
-        contentStackView.addArrangedSubview(timerContainer)              // 3. Контейнер с временем последнего обновления
-        contentStackView.addArrangedSubview(batteryInfoContainer)        // 4. Информация о батарее (процент заряда и статус)
-        contentStackView.addArrangedSubview(batteryContainer)            // 5. Визуализация уровня заряда батареи
-        contentStackView.addArrangedSubview(logoContainer)               // 6. Логотип внизу экрана
+        contentStackView.addArrangedSubview(tabsContainer)               // 3. Контейнер с табами
+        contentStackView.addArrangedSubview(timerContainer)              // 4. Контейнер с временем последнего обновления
+        contentStackView.addArrangedSubview(batteryInfoContainer)        // 5. Информация о батарее (процент заряда и статус)
+        contentStackView.addArrangedSubview(batteryContainer)            // 6. Визуализация уровня заряда батареи
+        contentStackView.addArrangedSubview(logoContainer)               // 7. Логотип внизу экрана
         
-        // Добавляем отрицательный отступ между первым и вторым контейнером
-        contentStackView.setCustomSpacing(-1, after: bluetoothConnectionContainer)
+        // Добавляем отступы между контейнерами
+        // contentStackView.setCustomSpacing(-1, after: bluetoothConnectionContainer) // Удаляем отрицательный отступ
         
         // Создаем и настраиваем bluetoothConnectionView
         bluetoothConnectionView = UIView()
@@ -288,6 +306,97 @@ class HomeViewController: UIViewController {
         addButton.contentMode = .scaleAspectFit
         addButton.translatesAutoresizingMaskIntoConstraints = false
         bluetoothConnectionView.addSubview(addButton)
+        
+        // Проверяем видимость контейнеров
+        bluetoothConnectionContainer.isHidden = false
+        componentsContainer.isHidden = false
+        
+        // Создаем и настраиваем контейнер с табами
+        self.tabsContainer = tabsContainer
+        tabsContainer.backgroundColor = .clear // Делаем фон прозрачным
+        
+        // Создаем внутренний контейнер для табов с отступами
+        let tabsInnerContainer = UIView()
+        tabsInnerContainer.backgroundColor = UIColor.white.withAlphaComponent(0.9)
+        tabsInnerContainer.layer.cornerRadius = 16
+        tabsInnerContainer.layer.masksToBounds = true
+        tabsInnerContainer.translatesAutoresizingMaskIntoConstraints = false
+        tabsContainer.addSubview(tabsInnerContainer)
+        
+        // Настраиваем отступы для внутреннего контейнера
+        tabsInnerContainer.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().offset(-16)
+            make.top.bottom.equalToSuperview()
+        }
+        
+        // Создаем горизонтальный стек для кнопок табов
+        tabButtonsStackView = UIStackView()
+        tabButtonsStackView.translatesAutoresizingMaskIntoConstraints = false
+        tabButtonsStackView.axis = .horizontal
+        tabButtonsStackView.distribution = .fillEqually
+        tabButtonsStackView.spacing = 10
+        tabsInnerContainer.addSubview(tabButtonsStackView) // Добавляем в tabsInnerContainer вместо tabsContainer
+        
+        // Создаем контейнер для содержимого активного таба
+        tabContentContainer = UIView()
+        tabContentContainer.translatesAutoresizingMaskIntoConstraints = false
+        tabContentContainer.backgroundColor = .white
+        tabsInnerContainer.addSubview(tabContentContainer) // Добавляем в tabsInnerContainer вместо tabsContainer
+        
+        // Создаем кнопки для табов
+        summaryTabButton = createTabButton(title: "Summary", isActive: true)
+        cellVoltageTabButton = createTabButton(title: "Cell Voltage", isActive: false)
+        temperatureTabButton = createTabButton(title: "Temperature", isActive: false)
+        
+        // Добавляем кнопки в стек
+        tabButtonsStackView.addArrangedSubview(summaryTabButton)
+        tabButtonsStackView.addArrangedSubview(cellVoltageTabButton)
+        tabButtonsStackView.addArrangedSubview(temperatureTabButton)
+        
+        // Создаем содержимое для каждого таба
+        summaryTabContent = createTabContent(title: "Summary Tab Content")
+        cellVoltageTabContent = createTabContent(title: "Cell Voltage Tab Content")
+        temperatureTabContent = createTabContent(title: "Temperature Tab Content")
+        
+        // Добавляем содержимое в контейнер (изначально только Summary)
+        tabContentContainer.addSubview(summaryTabContent)
+        summaryTabContent.isHidden = false
+        tabContentContainer.addSubview(cellVoltageTabContent)
+        cellVoltageTabContent.isHidden = true
+        tabContentContainer.addSubview(temperatureTabContent)
+        temperatureTabContent.isHidden = true
+        
+        // Добавляем обработчики нажатий на кнопки
+        summaryTabButton.addTarget(self, action: #selector(tabButtonTapped(_:)), for: .touchUpInside)
+        cellVoltageTabButton.addTarget(self, action: #selector(tabButtonTapped(_:)), for: .touchUpInside)
+        temperatureTabButton.addTarget(self, action: #selector(tabButtonTapped(_:)), for: .touchUpInside)
+        
+        // Настраиваем ограничения для элементов внутри tabsContainer
+        tabButtonsStackView.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(16)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().offset(-16)
+            make.height.equalTo(40)
+        }
+        
+        tabContentContainer.snp.makeConstraints { make in
+            make.top.equalTo(tabButtonsStackView.snp.bottom).offset(16)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().offset(-16)
+            make.bottom.equalToSuperview().offset(-16)
+        }
+        
+        // Настраиваем ограничения для содержимого табов
+        [summaryTabContent, cellVoltageTabContent, temperatureTabContent].forEach { content in
+            content.snp.makeConstraints { make in
+                make.edges.equalToSuperview()
+            }
+        }
+        
+        // Удаляем использование bringSubviewToFront, так как это может нарушить порядок отображения
+        // contentStackView.bringSubviewToFront(bluetoothConnectionContainer)
+        // contentStackView.bringSubviewToFront(componentsContainer)
         
         // Добавляем элементы в соответствующие контейнеры
         timerContainer.addSubview(timerLabel)
@@ -346,6 +455,21 @@ class HomeViewController: UIViewController {
             make.trailing.equalToSuperview().offset(-56)
             make.bottom.equalToSuperview().offset(0) // Убираем нижний отступ полностью
             make.height.equalTo(40) // Высота плашки
+        }
+        
+        // Настраиваем ограничения для bluetoothConnectionContainer
+        bluetoothConnectionContainer.snp.makeConstraints { make in
+            make.height.equalTo(60) // Задаем явную высоту
+        }
+        
+        // Настраиваем ограничения для componentsContainer
+        componentsContainer.snp.makeConstraints { make in
+            make.height.equalTo(100) // Задаем явную высоту
+        }
+        
+        // Настраиваем ограничения для tabsContainer (только высота, без отступов)
+        tabsContainer.snp.makeConstraints { make in
+            make.height.equalTo(120) // Высота контейнера с табами
         }
         
         // Настраиваем ограничения для элементов внутри bluetoothConnectionView
@@ -468,6 +592,78 @@ class HomeViewController: UIViewController {
         d.dateFormat = "yyyy/MM/dd HH:mm:ss"
         return d
     }()
+    
+    // MARK: - Методы для работы с табами
+    
+    // Метод для создания кнопки таба
+    private func createTabButton(title: String, isActive: Bool) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .medium)
+        button.backgroundColor = .white
+        button.layer.cornerRadius = 20
+        button.layer.masksToBounds = true
+        
+        // Настраиваем внешний вид в зависимости от активности
+        updateTabButtonAppearance(button, isActive: isActive)
+        
+        return button
+    }
+    
+    // Метод для обновления внешнего вида кнопки таба
+    private func updateTabButtonAppearance(_ button: UIButton, isActive: Bool) {
+        if isActive {
+            button.setTitleColor(.systemGreen, for: .normal)
+            button.layer.borderWidth = 2
+            button.layer.borderColor = UIColor.systemGreen.cgColor
+        } else {
+            button.setTitleColor(.darkGray, for: .normal)
+            button.layer.borderWidth = 0
+        }
+    }
+    
+    // Метод для создания содержимого таба
+    private func createTabContent(title: String) -> UIView {
+        let contentView = UIView()
+        contentView.backgroundColor = .white
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(titleLabel)
+        
+        titleLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.leading.trailing.equalToSuperview().inset(16)
+        }
+        
+        return contentView
+    }
+    
+    // Обработчик нажатия на кнопку таба
+    @objc private func tabButtonTapped(_ sender: UIButton) {
+        // Обновляем внешний вид всех кнопок
+        [summaryTabButton, cellVoltageTabButton, temperatureTabButton].forEach { button in
+            updateTabButtonAppearance(button, isActive: button == sender)
+        }
+        
+        // Скрываем все содержимое табов
+        summaryTabContent.isHidden = true
+        cellVoltageTabContent.isHidden = true
+        temperatureTabContent.isHidden = true
+        
+        // Показываем содержимое активного таба
+        if sender == summaryTabButton {
+            summaryTabContent.isHidden = false
+        } else if sender == cellVoltageTabButton {
+            cellVoltageTabContent.isHidden = false
+        } else if sender == temperatureTabButton {
+            temperatureTabContent.isHidden = false
+        }
+    }
 }
 
 
