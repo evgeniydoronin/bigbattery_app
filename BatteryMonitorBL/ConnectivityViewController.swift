@@ -33,8 +33,24 @@ class ConnectivityViewController : UIViewController {
         print("deinit ConnectivityViewController.")
     }
     
+    // Метод для возврата на предыдущий экран
+    @objc func goBack() {
+        navigationController?.popViewController(animated: true)
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Показываем навигационную панель
+        self.navigationController?.setNavigationBarHidden(false, animated: true)
+        
+        // Добавляем кнопку "Back"
+        let backButton = UIBarButtonItem(title: "Back", style: .plain, target: self, action: #selector(goBack))
+        navigationItem.leftBarButtonItem = backButton
+        
+        // Включаем жесты смахивания
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = true
+        navigationController?.interactivePopGestureRecognizer?.delegate = nil
         
         // Добавляем фоновое изображение
         let backgroundImageView = UIImageView(image: R.image.background())

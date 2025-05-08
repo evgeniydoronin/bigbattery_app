@@ -43,6 +43,9 @@ class HomeViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
+        // Скрываем навигационный бар при возвращении на главный экран
+        self.navigationController?.setNavigationBarHidden(true, animated: animated)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -61,29 +64,33 @@ class HomeViewController: UIViewController {
     var currentComponentView: ComponentView = ComponentView(icon: R.image.homeComponentCurrent()!, title: "Current", value: "0")
     var tempComponentView: ComponentView = ComponentView(icon: R.image.homeComponentTemperature()!, title: "Temperature", value: "0°C/0°F")
     
+    // Свойства для новой плашки Bluetooth
+    private var bluetoothConnectionView: UIView!
+    private var deviceNameLabel: UILabel!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        /// Tab bar appearance
+        /// Настройка внешнего вида панели вкладок
         let appearance = UITabBarAppearance()
 
-        /// General
+        /// Общие настройки
         appearance.backgroundColor = .white
         appearance.shadowImage = UIImage()
         appearance.shadowColor = appColor.withAlphaComponent(0.25)
 
-        /// Normal tabs
+        /// Обычные вкладки
         appearance.stackedLayoutAppearance.normal.iconColor = appColor
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: appColor.withAlphaComponent(0.25)]
         appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .white
 
-        /// Selected tab
+        /// Выбранная вкладка
         appearance.stackedLayoutAppearance.selected.iconColor = appColor
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = [NSAttributedString.Key.foregroundColor: appColor]
 
         self.tabBarController!.tabBar.standardAppearance = appearance
         
-        /// Connect if no device connected
+        /// Подключение, если устройство не подключено
 //        if ZetaraManager.shared.connectedPeripheral() == nil {
 //            self.performSegue(withIdentifier: R.segue.homeViewController.pushConnectivityPage, sender: self.navigationController)
 //        }
@@ -129,19 +136,36 @@ class HomeViewController: UIViewController {
         
         // Используем bluetoothButton из batteryInfoView вместо titleButton
         batteryInfoView.bluetoothButton.rx.tap.subscribe(onNext: { [weak self] _ in
+            // Показываем навигационную панель перед переходом
+            self?.navigationController?.setNavigationBarHidden(false, animated: true)
             self?.performSegue(withIdentifier: R.segue.homeViewController.pushConnectivityPage, sender: self?.navigationController)
         }).disposed(by: disposeBag)
+        
+        // Добавляем обработку нажатия на новую плашку bluetoothConnectionView
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleBluetoothConnectionTap))
+        bluetoothConnectionView.addGestureRecognizer(tapGesture)
+        bluetoothConnectionView.isUserInteractionEnabled = true
     }
     
-    /// 设备名称
+    @objc func handleBluetoothConnectionTap() {
+        // Показываем навигационную панель перед переходом
+        self.navigationController?.setNavigationBarHidden(false, animated: true)
+        performSegue(withIdentifier: R.segue.homeViewController.pushConnectivityPage, sender: navigationController)
+    }
+    
+    /// Обновление имени устройства
     func updateTitle(_ peripheral: ZetaraManager.ConnectedPeripheral?) {
         if let peripheral = peripheral,
            let name = peripheral.name {
             timerLabel.isHidden = false
             batteryInfoView.updateBluetoothButton(title: name)
+            // Обновляем название устройства в новой плашке
+            deviceNameLabel.text = name
         } else {
             timerLabel.isHidden = true
-            batteryInfoView.updateBluetoothButton(title: nil)
+            batteryInfoView.updateBluetoothButton(title: nil as String?)
+            // Сбрасываем название устройства в новой плашке
+            deviceNameLabel.text = "Connect Device"
         }
     }
     
@@ -182,6 +206,10 @@ class HomeViewController: UIViewController {
         scrollView.addSubview(contentStackView)
         
         // Создаем контейнеры для разных секций контента
+        // Создаем контейнер для новой плашки Bluetooth
+        let bluetoothConnectionContainer = UIView()
+        bluetoothConnectionContainer.translatesAutoresizingMaskIntoConstraints = false
+        
         let timerContainer = UIView()
         timerContainer.translatesAutoresizingMaskIntoConstraints = false
         
@@ -198,11 +226,50 @@ class HomeViewController: UIViewController {
         logoContainer.translatesAutoresizingMaskIntoConstraints = false
         
         // Добавляем контейнеры в стек
+        contentStackView.addArrangedSubview(bluetoothConnectionContainer) // Добавляем новый контейнер в самый верх
         contentStackView.addArrangedSubview(timerContainer)
         contentStackView.addArrangedSubview(batteryInfoContainer)
         contentStackView.addArrangedSubview(batteryContainer)
         contentStackView.addArrangedSubview(componentsContainer)
         contentStackView.addArrangedSubview(logoContainer)
+        
+        // Создаем и настраиваем bluetoothConnectionView
+        bluetoothConnectionView = UIView()
+        bluetoothConnectionView.backgroundColor = UIColor.white
+        bluetoothConnectionView.layer.cornerRadius = 10
+        bluetoothConnectionView.layer.masksToBounds = true
+        bluetoothConnectionView.layer.borderWidth = 1 // Ширина границы в пикселях 
+        bluetoothConnectionView.layer.borderColor = UIColor.black.cgColor // Цвет границы
+        bluetoothConnectionView.layer.borderColor = UIColor.black.withAlphaComponent(0.25).cgColor
+        bluetoothConnectionView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        bluetoothConnectionView.layer.shadowOpacity = 0.0
+        bluetoothConnectionView.layer.shadowRadius = 4
+        bluetoothConnectionView.clipsToBounds = false
+        bluetoothConnectionView.translatesAutoresizingMaskIntoConstraints = false
+        bluetoothConnectionContainer.addSubview(bluetoothConnectionView)
+        
+        // Создаем иконку Bluetooth
+        let bluetoothImageView = UIImageView(image: R.image.homeBluetooth())
+        bluetoothImageView.contentMode = .scaleAspectFit
+        bluetoothImageView.tintColor = .systemBlue
+        bluetoothImageView.translatesAutoresizingMaskIntoConstraints = false
+        bluetoothConnectionView.addSubview(bluetoothImageView)
+        
+        // Создаем лейбл для названия устройства
+        deviceNameLabel = UILabel()
+        deviceNameLabel.font = .systemFont(ofSize: 20, weight: .medium)
+        deviceNameLabel.textColor = .black
+        deviceNameLabel.text = "Connect Device"
+        deviceNameLabel.translatesAutoresizingMaskIntoConstraints = false
+        bluetoothConnectionView.addSubview(deviceNameLabel)
+        
+        // Создаем кнопку "+"
+        let addButton = UIButton(type: .system)
+        addButton.setImage(UIImage(systemName: "plus"), for: .normal)
+        addButton.tintColor = .black
+        addButton.contentMode = .scaleAspectFit
+        addButton.translatesAutoresizingMaskIntoConstraints = false
+        bluetoothConnectionView.addSubview(addButton)
         
         // Добавляем элементы в соответствующие контейнеры
         timerContainer.addSubview(timerLabel)
@@ -253,6 +320,34 @@ class HomeViewController: UIViewController {
             contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor) // Важно для правильного скроллинга
         ])
+        
+        // Настраиваем ограничения для bluetoothConnectionView
+        bluetoothConnectionView.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(26)
+            make.leading.equalToSuperview().offset(56)
+            make.trailing.equalToSuperview().offset(-56)
+            make.bottom.equalToSuperview().offset(-16)
+            make.height.equalTo(50) // Высота плашки
+        }
+        
+        // Настраиваем ограничения для элементов внутри bluetoothConnectionView
+        bluetoothImageView.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(16)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(32)
+        }
+        
+        deviceNameLabel.snp.makeConstraints { make in
+            make.leading.equalTo(bluetoothImageView.snp.trailing).offset(16)
+            make.centerY.equalToSuperview()
+            make.trailing.lessThanOrEqualTo(addButton.snp.leading).offset(-16)
+        }
+        
+        addButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().offset(-16)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(32)
+        }
         
         // Обновляем ограничения для timerLabel
         timerLabel.snp.remakeConstraints { make in
@@ -309,14 +404,14 @@ class HomeViewController: UIViewController {
         
         let battery = Float(data.soc)/100.0
 
-        // 电量 & 状态
+        // Заряд батареи и статус
         batteryInfoView.update(battery: battery, status: data.status.description)
         batteryInfoView.charging = data.status == .charging
 
-        /// 电量
+        /// Уровень заряда
         batteryView.level = battery
 
-        /// 信息
+        /// Информация о параметрах
         voltageComponentView.value = "\(data.voltage)V"
         currentComponentView.value = "\(data.current)A"
         tempComponentView.value = "\(data.tempEnv)°C/\(data.tempEnv.celsiusToFahrenheit())°F"
@@ -331,8 +426,8 @@ class HomeViewController: UIViewController {
 
 
 extension BinaryInteger {
-    /// 摄氏度转华氏度
-    /// - Returns: 华氏度温度
+    /// Преобразование из Цельсия в Фаренгейт
+    /// - Returns: Температура в градусах Фаренгейта
     func celsiusToFahrenheit() -> Int {
         return Int(self) * 9/5 + 32
     }
@@ -340,14 +435,15 @@ extension BinaryInteger {
 
 //extension Int {
 //
-//    /// 摄氏度转华氏度
-//    /// - Returns: 华氏度温度
+//    /// Преобразование из Цельсия в Фаренгейт
+//    /// - Returns: Температура в градусах Фаренгейта
 //    func celsiusToFahrenheit() -> Int {
 //        return Int(self * 9/5 + 32)
 //    }
 //}
 
 extension Float {
+    /// Преобразование из Цельсия в Фаренгейт
     func celsiusToFahrenheit() -> Float {
         return self * 9/5 + 32
     }
