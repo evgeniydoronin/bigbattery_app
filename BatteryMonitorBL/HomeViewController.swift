@@ -52,6 +52,14 @@ class HomeViewController: UIViewController {
         super.viewWillDisappear(animated)
     }
     
+    // Отключаем жест смахивания назад на главном экране, чтобы избежать зависания
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        // Отключаем интерактивный переход назад для этого экрана
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+    }
+    
     // Удаляем titleButton, так как теперь используем bluetoothButton из batteryInfoView
 
     @IBOutlet weak var timerLabel: UILabel!
