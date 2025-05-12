@@ -13,7 +13,14 @@ import RxSwift
 import RxCocoa
 import RxBluetoothKit2
 
-// Класс TitleButton перемещен в BatteryInfoView.swift
+// Импортируем компоненты
+import class BatteryMonitorBL.SummaryTabView
+import class BatteryMonitorBL.BluetoothConnectionView
+import class BatteryMonitorBL.BatteryParametersView
+import class BatteryMonitorBL.TimerView
+import class BatteryMonitorBL.BatteryProgressView
+
+// Удаляем импорт BatteryInfoView
 
 class HomeViewController: UIViewController {
     
@@ -62,19 +69,21 @@ class HomeViewController: UIViewController {
     
     // Удаляем titleButton, так как теперь используем bluetoothButton из batteryInfoView
 
-    @IBOutlet weak var timerLabel: UILabel!
+    @IBOutlet weak var timerLabel: UILabel! // Будет заменен на TimerView
     @IBOutlet weak var logoImageView: UIImageView!
-    @IBOutlet weak var componentsStackView: UIStackView!
-    @IBOutlet weak var batteryInfoView: BatteryInfoView!
-    @IBOutlet weak var batteryView: BatteryView!
+    // batteryView заменен на batteryProgressView
     
-    var voltageComponentView: ComponentView = ComponentView(icon: R.image.homeComponentVoltage()!, title:"Total Voltage" , value: "0V")
-    var currentComponentView: ComponentView = ComponentView(icon: R.image.homeComponentCurrent()!, title: "Total Current", value: "0A")
-    var tempComponentView: ComponentView = ComponentView(icon: R.image.homeComponentTemperature()!, title: "Total Temp.", value: "0°C/0°F")
+    // Свойство для компонента BatteryProgressView
+    private var batteryProgressView: BatteryProgressView!
     
-    // Свойства для новой плашки Bluetooth
+    // Свойство для компонента TimerView
+    private var timerView: TimerView!
+    
+    // Свойство для компонента BatteryParametersView
+    private var batteryParametersView: BatteryParametersView!
+    
+    // Свойство для компонента BluetoothConnectionView
     private var bluetoothConnectionView: UIView!
-    private var deviceNameLabel: UILabel!
     
     // Свойства для табов
     private var tabsContainer: UIView!
@@ -88,6 +97,11 @@ class HomeViewController: UIViewController {
     private var summaryTabContent: UIView!
     private var cellVoltageTabContent: UIView!
     private var temperatureTabContent: UIView!
+    
+    // Ссылка на SummaryTabView для обновления данных
+    private var summaryView: SummaryTabView? {
+        return summaryTabContent as? SummaryTabView
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -123,7 +137,7 @@ class HomeViewController: UIViewController {
         setupHeaderView()
         
         setupObservers()
-        timerLabel.isHidden = true
+        // timerLabel.isHidden = true - больше не используется, так как мы используем timerView
     }
     
     var disposeBag: DisposeBag = DisposeBag()
@@ -155,17 +169,9 @@ class HomeViewController: UIViewController {
             }.disposed(by: disposeBag)
         
         
-        // Используем bluetoothButton из batteryInfoView вместо titleButton
-        batteryInfoView.bluetoothButton.rx.tap.subscribe(onNext: { [weak self] _ in
-            // Показываем навигационную панель перед переходом
-            self?.navigationController?.setNavigationBarHidden(false, animated: true)
-            self?.performSegue(withIdentifier: R.segue.homeViewController.pushConnectivityPage, sender: self?.navigationController)
-        }).disposed(by: disposeBag)
+        // Удаляем использование bluetoothButton из batteryInfoView
         
-        // Добавляем обработку нажатия на новую плашку bluetoothConnectionView
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleBluetoothConnectionTap))
-        bluetoothConnectionView.addGestureRecognizer(tapGesture)
-        bluetoothConnectionView.isUserInteractionEnabled = true
+        // Обработка нажатия на bluetoothConnectionView теперь устанавливается через свойство onTap
     }
     
     @objc func handleBluetoothConnectionTap() {
@@ -178,15 +184,17 @@ class HomeViewController: UIViewController {
     func updateTitle(_ peripheral: ZetaraManager.ConnectedPeripheral?) {
         if let peripheral = peripheral,
            let name = peripheral.name {
-            timerLabel.isHidden = false
-            batteryInfoView.updateBluetoothButton(title: name)
-            // Обновляем название устройства в новой плашке
-            deviceNameLabel.text = name
+            timerView.setHidden(false) // Используем timerView вместо timerLabel
+            // Обновляем название устройства в компоненте BluetoothConnectionView
+            if let bluetoothView = bluetoothConnectionView as? BluetoothConnectionView {
+                bluetoothView.updateDeviceName(name)
+            }
         } else {
-            timerLabel.isHidden = true
-            batteryInfoView.updateBluetoothButton(title: nil as String?)
-            // Сбрасываем название устройства в новой плашке
-            deviceNameLabel.text = "Connect Device"
+            timerView.setHidden(true) // Используем timerView вместо timerLabel
+            // Сбрасываем название устройства в компоненте BluetoothConnectionView
+            if let bluetoothView = bluetoothConnectionView as? BluetoothConnectionView {
+                bluetoothView.updateDeviceName(nil)
+            }
         }
     }
     
@@ -196,11 +204,10 @@ class HomeViewController: UIViewController {
         // 1. Шапка с логотипом (headerView)
         // 2. Скроллируемый контейнер (scrollView) с вертикальным стеком (contentStackView), содержащим:
         //    - Плашка Bluetooth для подключения устройства
-        //    - Контейнер с параметрами батареи (напряжение, ток, температура)
-        //    - Контейнер с временем последнего обновления
-        //    - Информация о батарее (процент заряда и статус)
         //    - Визуализация уровня заряда батареи
-        //    - Логотип внизу экрана
+        //    - Контейнер с параметрами батареи (напряжение, ток, температура)
+        //    - Контейнер с табами (Summary, Cell Voltage, Temperature)
+        //    - Контейнер с временем последнего обновления
         
         // Очищаем все существующие ограничения
         for subview in view.subviews {
@@ -241,79 +248,47 @@ class HomeViewController: UIViewController {
         let bluetoothConnectionContainer = UIView()
         bluetoothConnectionContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        // 2. Контейнер для параметров батареи - отображает напряжение, ток и температуру
-        let componentsContainer = UIView()
-        componentsContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        // 3. Контейнер для табов (Summary, Cell Voltage, Temperature)
-        let tabsContainer = UIView()
-        tabsContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        // 4. Контейнер для времени последнего обновления данных
-        let timerContainer = UIView()
-        timerContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        // 4. Контейнер для информации о батарее - процент заряда и статус (зарядка/разрядка)
-        let batteryInfoContainer = UIView()
-        batteryInfoContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        // 5. Контейнер для визуализации уровня заряда батареи
+        // 2. Контейнер для визуализации уровня заряда батареи
         let batteryContainer = UIView()
         batteryContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        // 6. Контейнер для логотипа внизу экрана
-        let logoContainer = UIView()
-        logoContainer.translatesAutoresizingMaskIntoConstraints = false
+        // 3. Контейнер для параметров батареи - отображает напряжение, ток и температуру
+        let componentsContainer = UIView()
+        componentsContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 4. Контейнер для табов (Summary, Cell Voltage, Temperature)
+        let tabsContainer = UIView()
+        tabsContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 5. Контейнер для времени последнего обновления данных
+        let timerContainer = UIView()
+        timerContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        
+        // Удаляем контейнер для логотипа внизу экрана
         
         // Добавляем контейнеры в стек
         contentStackView.addArrangedSubview(bluetoothConnectionContainer) // 1. Плашка для подключения Bluetooth
-        contentStackView.addArrangedSubview(componentsContainer)         // 2. Контейнер с параметрами батареи (напряжение, ток, температура)
-        contentStackView.addArrangedSubview(tabsContainer)               // 3. Контейнер с табами
-        contentStackView.addArrangedSubview(timerContainer)              // 4. Контейнер с временем последнего обновления
-        contentStackView.addArrangedSubview(batteryInfoContainer)        // 5. Информация о батарее (процент заряда и статус)
-        contentStackView.addArrangedSubview(batteryContainer)            // 6. Визуализация уровня заряда батареи
-        contentStackView.addArrangedSubview(logoContainer)               // 7. Логотип внизу экрана
+        contentStackView.addArrangedSubview(batteryContainer)            // 2. Визуализация уровня заряда батареи
+        contentStackView.addArrangedSubview(componentsContainer)         // 3. Контейнер с параметрами батареи (напряжение, ток, температура)
+        contentStackView.addArrangedSubview(tabsContainer)               // 4. Контейнер с табами
+        contentStackView.addArrangedSubview(timerContainer)              // 5. Контейнер с временем последнего обновления
         
         // Добавляем отступы между контейнерами
         // contentStackView.setCustomSpacing(-1, after: bluetoothConnectionContainer) // Удаляем отрицательный отступ
         
-        // Создаем и настраиваем bluetoothConnectionView
-        bluetoothConnectionView = UIView()
-        bluetoothConnectionView.backgroundColor = UIColor.white
-        bluetoothConnectionView.layer.cornerRadius = 10
-        bluetoothConnectionView.layer.masksToBounds = true
-        bluetoothConnectionView.layer.borderWidth = 1 // Ширина границы в пикселях 
-        bluetoothConnectionView.layer.borderColor = UIColor.black.cgColor // Цвет границы
-        bluetoothConnectionView.layer.borderColor = UIColor.black.withAlphaComponent(0.25).cgColor
-        bluetoothConnectionView.layer.shadowOffset = CGSize(width: 0, height: 2)
-        bluetoothConnectionView.layer.shadowOpacity = 0.0
-        bluetoothConnectionView.layer.shadowRadius = 4
-        bluetoothConnectionView.clipsToBounds = false
+        // Создаем компонент BluetoothConnectionView
+        let bluetoothConnectionView = BluetoothConnectionView()
         bluetoothConnectionView.translatesAutoresizingMaskIntoConstraints = false
         bluetoothConnectionContainer.addSubview(bluetoothConnectionView)
         
-        // Создаем иконку Bluetooth
-        let bluetoothImageView = UIImageView(image: R.image.homeBluetooth())
-        bluetoothImageView.contentMode = .scaleAspectFit
-        bluetoothImageView.tintColor = .systemBlue
-        bluetoothImageView.translatesAutoresizingMaskIntoConstraints = false
-        bluetoothConnectionView.addSubview(bluetoothImageView)
+        // Сохраняем ссылку на deviceNameLabel через компонент
+        self.bluetoothConnectionView = bluetoothConnectionView
         
-        // Создаем лейбл для названия устройства
-        deviceNameLabel = UILabel()
-        deviceNameLabel.font = .systemFont(ofSize: 20, weight: .medium)
-        deviceNameLabel.textColor = .black
-        deviceNameLabel.text = "Connect Device"
-        deviceNameLabel.translatesAutoresizingMaskIntoConstraints = false
-        bluetoothConnectionView.addSubview(deviceNameLabel)
-        
-        // Создаем кнопку "+"
-        let addButton = UIButton(type: .system)
-        addButton.setImage(UIImage(systemName: "plus"), for: .normal)
-        addButton.tintColor = .black
-        addButton.contentMode = .scaleAspectFit
-        addButton.translatesAutoresizingMaskIntoConstraints = false
-        bluetoothConnectionView.addSubview(addButton)
+        // Устанавливаем обработчик нажатия
+        bluetoothConnectionView.onTap = { [weak self] in
+            self?.handleBluetoothConnectionTap()
+        }
         
         // Проверяем видимость контейнеров
         bluetoothConnectionContainer.isHidden = false
@@ -325,11 +300,29 @@ class HomeViewController: UIViewController {
         
         // Создаем внутренний контейнер для табов с отступами
         let tabsInnerContainer = UIView()
-        tabsInnerContainer.backgroundColor = UIColor.white.withAlphaComponent(0.9)
+        tabsInnerContainer.backgroundColor = .clear // Делаем фон прозрачным для градиента
         tabsInnerContainer.layer.cornerRadius = 16
         tabsInnerContainer.layer.masksToBounds = true
         tabsInnerContainer.translatesAutoresizingMaskIntoConstraints = false
         tabsContainer.addSubview(tabsInnerContainer)
+        
+        // Добавляем градиентный фон
+        let gradientView = GradientView(frame: .zero)
+        gradientView.translatesAutoresizingMaskIntoConstraints = false
+        tabsInnerContainer.addSubview(gradientView)
+        tabsInnerContainer.sendSubviewToBack(gradientView)
+        
+        // Настраиваем градиент
+        gradientView.direction = .vertical // Вертикальный градиент (сверху вниз)
+        gradientView.colors = [
+            UIColor.white, // Белый цвет вверху
+            UIColor(hex: "D8E7F6") // Светло-голубой цвет внизу
+        ]
+        
+        // Настраиваем ограничения для градиентного вида
+        gradientView.snp.makeConstraints { make in
+            make.edges.equalToSuperview() // Заполняем весь контейнер
+        }
         
         // Настраиваем отступы для внутреннего контейнера
         tabsInnerContainer.snp.makeConstraints { make in
@@ -407,11 +400,22 @@ class HomeViewController: UIViewController {
         // contentStackView.bringSubviewToFront(componentsContainer)
         
         // Добавляем элементы в соответствующие контейнеры
-        timerContainer.addSubview(timerLabel)
-        batteryInfoContainer.addSubview(batteryInfoView)
-        batteryContainer.addSubview(batteryView)
+        // Создаем компонент TimerView
+        timerView = TimerView()
+        timerView.translatesAutoresizingMaskIntoConstraints = false
+        timerContainer.addSubview(timerView)
+        
+        // Создаем компонент BatteryProgressView вместо использования batteryView
+        batteryProgressView = BatteryProgressView()
+        batteryProgressView.translatesAutoresizingMaskIntoConstraints = false
+        batteryContainer.addSubview(batteryProgressView)
+        // Создаем горизонтальный стек для компонентов
+        let componentsStackView = UIStackView()
+        componentsStackView.translatesAutoresizingMaskIntoConstraints = false
+        componentsStackView.axis = .horizontal
+        componentsStackView.distribution = .fillEqually
+        componentsStackView.spacing = 10
         componentsContainer.addSubview(componentsStackView)
-        logoContainer.addSubview(logoImageView)
         
         // Настраиваем ограничения для фонового изображения
         NSLayoutConstraint.activate([
@@ -477,122 +481,83 @@ class HomeViewController: UIViewController {
         
         // Настраиваем ограничения для tabsContainer (только высота, без отступов)
         tabsContainer.snp.makeConstraints { make in
-            make.height.equalTo(120) // Высота контейнера с табами
+            make.height.equalTo(300) // Увеличиваем высоту контейнера с табами для размещения всех параметров
         }
         
-        // Настраиваем ограничения для элементов внутри bluetoothConnectionView
-        bluetoothImageView.snp.makeConstraints { make in
-            make.leading.equalToSuperview().offset(16)
-            make.centerY.equalToSuperview()
-            make.width.height.equalTo(32)
-        }
+        // Ограничения для элементов внутри bluetoothConnectionView теперь настраиваются в самом компоненте
         
-        deviceNameLabel.snp.makeConstraints { make in
-            make.leading.equalTo(bluetoothImageView.snp.trailing).offset(16)
-            make.centerY.equalToSuperview()
-            make.trailing.lessThanOrEqualTo(addButton.snp.leading).offset(-16)
-        }
-        
-        addButton.snp.makeConstraints { make in
-            make.trailing.equalToSuperview().offset(-16)
-            make.centerY.equalToSuperview()
-            make.width.height.equalTo(32)
-        }
-        
-        // Обновляем ограничения для timerLabel
-        timerLabel.snp.remakeConstraints { make in
+        // Обновляем ограничения для timerView
+        timerView.snp.makeConstraints { make in
             make.top.equalToSuperview().offset(16)
             make.leading.equalToSuperview().offset(16)
             make.trailing.equalToSuperview().offset(-16)
             make.bottom.equalToSuperview().offset(-16)
         }
         
-        // Обновляем ограничения для batteryInfoView
-        batteryInfoView.snp.remakeConstraints { make in
-            make.top.equalToSuperview().offset(16)
-            make.leading.equalToSuperview().offset(16)
-            make.trailing.equalToSuperview().offset(-16)
-            make.bottom.equalToSuperview().offset(-16)
-            make.height.equalTo(84) // Увеличиваем высоту, чтобы вместить кнопку Bluetooth
-        }
         
-        // Обновляем ограничения для batteryView
-        batteryView.snp.remakeConstraints { make in
+        // Обновляем ограничения для batteryProgressView
+        batteryProgressView.snp.makeConstraints { make in
             make.center.equalToSuperview()
-            make.width.equalTo(120)
-            make.height.equalTo(300)
+            make.width.height.equalTo(350) // Увеличиваем размер для круговой диаграммы
             make.top.equalToSuperview().offset(16)
             make.bottom.equalToSuperview().offset(-16)
         }
         
-        // Настраиваем componentsStackView для горизонтального отображения
-        componentsStackView.axis = .horizontal // Меняем ось на горизонтальную
-        componentsStackView.distribution = .fillEqually // Равномерное распределение
-        componentsStackView.spacing = 10 // Отступ между компонентами
         
-        // Настраиваем внешний вид компонентов
-        [voltageComponentView, currentComponentView, tempComponentView].forEach { view in
-            view.backgroundColor = UIColor.white
-            view.layer.cornerRadius = 10 // Увеличиваем скругление углов
-            view.layer.masksToBounds = true
-            view.layer.borderWidth = 1
-            view.layer.borderColor = UIColor.black.withAlphaComponent(0.1).cgColor // Делаем границу светлее
-            view.configureForHorizontalLayout() // Настраиваем для нового макета
+        // Создаем компонент BatteryParametersView
+        batteryParametersView = BatteryParametersView()
+        batteryParametersView.translatesAutoresizingMaskIntoConstraints = false
+        componentsContainer.addSubview(batteryParametersView)
+        
+        // Настраиваем ограничения для batteryParametersView
+        batteryParametersView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
         
-        // Обновляем ограничения для componentsStackView
-        componentsStackView.snp.remakeConstraints { make in
-            make.top.equalToSuperview().offset(0) // Убираем верхний отступ полностью
-            make.leading.equalToSuperview().offset(16)
-            make.trailing.equalToSuperview().offset(-16)
-            make.bottom.equalToSuperview().offset(-8)
-            make.height.equalTo(80) // Высота плашек
-        }
-        
-        // Обновляем ограничения для logoImageView
-        logoImageView.snp.remakeConstraints { make in
-            make.centerX.equalToSuperview()
-            make.top.equalToSuperview().offset(16)
-            make.bottom.equalToSuperview().offset(-16)
-        }
-        
-        // Добавляем компоненты в componentsStackView
-        componentsStackView.addArrangedSubview(voltageComponentView)
-        componentsStackView.addArrangedSubview(currentComponentView)
-        componentsStackView.addArrangedSubview(tempComponentView)
+        // Удаляем ограничения для logoImageView, так как контейнер удален
     }
     
     func updateUI(_ data: Zetara.Data.BMS) {
         
-        timerLabel.text = "Last Update: \(formatter.string(from: Date()))"
+        // Обновляем время в компоненте TimerView
+        timerView.updateTime(Date())
         
         let battery = Float(data.soc)/100.0
 
-        // Заряд батареи и статус
-        batteryInfoView.update(battery: battery, status: data.status.description)
-        batteryInfoView.charging = data.status == .charging
-
         /// Уровень заряда
-        batteryView.level = battery
+        batteryProgressView.level = battery
+        batteryProgressView.updateChargingStatus(isCharging: data.status == .charging)
 
         /// Информация о параметрах
-        voltageComponentView.value = "\(data.voltage)V"
-        currentComponentView.value = "\(data.current)A"
-        tempComponentView.value = "\(data.tempEnv.celsiusToFahrenheit())°F/\(data.tempEnv)°C"
+        batteryParametersView.updateVoltage("\(data.voltage)V")
+        batteryParametersView.updateCurrent("\(data.current)A")
+        batteryParametersView.updateTemperature("\(data.tempEnv.celsiusToFahrenheit())°F/\(data.tempEnv)°C")
+        
+        // Обновляем данные в SummaryTabView
+        if let summaryView = self.summaryView {
+            // Вычисляем параметры для SummaryTabView
+            let maxVoltage = data.cellVoltages.max() ?? 0
+            let minVoltage = data.cellVoltages.min() ?? 0
+            let voltageDiff = maxVoltage - minVoltage
+            let power = data.voltage * data.current
+            let avgVoltage = data.cellVoltages.reduce(0, +) / Float(max(1, data.cellVoltages.count))
+            
+            // Обновляем все параметры в SummaryTabView
+            summaryView.updateAllParameters(
+                maxVoltage: maxVoltage,
+                minVoltage: minVoltage,
+                voltageDiff: voltageDiff,
+                power: power,
+                internalTemp: data.tempPCB,
+                avgVoltage: avgVoltage
+            )
+        }
     }
     
     // Метод для изменения порядка компонентов
-    func reorderComponents(order: [ComponentView]) {
-        // Удаляем все существующие компоненты
-        for view in componentsStackView.arrangedSubviews {
-            componentsStackView.removeArrangedSubview(view)
-            view.removeFromSuperview()
-        }
-        
-        // Добавляем компоненты в новом порядке
-        for view in order {
-            componentsStackView.addArrangedSubview(view)
-        }
+    func reorderComponents(order: [BatteryParametersView.ComponentType]) {
+        // Используем метод reorderComponents компонента BatteryParametersView
+        batteryParametersView.reorderComponents(order: order)
     }
     
     var formatter: DateFormatter = {
@@ -632,23 +597,31 @@ class HomeViewController: UIViewController {
     
     // Метод для создания содержимого таба
     private func createTabContent(title: String) -> UIView {
-        let contentView = UIView()
-        contentView.backgroundColor = .white
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        
-        let titleLabel = UILabel()
-        titleLabel.text = title
-        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
-        titleLabel.textAlignment = .center
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(titleLabel)
-        
-        titleLabel.snp.makeConstraints { make in
-            make.center.equalToSuperview()
-            make.leading.trailing.equalToSuperview().inset(16)
+        if title == "Summary Tab Content" {
+            // Для таба Summary используем SummaryTabView
+            let summaryView = SummaryTabView()
+            summaryView.translatesAutoresizingMaskIntoConstraints = false
+            return summaryView
+        } else {
+            // Для остальных табов используем стандартное представление
+            let contentView = UIView()
+            contentView.backgroundColor = .white
+            contentView.translatesAutoresizingMaskIntoConstraints = false
+            
+            let titleLabel = UILabel()
+            titleLabel.text = title
+            titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
+            titleLabel.textAlignment = .center
+            titleLabel.translatesAutoresizingMaskIntoConstraints = false
+            contentView.addSubview(titleLabel)
+            
+            titleLabel.snp.makeConstraints { make in
+                make.center.equalToSuperview()
+                make.leading.trailing.equalToSuperview().inset(16)
+            }
+            
+            return contentView
         }
-        
-        return contentView
     }
     
     // Обработчик нажатия на кнопку таба
@@ -696,5 +669,27 @@ extension Float {
     /// Преобразование из Цельсия в Фаренгейт
     func celsiusToFahrenheit() -> Float {
         return self * 9/5 + 32
+    }
+}
+
+extension UIColor {
+    /// Создание цвета из шестнадцатеричной строки
+    /// - Parameter hex: Шестнадцатеричная строка (например, "FF0000" для красного)
+    convenience init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int = UInt64()
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        self.init(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: CGFloat(a) / 255)
     }
 }
