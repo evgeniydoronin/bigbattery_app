@@ -20,11 +20,11 @@ class BatteryProgressView: UIView {
         return view
     }()
     
-    /// Изображение батареи
-    private let batteryImageView: UIImageView = {
+    /// Изображение husky2
+    private let huskyImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
-        imageView.image = UIImage(named: "Battery/BatteryFull") // Используем существующее изображение
+        imageView.image = UIImage(named: "husky2")
         return imageView
     }()
     
@@ -34,10 +34,18 @@ class BatteryProgressView: UIView {
     /// Внутренний круг прогресса (зеленый)
     private let progressLayer = CAShapeLayer()
     
+    /// Контейнер для метки процента заряда с цветным фоном
+    private let percentLabelContainer: UIView = {
+        let view = UIView()
+        view.layer.cornerRadius = 8
+        view.clipsToBounds = true
+        return view
+    }()
+    
     /// Метка для отображения процента заряда
     private let percentLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 48, weight: .bold)
+        label.font = .systemFont(ofSize: 22, weight: .bold)
         label.textColor = .black
         label.textAlignment = .center
         label.text = "0%"
@@ -47,8 +55,8 @@ class BatteryProgressView: UIView {
     /// Метки для отображения минимального и максимального значений
     private let minLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 24, weight: .bold)
-        label.textColor = .darkGray
+        label.font = .systemFont(ofSize: 16, weight: .bold)
+        label.textColor = .black
         label.textAlignment = .center
         label.text = "0"
         return label
@@ -56,8 +64,8 @@ class BatteryProgressView: UIView {
     
     private let maxLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 24, weight: .bold)
-        label.textColor = .darkGray
+        label.font = .systemFont(ofSize: 16, weight: .bold)
+        label.textColor = .black
         label.textAlignment = .center
         label.text = "100"
         return label
@@ -105,39 +113,52 @@ class BatteryProgressView: UIView {
     private func setupView() {
         backgroundColor = .clear
         
-        // Добавляем контейнер для изображения батареи
+        // Добавляем контейнер для изображения
         addSubview(batteryImageContainer)
-        batteryImageContainer.addSubview(batteryImageView)
+        batteryImageContainer.addSubview(huskyImageView)
         
-        // Добавляем метки
-        addSubview(percentLabel)
+        // Добавляем контейнер для процента и метки
+        addSubview(percentLabelContainer)
+        percentLabelContainer.addSubview(percentLabel)
         addSubview(minLabel)
         addSubview(maxLabel)
         
         // Настраиваем ограничения
         batteryImageContainer.snp.makeConstraints { make in
             make.center.equalToSuperview()
-            make.width.height.equalTo(150)
+            make.width.height.equalTo(300)
         }
         
-        batteryImageView.snp.makeConstraints { make in
-            make.center.equalToSuperview()
-            make.width.height.equalTo(120)
+        huskyImageView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+            // make.center.equalToSuperview()
+            // make.width.lessThanOrEqualToSuperview().multipliedBy(1.0)
+            // make.height.lessThanOrEqualToSuperview().multipliedBy(1.0)
         }
         
-        percentLabel.snp.makeConstraints { make in
+        // Контейнер для процента (в центре)
+        percentLabelContainer.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.bottom.equalToSuperview().offset(-20)
+            make.bottom.equalToSuperview().offset(-40)
         }
         
+        // Метка процента (внутри своего контейнера)
+        percentLabel.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16))
+        }
+        
+        // Метка "0" (слева от контейнера процента)
         minLabel.snp.makeConstraints { make in
-            make.leading.equalToSuperview().offset(20)
-            make.bottom.equalToSuperview().offset(-20)
+            make.trailing.equalTo(percentLabelContainer.snp.leading).offset(-50)
+            make.centerY.equalTo(percentLabelContainer.snp.centerY)
+            make.leading.greaterThanOrEqualToSuperview().offset(10)
         }
         
+        // Метка "100" (справа от контейнера процента)
         maxLabel.snp.makeConstraints { make in
-            make.trailing.equalToSuperview().offset(-20)
-            make.bottom.equalToSuperview().offset(-20)
+            make.leading.equalTo(percentLabelContainer.snp.trailing).offset(50)
+            make.centerY.equalTo(percentLabelContainer.snp.centerY)
+            make.trailing.lessThanOrEqualToSuperview().offset(-10)
         }
         
         // Настраиваем слои для круговой диаграммы
@@ -196,6 +217,9 @@ class BatteryProgressView: UIView {
         // Обновляем цвет прогресса
         progressLayer.strokeColor = progressColor.cgColor
         
+        // Обновляем цвет фона контейнера процента
+        percentLabelContainer.backgroundColor = progressColor
+        
         // Обновляем текст процента
         percentLabel.text = "\(Int(_level * 100))%"
         
@@ -217,15 +241,10 @@ class BatteryProgressView: UIView {
         }
     }
     
-    /// Обновление статуса зарядки
+    /// Обновление статуса зарядки (пустая реализация для совместимости)
     /// - Parameter isCharging: Флаг зарядки
     func updateChargingStatus(isCharging: Bool) {
-        if isCharging {
-            batteryImageView.image = UIImage(named: "Battery/BatteryCharging")
-        } else if _level <= 0.1 {
-            batteryImageView.image = UIImage(named: "Battery/BatteryLow")
-        } else {
-            batteryImageView.image = UIImage(named: "Battery/BatteryFull")
-        }
+        // Пустая реализация, так как batteryImageView больше не используется
+        // Метод оставлен для совместимости с HomeViewController
     }
 }

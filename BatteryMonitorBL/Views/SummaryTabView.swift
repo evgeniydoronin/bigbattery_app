@@ -41,16 +41,47 @@ class SummaryTabView: UIView {
     // MARK: - Setup
     
     private func setupViews() {
-        backgroundColor = .white
+        
+        // Получаем иконки для ячеек
+        let defaultIcon = UIImage(named: "hugeicons_energy-rectangle")
+        let minVoltageIcon = UIImage(named: "min_vol") // Иконка для минимального напряжения
+        let voltageDiffIcon = UIImage(named: "vol_diff") // Иконка для разницы напряжений
+        let powerIcon = UIImage(named: "power_icon") // Иконка для мощности
+        let internalTempIcon = UIImage(named: "internal_icon") // Иконка для внутренней температуры
+        let avgVoltageIcon = UIImage(named: "ave_volt") // Иконка для среднего напряжения
         
         // Настраиваем заголовки и подзаголовки для каждого параметра
-        maxVoltageView.setup(title: "3.253 V", subtitle: "Max. Voltage")
-        minVoltageView.setup(title: "3.213 V", subtitle: "Min. Voltage")
-        voltageDiffView.setup(title: "0.040 V", subtitle: "Voltage Dif.")
+        maxVoltageView.setup(
+            title: "3.253 V", 
+            subtitle: "Max. Voltage",
+            icon: defaultIcon
+        )
+        minVoltageView.setup(
+            title: "3.213 V", 
+            subtitle: "Min. Voltage",
+            icon: minVoltageIcon // Используем специальную иконку для минимального напряжения
+        )
+        voltageDiffView.setup(
+            title: "0.040 V", 
+            subtitle: "Voltage Dif.",
+            icon: voltageDiffIcon // Используем специальную иконку для разницы напряжений
+        )
         
-        powerView.setup(title: "5.1 W", subtitle: "Power")
-        internalTempView.setup(title: "75° F", subtitle: "Internal\nTemperature")
-        avgVoltageView.setup(title: "3.233 V", subtitle: "Ave. Voltage")
+        powerView.setup(
+            title: "5.1 W", 
+            subtitle: "Power",
+            icon: powerIcon // Используем специальную иконку для мощности
+        )
+        internalTempView.setup(
+            title: "75° F", 
+            subtitle: "Int. Temp.",
+            icon: internalTempIcon // Используем специальную иконку для внутренней температуры
+        )
+        avgVoltageView.setup(
+            title: "3.233 V", 
+            subtitle: "Ave. Voltage",
+            icon: avgVoltageIcon // Используем специальную иконку для среднего напряжения
+        )
         
         // Добавляем представления на экран
         addSubview(maxVoltageView)
@@ -64,13 +95,13 @@ class SummaryTabView: UIView {
     
     private func setupConstraints() {
         // Размеры ячеек
-        let cellHeight: CGFloat = 80
+        let cellHeight: CGFloat = 100 // Увеличиваем высоту ячеек для размещения иконки
         
         // Первая строка
         maxVoltageView.snp.makeConstraints { make in
             make.top.equalToSuperview().offset(16)
-            make.leading.equalToSuperview().offset(16)
-            make.width.equalToSuperview().multipliedBy(0.3).offset(-24) // 1/3 ширины минус отступы
+            make.leading.equalToSuperview().offset(0)
+            make.width.equalToSuperview().multipliedBy(0.38).offset(-24) // 1/3 ширины минус отступы
             make.height.equalTo(cellHeight)
         }
         
@@ -83,15 +114,15 @@ class SummaryTabView: UIView {
         
         voltageDiffView.snp.makeConstraints { make in
             make.top.equalTo(maxVoltageView)
-            make.trailing.equalToSuperview().offset(-16)
+            make.trailing.equalToSuperview().offset(0)
             make.width.equalTo(maxVoltageView)
             make.height.equalTo(cellHeight)
         }
         
         // Вторая строка
         powerView.snp.makeConstraints { make in
-            make.top.equalTo(maxVoltageView.snp.bottom).offset(16)
-            make.leading.equalToSuperview().offset(16)
+            make.top.equalTo(maxVoltageView.snp.bottom).offset(13)
+            make.leading.equalToSuperview().offset(0)
             make.width.equalTo(maxVoltageView)
             make.height.equalTo(cellHeight)
         }
@@ -104,11 +135,17 @@ class SummaryTabView: UIView {
         }
         
         avgVoltageView.snp.makeConstraints { make in
-            make.top.equalTo(powerView)
-            make.trailing.equalToSuperview().offset(-16)
+            make.top.equalTo(internalTempView) // Изменяем привязку к internalTempView вместо powerView
+            make.trailing.equalToSuperview().offset(0)
             make.width.equalTo(maxVoltageView)
             make.height.equalTo(cellHeight)
-            make.bottom.equalToSuperview().offset(-16) // Нижняя граница всего представления
+        }
+        
+        // Устанавливаем фиксированную высоту для всего представления вместо привязки к нижней границе avgVoltageView
+        // Это предотвратит растяжение avgVoltageView при изменении высоты контейнера
+        let totalHeight = cellHeight * 2 + 16 * 3 // 2 ряда ячеек + отступы (сверху, между рядами, снизу)
+        self.snp.makeConstraints { make in
+            make.height.equalTo(totalHeight)
         }
     }
     
@@ -172,6 +209,15 @@ class ParameterView: UIView {
     
     // MARK: - UI Elements
     
+    /// Иконка параметра (опционально)
+    private let iconImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.tintColor = .systemGreen // Зеленый цвет для соответствия дизайну приложения
+        imageView.isHidden = true // По умолчанию скрыта
+        return imageView
+    }()
+    
     private let valueLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 18, weight: .bold)
@@ -209,29 +255,78 @@ class ParameterView: UIView {
         layer.borderWidth = 1
         layer.borderColor = UIColor.lightGray.withAlphaComponent(0.3).cgColor
         
+        addSubview(iconImageView)
         addSubview(valueLabel)
         addSubview(titleLabel)
         
+        iconImageView.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(8)
+            make.centerX.equalToSuperview()
+            make.width.height.equalTo(32) // Увеличиваем размер иконки
+        }
+        
         valueLabel.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(12)
+            make.top.equalTo(iconImageView.snp.bottom).offset(6)
             make.centerX.equalToSuperview()
             make.leading.trailing.equalToSuperview().inset(8)
+            make.height.equalTo(15) // Фиксированная высота для valueLabel
         }
         
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(valueLabel.snp.bottom).offset(8)
             make.centerX.equalToSuperview()
             make.leading.trailing.equalToSuperview().inset(8)
-            make.bottom.equalToSuperview().offset(-12)
+            make.height.equalTo(20) // Фиксированная высота для titleLabel вместо lessThanOrEqualTo
         }
     }
     
     // MARK: - Public Methods
     
     /// Настраивает представление с заданными значениями
-    func setup(title: String, subtitle: String) {
+    /// - Parameters:
+    ///   - title: Значение параметра
+    ///   - subtitle: Название параметра
+    ///   - icon: Иконка (опционально)
+    func setup(title: String, subtitle: String, icon: UIImage? = nil) {
         valueLabel.text = title
         titleLabel.text = subtitle
+        
+        if let icon = icon {
+            iconImageView.image = icon
+            iconImageView.isHidden = false
+            
+            // Обновляем ограничения для valueLabel и titleLabel, если иконка видима
+            valueLabel.snp.remakeConstraints { make in
+                make.top.equalTo(iconImageView.snp.bottom).offset(6)
+                make.centerX.equalToSuperview()
+                make.leading.trailing.equalToSuperview().inset(8)
+                make.height.equalTo(15) // Фиксированная высота для valueLabel
+            }
+            
+            titleLabel.snp.remakeConstraints { make in
+                make.top.equalTo(valueLabel.snp.bottom).offset(8)
+                make.centerX.equalToSuperview()
+                make.leading.trailing.equalToSuperview().inset(8)
+                make.height.equalTo(20) // Фиксированная высота для titleLabel
+            }
+        } else {
+            iconImageView.isHidden = true
+            
+            // Обновляем ограничения для valueLabel и titleLabel, если иконка скрыта
+            valueLabel.snp.remakeConstraints { make in
+                make.top.equalToSuperview().offset(12)
+                make.centerX.equalToSuperview()
+                make.leading.trailing.equalToSuperview().inset(8)
+                make.height.equalTo(24) // Фиксированная высота для valueLabel
+            }
+            
+            titleLabel.snp.remakeConstraints { make in
+                make.top.equalTo(valueLabel.snp.bottom).offset(8)
+                make.centerX.equalToSuperview()
+                make.leading.trailing.equalToSuperview().inset(8)
+                make.height.equalTo(20) // Фиксированная высота для titleLabel
+            }
+        }
     }
     
     /// Обновляет значение параметра

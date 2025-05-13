@@ -105,7 +105,7 @@ struct _R {
     var settingsCell: RswiftResources.ColorResource { .init(name: "Settings.Cell", path: [], bundle: bundle) }
   }
 
-  /// This `_R.image` struct is generated, and contains static references to 26 images.
+  /// This `_R.image` struct is generated, and contains static references to 33 images.
   struct image {
     let bundle: Foundation.Bundle
 
@@ -184,8 +184,29 @@ struct _R {
     /// Image `Settings.Up`.
     var settingsUp: RswiftResources.ImageResource { .init(name: "Settings.Up", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
 
+    /// Image `ave_volt`.
+    var ave_volt: RswiftResources.ImageResource { .init(name: "ave_volt", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `hugeicons_energy-rectangle`.
+    var hugeicons_energyRectangle: RswiftResources.ImageResource { .init(name: "hugeicons_energy-rectangle", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `husky2`.
+    var husky2: RswiftResources.ImageResource { .init(name: "husky2", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
     /// Image `icon`.
     var icon: RswiftResources.ImageResource { .init(name: "icon", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `internal_icon`.
+    var internal_icon: RswiftResources.ImageResource { .init(name: "internal_icon", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `min_vol`.
+    var min_vol: RswiftResources.ImageResource { .init(name: "min_vol", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `power_icon`.
+    var power_icon: RswiftResources.ImageResource { .init(name: "power_icon", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `vol_diff`.
+    var vol_diff: RswiftResources.ImageResource { .init(name: "vol_diff", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
   }
 
   /// This `_R.info` struct is generated, and contains static references to 1 properties.

@@ -35,7 +35,7 @@ class BluetoothConnectionView: UIView {
         let label = UILabel()
         label.font = .systemFont(ofSize: 20, weight: .medium)
         label.textColor = .black
-        label.text = "Connect Device"
+        label.text = "Tap to Connect"
         return label
     }()
     
@@ -64,7 +64,7 @@ class BluetoothConnectionView: UIView {
     
     private func setupView() {
         // Настройка контейнера
-        containerView.backgroundColor = UIColor.white
+        containerView.backgroundColor = UIColor.white // Белый цвет фона
         containerView.layer.cornerRadius = 10
         containerView.layer.masksToBounds = true
         containerView.layer.borderWidth = 1
@@ -82,17 +82,14 @@ class BluetoothConnectionView: UIView {
         
         // Настройка ограничений
         containerView.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(16)
-            make.leading.equalToSuperview().offset(56)
-            make.trailing.equalToSuperview().offset(-56)
-            make.bottom.equalToSuperview().offset(0)
-            make.height.equalTo(40)
+            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16))
+            make.height.equalTo(50) // Устанавливаем высоту контейнера 80 пикселей
         }
         
         bluetoothImageView.snp.makeConstraints { make in
             make.leading.equalToSuperview().offset(16)
             make.centerY.equalToSuperview()
-            make.width.height.equalTo(32)
+            make.width.height.equalTo(40)
         }
         
         deviceNameLabel.snp.makeConstraints { make in
@@ -134,6 +131,6 @@ class BluetoothConnectionView: UIView {
     /// Обновление имени устройства
     /// - Parameter name: Имя устройства или nil, если устройство не подключено
     func updateDeviceName(_ name: String?) {
-        deviceNameLabel.text = name ?? "Connect Device"
+        deviceNameLabel.text = name ?? "Tap to Connect"
     }
 }

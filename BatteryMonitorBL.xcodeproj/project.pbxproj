@@ -29,7 +29,8 @@
 		6A55CB4B2DCE566400B3C34B /* SummaryTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A55CB4A2DCE566400B3C34B /* SummaryTabView.swift */; };
 		6A55CB552DCE6A0F00B3C34B /* TimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A55CB542DCE6A0F00B3C34B /* TimerView.swift */; };
 		6A55CB582DCE6AFB00B3C34B /* BatteryParametersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A55CB562DCE6AFB00B3C34B /* BatteryParametersView.swift */; };
-		6A55CB592DCE6AFB00B3C34B /* BluetoothConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A55CB572DCE6AFB00B3C34B /* BluetoothConnectionView.swift */; };
+		6A5BA67F2DD361CA006C1EB8 /* BluetoothConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5BA67E2DD361CA006C1EB8 /* BluetoothConnectionView.swift */; };
+		6A5BA6812DD36A7C006C1EB8 /* TabsContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5BA6802DD36A7C006C1EB8 /* TabsContainerView.swift */; };
 		6AC451A42DD23E4900478A90 /* BatteryProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC451A32DD23E4900478A90 /* BatteryProgressView.swift */; };
 /* End PBXBuildFile section */
 
@@ -58,7 +59,8 @@
 		6A55CB4A2DCE566400B3C34B /* SummaryTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryTabView.swift; sourceTree = "<group>"; };
 		6A55CB542DCE6A0F00B3C34B /* TimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerView.swift; sourceTree = "<group>"; };
 		6A55CB562DCE6AFB00B3C34B /* BatteryParametersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryParametersView.swift; sourceTree = "<group>"; };
-		6A55CB572DCE6AFB00B3C34B /* BluetoothConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothConnectionView.swift; sourceTree = "<group>"; };
+		6A5BA67E2DD361CA006C1EB8 /* BluetoothConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothConnectionView.swift; sourceTree = "<group>"; };
+		6A5BA6802DD36A7C006C1EB8 /* TabsContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabsContainerView.swift; sourceTree = "<group>"; };
 		6AC451A32DD23E4900478A90 /* BatteryProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryProgressView.swift; sourceTree = "<group>"; };
 		D66A4BD0B8978044385B3013 /* Pods-BatteryMonitorBL.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.release.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.release.xcconfig"; sourceTree = "<group>"; };
 		F9A2BDB4DCDEB49487D3DCF0 /* Pods_BatteryMonitorBL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BatteryMonitorBL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -134,9 +136,10 @@
 		324213B02A1A359300DC7FFC /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				6A5BA6802DD36A7C006C1EB8 /* TabsContainerView.swift */,
+				6A5BA67E2DD361CA006C1EB8 /* BluetoothConnectionView.swift */,
 				6AC451A32DD23E4900478A90 /* BatteryProgressView.swift */,
 				6A55CB562DCE6AFB00B3C34B /* BatteryParametersView.swift */,
-				6A55CB572DCE6AFB00B3C34B /* BluetoothConnectionView.swift */,
 				6A55CB542DCE6A0F00B3C34B /* TimerView.swift */,
 				6A55CB4A2DCE566400B3C34B /* SummaryTabView.swift */,
 				324213B12A1A359300DC7FFC /* Alert.swift */,
@@ -317,15 +320,16 @@
 				324213CC2A1A359300DC7FFC /* BatteryView.swift in Sources */,
 				324213CF2A1A359300DC7FFC /* Array+Extensions.swift in Sources */,
 				6A55CB582DCE6AFB00B3C34B /* BatteryParametersView.swift in Sources */,
-				6A55CB592DCE6AFB00B3C34B /* BluetoothConnectionView.swift in Sources */,
 				324213C32A1A359300DC7FFC /* AppDelegate.swift in Sources */,
 				324213CE2A1A359300DC7FFC /* ConnectivityViewController.swift in Sources */,
 				324213D42A1A359300DC7FFC /* SettingsViewController.swift in Sources */,
 				324213C82A1A359300DC7FFC /* GradientBackgroundView.swift in Sources */,
 				6A55CB552DCE6A0F00B3C34B /* TimerView.swift in Sources */,
+				6A5BA6812DD36A7C006C1EB8 /* TabsContainerView.swift in Sources */,
 				324213AA2A1A354100DC7FFC /* R.generated.swift in Sources */,
 				324213CB2A1A359300DC7FFC /* SettingItemView.swift in Sources */,
 				324213C42A1A359300DC7FFC /* SceneDelegate.swift in Sources */,
+				6A5BA67F2DD361CA006C1EB8 /* BluetoothConnectionView.swift in Sources */,
 				324213C52A1A359300DC7FFC /* DetailsViewController.swift in Sources */,
 				324213D02A1A359300DC7FFC /* UIView+Extensions.swift in Sources */,
 				6A55CB4B2DCE566400B3C34B /* SummaryTabView.swift in Sources */,
@@ -484,7 +488,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 8WJJB8HG42;
 				GCC_PREFIX_HEADER = "";
@@ -517,7 +521,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 8WJJB8HG42;
 				GCC_PREFIX_HEADER = "";

@@ -82,7 +82,7 @@ class BatteryParametersView: UIView {
             make.leading.equalToSuperview().offset(16)
             make.trailing.equalToSuperview().offset(-16)
             make.bottom.equalToSuperview().offset(-8)
-            make.height.equalTo(80)
+            make.height.equalTo(70)
         }
     }
     
