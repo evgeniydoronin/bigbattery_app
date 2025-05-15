@@ -32,6 +32,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     var viewControllers = tabBarController.viewControllers ?? []
                     viewControllers.remove(at: 1) // Удаляем вкладку Details
                     
+                    // Создаем DiagnosticsViewController и оборачиваем его в NavigationController
+                    let diagnosticsViewController = DiagnosticsViewController()
+                    let diagnosticsNavigationController = UINavigationController(rootViewController: diagnosticsViewController)
+                    
+                    // Создаем TabBarItem для вкладки Diagnostics с использованием системных иконок
+                    let diagnosticsTabBarItem = UITabBarItem(
+                        title: "Diagnostics",
+                        image: UIImage(systemName: "waveform.path.ecg"),
+                        selectedImage: UIImage(systemName: "waveform.path.ecg.fill")
+                    )
+                    diagnosticsNavigationController.tabBarItem = diagnosticsTabBarItem
+                    
+                    // Добавляем вкладку Diagnostics после вкладки Settings
+                    viewControllers.append(diagnosticsNavigationController)
+                    
                     // Создаем новый ViewController для вкладки Shop
                     let shopViewController = UIViewController()
                     
@@ -44,7 +59,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     )
                     shopViewController.tabBarItem = shopTabBarItem
                     
-                    // Добавляем вкладку Shop после вкладки Settings
+                    // Добавляем вкладку Shop после вкладки Diagnostics
                     viewControllers.append(shopViewController)
                     
                     // Обновляем список вкладок
@@ -116,7 +131,7 @@ extension SceneDelegate: UITabBarControllerDelegate {
         // Проверяем, является ли выбранный контроллер вкладкой Shop (последняя вкладка)
         if let viewControllers = tabBarController.viewControllers,
            let index = viewControllers.firstIndex(of: viewController),
-           index == viewControllers.count - 1 {
+           index == viewControllers.count - 1 { // Shop - последняя вкладка
             
             // Открываем сайт https://bigbattery.com в Safari
             if let url = URL(string: "https://bigbattery.com") {
