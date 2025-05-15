@@ -388,7 +388,7 @@ class HomeViewController: UIViewController {
         
         // Настраиваем ограничения для tabsContainer (только высота, без отступов)
         tabsContainer.snp.makeConstraints { make in
-            make.height.equalTo(340) // Увеличиваем высоту контейнера с табами для размещения всех параметров
+            make.height.equalTo(330) // Увеличиваем высоту контейнера с табами для размещения всех параметров
         }
         
         // Ограничения для элементов внутри bluetoothConnectionView теперь настраиваются в самом компоненте
