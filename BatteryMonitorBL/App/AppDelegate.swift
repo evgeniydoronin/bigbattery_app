@@ -26,7 +26,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // возвращает nil, то теперь мы создаем фейковый объект BMS с данными для отладки.
         let config = Configuration(identifiers: [.v1, .v2],
                                    refreshBMSTimeInterval: 2,
-                                   mockData: Foundation.Data.mockCellTempsData)
+                                   mockData: Foundation.Data.mockCellTempsData,
+                                   mockDeviceName: "Husky 2")
         ZetaraManager.setup(config)
         
         UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor.black]

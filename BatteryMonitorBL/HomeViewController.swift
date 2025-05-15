@@ -131,6 +131,9 @@ class HomeViewController: UIViewController {
         
         setupObservers()
         // timerLabel.isHidden = true - больше не используется, так как мы используем timerView
+        
+        // Обновляем имя устройства при загрузке экрана
+        updateTitle(ZetaraManager.shared.connectedPeripheral())
     }
     
     var disposeBag: DisposeBag = DisposeBag()
@@ -175,12 +178,14 @@ class HomeViewController: UIViewController {
     
     /// Обновление имени устройства
     func updateTitle(_ peripheral: ZetaraManager.ConnectedPeripheral?) {
-        if let peripheral = peripheral,
-           let name = peripheral.name {
+        // Получаем имя устройства через метод getDeviceName
+        let deviceName = ZetaraManager.shared.getDeviceName()
+        
+        if deviceName != "No device connected" {
             timerView.setHidden(false) // Используем timerView вместо timerLabel
             // Обновляем название устройства в компоненте BluetoothConnectionView
             if let bluetoothView = bluetoothConnectionView as? BluetoothConnectionView {
-                bluetoothView.updateDeviceName(name)
+                bluetoothView.updateDeviceName(deviceName)
             }
         } else {
             timerView.setHidden(true) // Используем timerView вместо timerLabel

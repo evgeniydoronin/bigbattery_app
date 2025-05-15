@@ -40,6 +40,9 @@ public class ZetaraManager: NSObject {
     private var identifier: Identifier?
     private var writeCharacteristic: Characteristic?
     private var notifyCharacteristic: Characteristic?
+    
+    // Имя устройства для мок-данных
+    private var mockDeviceName: String?
 
     private static var configuration: Configuration = .default
 
@@ -87,6 +90,13 @@ public class ZetaraManager: NSObject {
         } else {
             print("!!! Мок-данные НЕ установлены !!!")
         }
+        
+        if let mockDeviceName = configuration.mockDeviceName {
+            print("!!! Мок-имя устройства установлено: \(mockDeviceName) !!!")
+            shared.mockDeviceName = mockDeviceName
+        } else {
+            print("!!! Мок-имя устройства НЕ установлено !!!")
+        }
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         
         ZetaraManager.configuration = configuration
@@ -99,7 +109,27 @@ public class ZetaraManager: NSObject {
     }
 
     public func connectedPeripheral() -> ConnectedPeripheral? {
-        return try? connectedPeripheralSubject.value()
+        // Если есть реальное подключенное устройство, возвращаем его
+        if let peripheral = try? connectedPeripheralSubject.value() {
+            return peripheral
+        }
+        
+        return nil
+    }
+    
+    /// Возвращает имя подключенного устройства или имя мок-устройства, если используются мок-данные
+    public func getDeviceName() -> String {
+        // Если есть реальное подключенное устройство, возвращаем его имя
+        if let peripheral = try? connectedPeripheralSubject.value() {
+            return peripheral.name ?? "Unknown device"
+        }
+        
+        // Если используются мок-данные и задано имя устройства, возвращаем его
+        if Self.configuration.mockData != nil && mockDeviceName != nil {
+            return mockDeviceName!
+        }
+        
+        return "No device connected"
     }
 
     public func startScan() -> Observable<[ScannedPeripheral]> {

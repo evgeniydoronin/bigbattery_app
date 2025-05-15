@@ -12,15 +12,18 @@ public struct Configuration {
     let refreshBMSTimeInterval: TimeInterval
     var mockData: Foundation.Data? = nil
     var mockSetModuleIdData: Foundation.Data? = nil
+    var mockDeviceName: String? = nil
 
     public init(identifiers: [Identifier],
                 refreshBMSTimeInterval: TimeInterval,
                 mockData: Foundation.Data? = nil,
-                mockSetModuleIdData: Foundation.Data? = nil) {
+                mockSetModuleIdData: Foundation.Data? = nil,
+                mockDeviceName: String? = nil) {
         self.identifiers = identifiers
         self.refreshBMSTimeInterval = refreshBMSTimeInterval
         self.mockData = mockData
         self.mockSetModuleIdData = mockSetModuleIdData
+        self.mockDeviceName = mockDeviceName
     }
 
     public static let `default` = Configuration(identifiers: [.v2], refreshBMSTimeInterval: 4)
@@ -34,6 +37,12 @@ public struct Configuration {
     public mutating func mockSetModuleIdData(_ data: Foundation.Data) -> Configuration {
         var newOne = self
         newOne.mockSetModuleIdData = data
+        return newOne
+    }
+    
+    public mutating func mockDeviceName(_ name: String) -> Configuration {
+        var newOne = self
+        newOne.mockDeviceName = name
         return newOne
     }
 }
