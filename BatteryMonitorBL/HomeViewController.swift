@@ -15,6 +15,7 @@ import RxBluetoothKit2
 
 // Импортируем компоненты
 import class BatteryMonitorBL.SummaryTabView
+import class BatteryMonitorBL.CellVoltageTabView
 import class BatteryMonitorBL.BluetoothConnectionView
 import class BatteryMonitorBL.BatteryParametersView
 import class BatteryMonitorBL.TimerView
@@ -89,8 +90,9 @@ class HomeViewController: UIViewController {
     // Свойства для табов
     private var tabsContainer: UIView!
     
-    // Ссылка на SummaryTabView для обновления данных
+    // Ссылки на табы для обновления данных
     private var summaryView: SummaryTabView?
+    private var cellVoltageView: CellVoltageTabView?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -297,8 +299,9 @@ class HomeViewController: UIViewController {
             make.edges.equalToSuperview()
         }
         
-        // Сохраняем ссылку на SummaryTabView для обновления данных
+        // Сохраняем ссылки на табы для обновления данных
         self.summaryView = tabsContainerView.getSummaryTabView()
+        self.cellVoltageView = tabsContainerView.getCellVoltageTabView()
         
         // Удаляем использование bringSubviewToFront, так как это может нарушить порядок отображения
         // contentStackView.bringSubviewToFront(bluetoothConnectionContainer)
@@ -452,6 +455,12 @@ class HomeViewController: UIViewController {
                 internalTemp: data.tempPCB,
                 avgVoltage: avgVoltage
             )
+        }
+        
+        // Обновляем данные в CellVoltageTabView
+        if let cellVoltageView = self.cellVoltageView {
+            // Обновляем напряжения ячеек в CellVoltageTabView
+            cellVoltageView.updateCellVoltages(data.cellVoltages)
         }
     }
     
