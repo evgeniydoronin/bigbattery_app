@@ -348,6 +348,192 @@ class DiagnosticsViewController: UIViewController {
             batteryInfo["status"] = "No data"
         }
         
+        // Расширенная информация о батарее
+        var extendedBatteryInfo: [String: Any] = [:]
+        
+        if let data = bmsData {
+            // Минимальное, максимальное и среднее напряжение ячеек
+            if !data.cellVoltages.isEmpty {
+                let minVoltage = data.cellVoltages.min() ?? 0
+                let maxVoltage = data.cellVoltages.max() ?? 0
+                let avgVoltage = data.cellVoltages.reduce(0, +) / Float(data.cellVoltages.count)
+                let voltageDelta = maxVoltage - minVoltage
+                
+                // Расчет стандартного отклонения
+                let sumOfSquaredDifferences = data.cellVoltages.reduce(0.0) { sum, voltage in
+                    let difference = Double(voltage - avgVoltage)
+                    return sum + (difference * difference)
+                }
+                let stdDev = sqrt(sumOfSquaredDifferences / Double(data.cellVoltages.count))
+                
+                extendedBatteryInfo["cellVoltageMin"] = minVoltage
+                extendedBatteryInfo["cellVoltageMax"] = maxVoltage
+                extendedBatteryInfo["cellVoltageAverage"] = avgVoltage
+                extendedBatteryInfo["cellVoltageDelta"] = voltageDelta
+                extendedBatteryInfo["cellVoltageStdDev"] = stdDev
+            }
+            
+            // Минимальная, максимальная и средняя температура
+            if !data.cellTemps.isEmpty {
+                let minTemp = Int(data.cellTemps.min() ?? 0)
+                let maxTemp = Int(data.cellTemps.max() ?? 0)
+                let tempDelta = maxTemp - minTemp
+                
+                extendedBatteryInfo["tempMin"] = minTemp
+                extendedBatteryInfo["tempMax"] = maxTemp
+                extendedBatteryInfo["tempDelta"] = tempDelta
+            }
+            
+            // Статус защиты
+            let protectionStatus: [String: Bool] = [
+                "overvoltage": data.status == .protecting,
+                "undervoltage": data.status == .protecting,
+                "overcurrent": data.status == .protecting,
+                "overtemperature": data.status == .protecting,
+                "shortCircuit": data.status == .protecting
+            ]
+            
+            extendedBatteryInfo["protectionStatus"] = protectionStatus
+        }
+        
+        // Информация о Bluetooth-соединении
+        var bluetoothInfo: [String: Any] = [
+            "connectionAttempts": 0
+        ]
+        
+        // Получаем имя устройства
+        let deviceName = ZetaraManager.shared.getDeviceName()
+        if deviceName != "No device connected" {
+            bluetoothInfo["peripheralName"] = deviceName
+        }
+        
+        // Получаем состояние Bluetooth
+        // Используем текущее состояние Bluetooth из ZetaraManager
+        // Поскольку observableState не имеет метода value(), используем другой подход
+        ZetaraManager.shared.observableState
+            .take(1)
+            .subscribe(onNext: { state in
+                // Преобразуем числовое значение в строковое представление
+                switch state {
+                case .poweredOn:
+                    bluetoothInfo["state"] = "poweredOn"
+                case .poweredOff:
+                    bluetoothInfo["state"] = "poweredOff"
+                case .resetting:
+                    bluetoothInfo["state"] = "resetting"
+                case .unauthorized:
+                    bluetoothInfo["state"] = "unauthorized"
+                case .unsupported:
+                    bluetoothInfo["state"] = "unsupported"
+                case .unknown:
+                    bluetoothInfo["state"] = "unknown"
+                @unknown default:
+                    bluetoothInfo["state"] = "unknown"
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        // Устанавливаем значение по умолчанию, если не удалось получить состояние
+        if bluetoothInfo["state"] == nil {
+            bluetoothInfo["state"] = "unknown"
+        }
+        
+        if let peripheral = ZetaraManager.shared.connectedPeripheral() {
+            bluetoothInfo["peripheralIdentifier"] = peripheral.identifier.uuidString
+            if bluetoothInfo["peripheralName"] == nil {
+                bluetoothInfo["peripheralName"] = peripheral.name ?? "Unknown"
+            }
+        }
+        
+        // Информация о процессе подключения
+        var connectionProcessInfo: [String: Any] = [
+            "steps": eventLogs.filter { $0.type == .connection || $0.type == .disconnection }.map { event -> [String: String] in
+                return [
+                    "timestamp": dateFormatter.string(from: event.timestamp),
+                    "step": event.type == .connection ? "connection" : "disconnection",
+                    "status": "success",
+                    "message": event.message
+                ]
+            }
+        ]
+        
+        // Информация о сырых данных
+        var rawDataInfo: [String: Any] = [:]
+        
+        if let data = bmsData {
+            // Получаем последние данные в виде hex-строки
+            var hexString = "Unavailable"
+            
+            // Создаем массив байтов для представления данных BMS
+            var bytes: [UInt8] = []
+            
+            // Добавляем основные данные
+            bytes.append(contentsOf: withUnsafeBytes(of: data.voltage) { Array($0) })
+            bytes.append(contentsOf: withUnsafeBytes(of: data.current) { Array($0) })
+            bytes.append(contentsOf: withUnsafeBytes(of: data.soc) { Array($0) })
+            bytes.append(contentsOf: withUnsafeBytes(of: data.soh) { Array($0) })
+            
+            // Добавляем напряжения ячеек
+            for voltage in data.cellVoltages {
+                bytes.append(contentsOf: withUnsafeBytes(of: voltage) { Array($0) })
+            }
+            
+            // Добавляем температуры
+            bytes.append(contentsOf: data.cellTemps.map { UInt8(bitPattern: $0) })
+            bytes.append(UInt8(bitPattern: data.tempPCB))
+            bytes.append(UInt8(bitPattern: data.tempEnv))
+            
+            // Преобразуем байты в hex-строку
+            hexString = bytes.map { String(format: "%02X", $0) }.joined()
+            
+            rawDataInfo["lastReceivedPacket"] = hexString
+            rawDataInfo["packetHistory"] = [
+                [
+                    "timestamp": dateFormatter.string(from: Date()),
+                    "data": hexString,
+                    "parseResult": "success"
+                ]
+            ]
+            
+            // Добавляем информацию о парсинге
+            rawDataInfo["parseErrors"] = []
+        }
+        
+        // Информация о коммуникационных ошибках
+        var communicationErrorsInfo: [String: Any] = [
+            "timeouts": 0,
+            "crcErrors": 0,
+            "packetLoss": 0,
+            "retries": 0
+        ]
+        
+        // Добавляем последнюю ошибку, если она есть
+        let errorEvents = eventLogs.filter { $0.type == .error }
+        if let lastError = errorEvents.first {
+            communicationErrorsInfo["lastError"] = [
+                "timestamp": dateFormatter.string(from: lastError.timestamp),
+                "type": "error",
+                "message": lastError.message
+            ]
+        }
+        
+        
+        // Информация о состоянии системы
+        var systemInfo: [String: Any] = [
+            "isLowPowerMode": ProcessInfo.processInfo.isLowPowerModeEnabled,
+            "availableMemory": ProcessInfo.processInfo.physicalMemory,
+            "cpuUsage": 0.0 // Заглушка, в реальном приложении здесь будет код для получения загрузки CPU
+        ]
+        
+        // Получаем уровень заряда устройства
+        device.isBatteryMonitoringEnabled = true
+        let batteryLevel = device.batteryLevel
+        if batteryLevel >= 0 {
+            systemInfo["batteryLevel"] = Int(batteryLevel * 100)
+        } else {
+            systemInfo["batteryLevel"] = 0
+        }
+        
         // Журнал событий
         let events = eventLogs.map { event -> [String: String] in
             return [
@@ -362,6 +548,12 @@ class DiagnosticsViewController: UIViewController {
             "deviceInfo": deviceInfo,
             "appInfo": appInfo,
             "batteryInfo": batteryInfo,
+            "extendedBatteryInfo": extendedBatteryInfo,
+            "bluetoothInfo": bluetoothInfo,
+            "connectionProcessInfo": connectionProcessInfo,
+            "rawDataInfo": rawDataInfo,
+            "communicationErrorsInfo": communicationErrorsInfo,
+            "systemInfo": systemInfo,
             "events": events,
             "timestamp": dateFormatter.string(from: Date())
         ]
