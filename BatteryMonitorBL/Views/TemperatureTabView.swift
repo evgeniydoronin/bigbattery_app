@@ -392,13 +392,3 @@ class TemperatureSensorCell: UITableViewCell {
         temperatureLabel.text = "\(data.fahrenheit)°F / \(data.celsius)°C"
     }
 }
-
-// MARK: - Int8 Extension
-
-extension Int8 {
-    /// Преобразование из Цельсия в Фаренгейт
-    /// - Returns: Температура в градусах Фаренгейта
-    func celsiusToFahrenheit() -> Int8 {
-        return Int8(Int(self) * 9/5 + 32)
-    }
-}
