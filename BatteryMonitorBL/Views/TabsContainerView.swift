@@ -12,6 +12,7 @@ import GradientView
 // Импортируем компоненты
 import class BatteryMonitorBL.SummaryTabView
 import class BatteryMonitorBL.CellVoltageTabView
+import class BatteryMonitorBL.TemperatureTabView
 
 /// Компонент для отображения контейнера с табами
 class TabsContainerView: UIView {
@@ -129,7 +130,7 @@ class TabsContainerView: UIView {
         // Создаем стандартные табы
         addTab(title: "Summary", content: SummaryTabView(), isActive: true)
         addTab(title: "Cell Voltage", content: CellVoltageTabView(), isActive: false)
-        addTab(title: "Temperature", content: createDefaultTabContent(title: "Temperature Tab Content"))
+        addTab(title: "Temperature", content: TemperatureTabView(), isActive: false)
     }
     
     private func createDefaultTabContent(title: String) -> UIView {
@@ -229,6 +230,12 @@ class TabsContainerView: UIView {
     /// - Returns: Содержимое таба Cell Voltage
     func getCellVoltageTabView() -> CellVoltageTabView? {
         return tabContents.first { $0 is CellVoltageTabView } as? CellVoltageTabView
+    }
+    
+    /// Возвращает содержимое таба Temperature, если оно есть
+    /// - Returns: Содержимое таба Temperature
+    func getTemperatureTabView() -> TemperatureTabView? {
+        return tabContents.first { $0 is TemperatureTabView } as? TemperatureTabView
     }
     
     // MARK: - Private Methods

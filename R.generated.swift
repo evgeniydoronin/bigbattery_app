@@ -105,7 +105,7 @@ struct _R {
     var settingsCell: RswiftResources.ColorResource { .init(name: "Settings.Cell", path: [], bundle: bundle) }
   }
 
-  /// This `_R.image` struct is generated, and contains static references to 34 images.
+  /// This `_R.image` struct is generated, and contains static references to 35 images.
   struct image {
     let bundle: Foundation.Bundle
 
@@ -189,6 +189,9 @@ struct _R {
 
     /// Image `cell_icon`.
     var cell_icon: RswiftResources.ImageResource { .init(name: "cell_icon", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
+
+    /// Image `goto_shop`.
+    var goto_shop: RswiftResources.ImageResource { .init(name: "goto_shop", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }
 
     /// Image `hugeicons_energy-rectangle`.
     var hugeicons_energyRectangle: RswiftResources.ImageResource { .init(name: "hugeicons_energy-rectangle", path: [], bundle: bundle, locale: nil, onDemandResourceTags: nil) }

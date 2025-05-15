@@ -32,6 +32,7 @@
 		6A5BA67F2DD361CA006C1EB8 /* BluetoothConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5BA67E2DD361CA006C1EB8 /* BluetoothConnectionView.swift */; };
 		6A5BA6812DD36A7C006C1EB8 /* TabsContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5BA6802DD36A7C006C1EB8 /* TabsContainerView.swift */; };
 		6A64C0552DD5DAAE00097A22 /* CellVoltageTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A64C0542DD5DAAE00097A22 /* CellVoltageTabView.swift */; };
+		6A64C0572DD5E6D100097A22 /* TemperatureTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A64C0562DD5E6D000097A22 /* TemperatureTabView.swift */; };
 		6AC451A42DD23E4900478A90 /* BatteryProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC451A32DD23E4900478A90 /* BatteryProgressView.swift */; };
 /* End PBXBuildFile section */
 
@@ -63,6 +64,7 @@
 		6A5BA67E2DD361CA006C1EB8 /* BluetoothConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothConnectionView.swift; sourceTree = "<group>"; };
 		6A5BA6802DD36A7C006C1EB8 /* TabsContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabsContainerView.swift; sourceTree = "<group>"; };
 		6A64C0542DD5DAAE00097A22 /* CellVoltageTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CellVoltageTabView.swift; sourceTree = "<group>"; };
+		6A64C0562DD5E6D000097A22 /* TemperatureTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureTabView.swift; sourceTree = "<group>"; };
 		6AC451A32DD23E4900478A90 /* BatteryProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryProgressView.swift; sourceTree = "<group>"; };
 		D66A4BD0B8978044385B3013 /* Pods-BatteryMonitorBL.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.release.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.release.xcconfig"; sourceTree = "<group>"; };
 		F9A2BDB4DCDEB49487D3DCF0 /* Pods_BatteryMonitorBL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BatteryMonitorBL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -138,6 +140,7 @@
 		324213B02A1A359300DC7FFC /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				6A64C0562DD5E6D000097A22 /* TemperatureTabView.swift */,
 				6A64C0542DD5DAAE00097A22 /* CellVoltageTabView.swift */,
 				6A5BA6802DD36A7C006C1EB8 /* TabsContainerView.swift */,
 				6A5BA67E2DD361CA006C1EB8 /* BluetoothConnectionView.swift */,
@@ -332,6 +335,7 @@
 				6A5BA6812DD36A7C006C1EB8 /* TabsContainerView.swift in Sources */,
 				324213AA2A1A354100DC7FFC /* R.generated.swift in Sources */,
 				324213CB2A1A359300DC7FFC /* SettingItemView.swift in Sources */,
+				6A64C0572DD5E6D100097A22 /* TemperatureTabView.swift in Sources */,
 				324213C42A1A359300DC7FFC /* SceneDelegate.swift in Sources */,
 				6A5BA67F2DD361CA006C1EB8 /* BluetoothConnectionView.swift in Sources */,
 				324213C52A1A359300DC7FFC /* DetailsViewController.swift in Sources */,
