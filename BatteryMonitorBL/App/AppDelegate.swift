@@ -24,10 +24,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // ВАЖНО: Мы добавили отладочную информацию в метод getBMSData() в ZetaraManager.swift,
         // чтобы понять, что происходит при обработке мок-данных. Если bmsDataHandler.append()
         // возвращает nil, то теперь мы создаем фейковый объект BMS с данными для отладки.
+        // Настраиваем конфигурацию ZetaraManager
+        // Для отладочных сборок используем мок-данные, для релизных - нет
+        var mockDataForConfig: Foundation.Data? = nil
+        var mockDeviceNameForConfig: String? = nil
+        
+        #if DEBUG
+        // Включаем мок-данные только для отладочных сборок
+        mockDataForConfig = Foundation.Data.mockCellTempsData
+        mockDeviceNameForConfig = "Husky 2 (Mock)"
+        #endif
+        
         let config = Configuration(identifiers: [.v1, .v2],
                                    refreshBMSTimeInterval: 2,
-                                   mockData: Foundation.Data.mockCellTempsData,
-                                   mockDeviceName: "Husky 2")
+                                   mockData: mockDataForConfig,
+                                   mockDeviceName: mockDeviceNameForConfig)
         ZetaraManager.setup(config)
         
         UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor.black]

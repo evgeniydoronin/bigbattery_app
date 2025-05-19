@@ -596,6 +596,9 @@ extension DiagnosticsViewController: UITableViewDataSource {
             return UITableViewCell()
         }
         
+        // Проверяем, есть ли реальное подключение к устройству
+        let isDeviceActuallyConnected = ZetaraManager.shared.connectedPeripheral() != nil
+        
         switch section {
         case .deviceInfo:
             let cell = tableView.dequeueReusableCell(withIdentifier: DiagnosticsParameterCell.reuseIdentifier, for: indexPath) as! DiagnosticsParameterCell
@@ -609,28 +612,28 @@ extension DiagnosticsViewController: UITableViewDataSource {
             let cell = tableView.dequeueReusableCell(withIdentifier: DiagnosticsParameterCell.reuseIdentifier, for: indexPath) as! DiagnosticsParameterCell
             let parameter = BatteryParameter(rawValue: indexPath.row)!
             
-            if let data = bmsData {
+            if isDeviceActuallyConnected, let data = bmsData {
                 cell.configure(title: parameter.title, value: parameter.value(from: data))
             } else {
-                cell.configure(title: parameter.title, value: "No data")
+                cell.configure(title: parameter.title, value: "--")
             }
             return cell
             
         case .cellVoltages:
             let cell = tableView.dequeueReusableCell(withIdentifier: DiagnosticsParameterCell.reuseIdentifier, for: indexPath) as! DiagnosticsParameterCell
             
-            if let data = bmsData, indexPath.row < data.cellVoltages.count {
+            if isDeviceActuallyConnected, let data = bmsData, indexPath.row < data.cellVoltages.count {
                 let voltage = data.cellVoltages[indexPath.row]
                 cell.configure(title: "Cell \(indexPath.row + 1)", value: String(format: "%.3f V", voltage))
             } else {
-                cell.configure(title: "Cell \(indexPath.row + 1)", value: "No data")
+                cell.configure(title: "Cell \(indexPath.row + 1)", value: "-- V")
             }
             return cell
             
         case .temperatures:
             let cell = tableView.dequeueReusableCell(withIdentifier: DiagnosticsParameterCell.reuseIdentifier, for: indexPath) as! DiagnosticsParameterCell
             
-            if let data = bmsData {
+            if isDeviceActuallyConnected, let data = bmsData {
                 if indexPath.row == 0 {
                     // PCB температура
                     let tempF = Int(data.tempPCB.celsiusToFahrenheit())
@@ -650,18 +653,18 @@ extension DiagnosticsViewController: UITableViewDataSource {
                         let tempC = Int(temp)
                         cell.configure(title: "Sensor \(index + 1)", value: "\(tempF)°F / \(tempC)°C")
                     } else {
-                        cell.configure(title: "Sensor \(index + 1)", value: "No data")
+                        cell.configure(title: "Sensor \(index + 1)", value: "-- °F / -- °C")
                     }
                 }
             } else {
-                // Если данных нет
+                // Если данных нет или нет подключения
                 if indexPath.row == 0 {
-                    cell.configure(title: "PCB", value: "No data")
+                    cell.configure(title: "PCB", value: "-- °F / -- °C")
                 } else if indexPath.row == 1 {
-                    cell.configure(title: "Environment", value: "No data")
+                    cell.configure(title: "Environment", value: "-- °F / -- °C")
                 } else {
                     let index = indexPath.row - 2
-                    cell.configure(title: "Sensor \(index + 1)", value: "No data")
+                    cell.configure(title: "Sensor \(index + 1)", value: "-- °F / -- °C")
                 }
             }
             

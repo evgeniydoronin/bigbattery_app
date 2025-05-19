@@ -114,31 +114,61 @@ class TemperatureTabView: UIView {
     ///   - pcbTemp: Температура PCB в Цельсиях
     ///   - envTemp: Температура окружающей среды в Цельсиях
     ///   - cellTemps: Массив температур ячеек в Цельсиях
-    func updateTemperatures(pcbTemp: Int8, envTemp: Int8, cellTemps: [Int8]) {
+    ///   - showDashes: Показывать прочерки вместо значений (по умолчанию false)
+    func updateTemperatures(pcbTemp: Int8, envTemp: Int8, cellTemps: [Int8], showDashes: Bool = false) {
         // Очищаем массив температур
         temperatures.removeAll()
         
-        // Добавляем температуру PCB
-        temperatures.append(TemperatureSensorData(
-            name: "Temp. Sensor #1",
-            fahrenheit: Int(pcbTemp.celsiusToFahrenheit()),
-            celsius: Int(pcbTemp)
-        ))
-        
-        // Добавляем температуру окружающей среды
-        temperatures.append(TemperatureSensorData(
-            name: "Temp. Sensor #2",
-            fahrenheit: Int(envTemp.celsiusToFahrenheit()),
-            celsius: Int(envTemp)
-        ))
-        
-        // Добавляем температуры ячеек
-        for (index, temp) in cellTemps.enumerated() {
+        if showDashes {
+            // Если нужно показать прочерки, добавляем датчики с прочерками
+            
+            // Добавляем температуру PCB с прочерками
             temperatures.append(TemperatureSensorData(
-                name: "Temp. Sensor #\(index + 3)",
-                fahrenheit: Int(temp.celsiusToFahrenheit()),
-                celsius: Int(temp)
+                name: "Temp. Sensor #1",
+                fahrenheit: nil,
+                celsius: nil
             ))
+            
+            // Добавляем температуру окружающей среды с прочерками
+            temperatures.append(TemperatureSensorData(
+                name: "Temp. Sensor #2",
+                fahrenheit: nil,
+                celsius: nil
+            ))
+            
+            // Добавляем температуры ячеек с прочерками
+            for index in 0..<4 { // Добавляем 4 датчика с прочерками
+                temperatures.append(TemperatureSensorData(
+                    name: "Temp. Sensor #\(index + 3)",
+                    fahrenheit: nil,
+                    celsius: nil
+                ))
+            }
+        } else {
+            // Если нужно показать реальные данные
+            
+            // Добавляем температуру PCB
+            temperatures.append(TemperatureSensorData(
+                name: "Temp. Sensor #1",
+                fahrenheit: Int(pcbTemp.celsiusToFahrenheit()),
+                celsius: Int(pcbTemp)
+            ))
+            
+            // Добавляем температуру окружающей среды
+            temperatures.append(TemperatureSensorData(
+                name: "Temp. Sensor #2",
+                fahrenheit: Int(envTemp.celsiusToFahrenheit()),
+                celsius: Int(envTemp)
+            ))
+            
+            // Добавляем температуры ячеек
+            for (index, temp) in cellTemps.enumerated() {
+                temperatures.append(TemperatureSensorData(
+                    name: "Temp. Sensor #\(index + 3)",
+                    fahrenheit: Int(temp.celsiusToFahrenheit()),
+                    celsius: Int(temp)
+                ))
+            }
         }
         
         tableView.reloadData()
@@ -218,11 +248,11 @@ struct TemperatureSensorData {
     /// Название датчика
     let name: String
     
-    /// Температура в градусах Фаренгейта
-    let fahrenheit: Int
+    /// Температура в градусах Фаренгейта (nil для отображения прочерков)
+    let fahrenheit: Int?
     
-    /// Температура в градусах Цельсия
-    let celsius: Int
+    /// Температура в градусах Цельсия (nil для отображения прочерков)
+    let celsius: Int?
 }
 
 // MARK: - TemperatureSensorCell
@@ -383,12 +413,13 @@ class TemperatureSensorCell: UITableViewCell {
         // НАСТРОЙКА: Формат отображения названия датчика
         nameLabel.text = data.name
         
-        // НАСТРОЙКА: Формат отображения температуры
-        // Можно изменить формат отображения температуры, например:
-        // - "\(data.fahrenheit)°F" - только Фаренгейты
-        // - "\(data.celsius)°C" - только Цельсии
-        // - "F: \(data.fahrenheit)° | C: \(data.celsius)°" - другой формат
-        // - String(format: "%.1f°F / %.1f°C", Float(data.fahrenheit), Float(data.celsius)) - с десятичными знаками
-        temperatureLabel.text = "\(data.fahrenheit)°F / \(data.celsius)°C"
+        // Проверяем, есть ли значения температуры
+        if let fahrenheit = data.fahrenheit, let celsius = data.celsius {
+            // Если значения есть, отображаем их
+            temperatureLabel.text = "\(fahrenheit)°F / \(celsius)°C"
+        } else {
+            // Если значений нет, отображаем прочерки
+            temperatureLabel.text = "--°F / --°C"
+        }
     }
 }

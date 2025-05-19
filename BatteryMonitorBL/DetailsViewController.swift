@@ -77,9 +77,21 @@ class DetailsViewController: UIViewController {
         ZetaraManager.shared.bmsDataSubject
             .subscribeOn(MainScheduler.instance)
             .subscribe { [weak self] (_data: Zetara.Data.BMS) in
-                self?.cellVoltages = _data.cellVoltages
-                self?.cellTemps = _data.cellTemps
-                self?.pcbTemperature = _data.tempPCB
+                // Проверяем, есть ли реальное подключение к устройству
+                let isDeviceActuallyConnected = ZetaraManager.shared.connectedPeripheral() != nil
+                
+                if isDeviceActuallyConnected {
+                    // Если есть реальное подключение, отображаем данные
+                    self?.cellVoltages = _data.cellVoltages
+                    self?.cellTemps = _data.cellTemps
+                    self?.pcbTemperature = _data.tempPCB
+                } else {
+                    // Если нет реального подключения, очищаем данные
+                    self?.cellVoltages = []
+                    self?.cellTemps = []
+                    self?.pcbTemperature = 0
+                }
+                
                 self?.collectionView.reloadData()
             }.disposed(by: disposeBag)
     }

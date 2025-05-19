@@ -115,11 +115,20 @@ class CellVoltageTabView: UIView {
     // MARK: - Public Methods
     
     /// Обновляет данные о напряжении ячеек батареи
-    /// - Parameter voltages: Массив значений напряжения ячеек
-    func updateCellVoltages(_ voltages: [Float]) {
+    /// - Parameters:
+    ///   - voltages: Массив значений напряжения ячеек
+    ///   - showDashes: Показывать прочерки вместо значений (по умолчанию false)
+    func updateCellVoltages(_ voltages: [Float], showDashes: Bool = false) {
         cellVoltages = voltages
+        
+        // Сохраняем флаг showDashes для использования в cellForItemAt
+        self.showDashes = showDashes
+        
         collectionView.reloadData()
     }
+    
+    /// Флаг для отображения прочерков вместо значений
+    private var showDashes: Bool = false
 }
 
 // MARK: - UICollectionViewDataSource
@@ -133,16 +142,22 @@ extension CellVoltageTabView: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath) as! CellVoltageCell
         
-        // Если индекс выходит за пределы массива, используем значение по умолчанию (3.25V)
-        let voltage: Float
-        if indexPath.item < cellVoltages.count {
-            voltage = cellVoltages[indexPath.item]
+        if showDashes {
+            // Если нужно показать прочерки, настраиваем ячейку с прочерками
+            cell.configureDashes(cellNumber: indexPath.item + 1)
         } else {
-            voltage = 3.25
+            // Если индекс выходит за пределы массива, используем значение по умолчанию (3.25V)
+            let voltage: Float
+            if indexPath.item < cellVoltages.count {
+                voltage = cellVoltages[indexPath.item]
+            } else {
+                voltage = 3.25
+            }
+            
+            // Настраиваем ячейку с реальными значениями
+            cell.configure(voltage: voltage, cellNumber: indexPath.item + 1)
         }
         
-        // Настраиваем ячейку
-        cell.configure(voltage: voltage, cellNumber: indexPath.item + 1)
         cell.isHidden = false
         
         return cell
@@ -336,6 +351,16 @@ class CellVoltageCell: UICollectionViewCell {
         
         // НАСТРОЙКА: Формат отображения номера ячейки
         // Можно изменить префикс "Cell" на любой другой или убрать совсем
+        cellNumberLabel.text = "Cell \(cellNumber)"
+    }
+    
+    /// Настраивает ячейку с прочерками вместо значений
+    /// - Parameter cellNumber: Номер ячейки
+    func configureDashes(cellNumber: Int) {
+        // Отображаем прочерки вместо значения напряжения
+        voltageLabel.text = "-- V"
+        
+        // Отображаем номер ячейки как обычно
         cellNumberLabel.text = "Cell \(cellNumber)"
     }
 }

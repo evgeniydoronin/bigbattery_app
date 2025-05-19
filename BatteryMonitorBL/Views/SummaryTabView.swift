@@ -162,14 +162,34 @@ class SummaryTabView: UIView {
     // MARK: - Public Methods
     
     /// Обновляет все параметры одновременно
+    /// - Parameters:
+    ///   - maxVoltage: Максимальное напряжение
+    ///   - minVoltage: Минимальное напряжение
+    ///   - voltageDiff: Разница напряжений
+    ///   - power: Мощность
+    ///   - internalTemp: Внутренняя температура
+    ///   - avgVoltage: Среднее напряжение
+    ///   - showDashes: Показывать прочерки вместо значений (по умолчанию false)
     func updateAllParameters(maxVoltage: Float, minVoltage: Float, voltageDiff: Float, 
-                            power: Float, internalTemp: Int8, avgVoltage: Float) {
-        updateMaxVoltage(maxVoltage)
-        updateMinVoltage(minVoltage)
-        updateVoltageDiff(voltageDiff)
-        updatePower(power)
-        updateInternalTemp(internalTemp)
-        updateAvgVoltage(avgVoltage)
+                            power: Float, internalTemp: Int8, avgVoltage: Float,
+                            showDashes: Bool = false) {
+        if showDashes {
+            // Если нужно показать прочерки, обновляем все значения прочерками
+            maxVoltageView.updateValue("-- V")
+            minVoltageView.updateValue("-- V")
+            voltageDiffView.updateValue("-- V")
+            powerView.updateValue("-- W")
+            internalTempView.updateValue("-- °F")
+            avgVoltageView.updateValue("-- V")
+        } else {
+            // Иначе обновляем реальными значениями
+            updateMaxVoltage(maxVoltage)
+            updateMinVoltage(minVoltage)
+            updateVoltageDiff(voltageDiff)
+            updatePower(power)
+            updateInternalTemp(internalTemp)
+            updateAvgVoltage(avgVoltage)
+        }
     }
     
     /// Обновляет максимальное напряжение

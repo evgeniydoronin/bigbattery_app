@@ -178,20 +178,27 @@ class HomeViewController: UIViewController {
     
     /// Обновление имени устройства
     func updateTitle(_ peripheral: ZetaraManager.ConnectedPeripheral?) {
-        // Получаем имя устройства через метод getDeviceName
-        let deviceName = ZetaraManager.shared.getDeviceName()
+        // Проверяем, есть ли реальное подключение к устройству
+        let isDeviceActuallyConnected = ZetaraManager.shared.connectedPeripheral() != nil
         
-        if deviceName != "No device connected" {
-            timerView.setHidden(false) // Используем timerView вместо timerLabel
+        if isDeviceActuallyConnected {
+            // Если есть реальное подключение, отображаем имя устройства
+            timerView.setHidden(false) // Показываем таймер
+            
+            // Получаем имя устройства через метод getDeviceName
+            let deviceName = ZetaraManager.shared.getDeviceName()
+            
             // Обновляем название устройства в компоненте BluetoothConnectionView
             if let bluetoothView = bluetoothConnectionView as? BluetoothConnectionView {
                 bluetoothView.updateDeviceName(deviceName)
             }
         } else {
-            timerView.setHidden(true) // Используем timerView вместо timerLabel
+            // Если нет реального подключения, скрываем таймер и отображаем "Tap to Connect"
+            timerView.setHidden(true) // Скрываем таймер
+            
             // Сбрасываем название устройства в компоненте BluetoothConnectionView
             if let bluetoothView = bluetoothConnectionView as? BluetoothConnectionView {
-                bluetoothView.updateDeviceName(nil)
+                bluetoothView.updateDeviceName(nil) // Передаем nil, чтобы отобразить "Tap to Connect"
             }
         }
     }
@@ -430,55 +437,102 @@ class HomeViewController: UIViewController {
     }
     
     func updateUI(_ data: Zetara.Data.BMS) {
-        
         // Обновляем время в компоненте TimerView
         timerView.updateTime(Date())
         
-        let battery = Float(data.soc)/100.0
-
-        /// Уровень заряда
-        batteryProgressView.level = battery
-        batteryProgressView.updateChargingStatus(isCharging: data.status == .charging)
-
-        /// Информация о параметрах
-        batteryParametersView.updateVoltage("\(data.voltage)V")
-        batteryParametersView.updateCurrent("\(data.current)A")
-        batteryParametersView.updateTemperature("\(data.tempEnv.celsiusToFahrenheit())°F/\(data.tempEnv)°C")
+        // Проверяем, есть ли реальное подключение к устройству
+        let isDeviceActuallyConnected = ZetaraManager.shared.connectedPeripheral() != nil
         
-        // Обновляем данные в SummaryTabView
-        if let summaryView = self.summaryView {
-            // Вычисляем параметры для SummaryTabView
-            let maxVoltage = data.cellVoltages.max() ?? 0
-            let minVoltage = data.cellVoltages.min() ?? 0
-            let voltageDiff = maxVoltage - minVoltage
-            let power = data.voltage * data.current
-            let avgVoltage = data.cellVoltages.reduce(0, +) / Float(max(1, data.cellVoltages.count))
+        if isDeviceActuallyConnected {
+            // Если есть реальное подключение, отображаем данные
+            let battery = Float(data.soc)/100.0
             
-            // Обновляем все параметры в SummaryTabView
-            summaryView.updateAllParameters(
-                maxVoltage: maxVoltage,
-                minVoltage: minVoltage,
-                voltageDiff: voltageDiff,
-                power: power,
-                internalTemp: data.tempPCB,
-                avgVoltage: avgVoltage
-            )
-        }
-        
-        // Обновляем данные в CellVoltageTabView
-        if let cellVoltageView = self.cellVoltageView {
-            // Обновляем напряжения ячеек в CellVoltageTabView
-            cellVoltageView.updateCellVoltages(data.cellVoltages)
-        }
-        
-        // Обновляем данные в TemperatureTabView
-        if let temperatureView = self.temperatureView {
-            // Обновляем температуры в TemperatureTabView
-            temperatureView.updateTemperatures(
-                pcbTemp: data.tempPCB,
-                envTemp: data.tempEnv,
-                cellTemps: data.cellTemps
-            )
+            /// Уровень заряда
+            batteryProgressView.level = battery
+            batteryProgressView.updateChargingStatus(isCharging: data.status == .charging)
+            
+            /// Информация о параметрах
+            batteryParametersView.updateVoltage("\(data.voltage)V")
+            batteryParametersView.updateCurrent("\(data.current)A")
+            batteryParametersView.updateTemperature("\(data.tempEnv.celsiusToFahrenheit())°F/\(data.tempEnv)°C")
+            
+            // Обновляем данные в SummaryTabView
+            if let summaryView = self.summaryView {
+                // Вычисляем параметры для SummaryTabView
+                let maxVoltage = data.cellVoltages.max() ?? 0
+                let minVoltage = data.cellVoltages.min() ?? 0
+                let voltageDiff = maxVoltage - minVoltage
+                let power = data.voltage * data.current
+                let avgVoltage = data.cellVoltages.reduce(0, +) / Float(max(1, data.cellVoltages.count))
+                
+                // Обновляем все параметры в SummaryTabView
+                summaryView.updateAllParameters(
+                    maxVoltage: maxVoltage,
+                    minVoltage: minVoltage,
+                    voltageDiff: voltageDiff,
+                    power: power,
+                    internalTemp: data.tempPCB,
+                    avgVoltage: avgVoltage
+                )
+            }
+            
+            // Обновляем данные в CellVoltageTabView
+            if let cellVoltageView = self.cellVoltageView {
+                // Обновляем напряжения ячеек в CellVoltageTabView
+                cellVoltageView.updateCellVoltages(data.cellVoltages)
+            }
+            
+            // Обновляем данные в TemperatureTabView
+            if let temperatureView = self.temperatureView {
+                // Обновляем температуры в TemperatureTabView
+                temperatureView.updateTemperatures(
+                    pcbTemp: data.tempPCB,
+                    envTemp: data.tempEnv,
+                    cellTemps: data.cellTemps
+                )
+            }
+        } else {
+            // Если нет реального подключения, отображаем прочерки
+            
+            /// Уровень заряда (показываем 0%)
+            batteryProgressView.level = 0
+            batteryProgressView.updateChargingStatus(isCharging: false)
+            
+            /// Информация о параметрах
+            batteryParametersView.updateVoltage("-- V")
+            batteryParametersView.updateCurrent("-- A")
+            batteryParametersView.updateTemperature("-- °F/-- °C")
+            
+            // Обновляем данные в SummaryTabView
+            if let summaryView = self.summaryView {
+                // Обновляем все параметры в SummaryTabView с прочерками
+                summaryView.updateAllParameters(
+                    maxVoltage: 0,
+                    minVoltage: 0,
+                    voltageDiff: 0,
+                    power: 0,
+                    internalTemp: 0,
+                    avgVoltage: 0,
+                    showDashes: true // Добавим параметр для отображения прочерков
+                )
+            }
+            
+            // Обновляем данные в CellVoltageTabView
+            if let cellVoltageView = self.cellVoltageView {
+                // Обновляем напряжения ячеек в CellVoltageTabView с прочерками
+                cellVoltageView.updateCellVoltages([], showDashes: true) // Добавим параметр для отображения прочерков
+            }
+            
+            // Обновляем данные в TemperatureTabView
+            if let temperatureView = self.temperatureView {
+                // Обновляем температуры в TemperatureTabView с прочерками
+                temperatureView.updateTemperatures(
+                    pcbTemp: 0,
+                    envTemp: 0,
+                    cellTemps: [],
+                    showDashes: true // Добавим параметр для отображения прочерков
+                )
+            }
         }
     }
     
