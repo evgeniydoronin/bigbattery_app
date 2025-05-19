@@ -79,9 +79,12 @@ class SettingsViewController: UIViewController {
             }
         }.disposed(by: disposeBag)
         
-        ZetaraManager.shared.connectedPeripheralSubject.subscribeOn(MainScheduler.instance)
+        ZetaraManager.shared.connectedPeripheralSubject
+            .subscribeOn(MainScheduler.instance) // Определяет поток для подписки
+            .observe(on: MainScheduler.instance) // Гарантирует, что все последующие операции будут на главном потоке
             .filter { $0 == nil }
             .subscribe { [weak self] _ in
+                // Теперь этот блок гарантированно выполняется на главном потоке
                 self?.canProtocolView?.options = []
                 self?.rs485ProtocolView?.options = []
                 self?.canProtocolView?.label = nil

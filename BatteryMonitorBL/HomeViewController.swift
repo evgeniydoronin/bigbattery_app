@@ -151,7 +151,8 @@ class HomeViewController: UIViewController {
             }.disposed(by: disposeBag)
         
         ZetaraManager.shared.bmsDataSubject
-            .subscribeOn(MainScheduler.instance)
+            .subscribeOn(MainScheduler.instance) // Определяет поток для подписки
+            .observe(on: MainScheduler.instance) // Гарантирует, что все последующие операции будут на главном потоке
             .subscribe { [weak self] _data in
                 self?.updateUI(_data)
             } onError: { error in
@@ -159,7 +160,8 @@ class HomeViewController: UIViewController {
             }.disposed(by: disposeBag)
         
         ZetaraManager.shared.connectedPeripheralSubject
-            .subscribeOn(MainScheduler.instance)
+            .subscribeOn(MainScheduler.instance) // Определяет поток для подписки
+            .observe(on: MainScheduler.instance) // Гарантирует, что все последующие операции будут на главном потоке
             .subscribe { [weak self] (peripheral: ZetaraManager.ConnectedPeripheral?) in
                 self?.updateTitle(peripheral)
             }.disposed(by: disposeBag)
