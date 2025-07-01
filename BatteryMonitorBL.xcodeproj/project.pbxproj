@@ -34,6 +34,7 @@
 		6A64C0552DD5DAAE00097A22 /* CellVoltageTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A64C0542DD5DAAE00097A22 /* CellVoltageTabView.swift */; };
 		6A64C0572DD5E6D100097A22 /* TemperatureTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A64C0562DD5E6D000097A22 /* TemperatureTabView.swift */; };
 		6A64C05B2DD6093900097A22 /* DiagnosticsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A64C05A2DD6093900097A22 /* DiagnosticsViewController.swift */; };
+		6A7F09872DE08592004FAB0B /* BatteryStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7F09862DE08592004FAB0B /* BatteryStatusView.swift */; };
 		6AC451A42DD23E4900478A90 /* BatteryProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC451A32DD23E4900478A90 /* BatteryProgressView.swift */; };
 /* End PBXBuildFile section */
 
@@ -67,6 +68,7 @@
 		6A64C0542DD5DAAE00097A22 /* CellVoltageTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CellVoltageTabView.swift; sourceTree = "<group>"; };
 		6A64C0562DD5E6D000097A22 /* TemperatureTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureTabView.swift; sourceTree = "<group>"; };
 		6A64C05A2DD6093900097A22 /* DiagnosticsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsViewController.swift; sourceTree = "<group>"; };
+		6A7F09862DE08592004FAB0B /* BatteryStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryStatusView.swift; sourceTree = "<group>"; };
 		6AC451A32DD23E4900478A90 /* BatteryProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryProgressView.swift; sourceTree = "<group>"; };
 		D66A4BD0B8978044385B3013 /* Pods-BatteryMonitorBL.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.release.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.release.xcconfig"; sourceTree = "<group>"; };
 		F9A2BDB4DCDEB49487D3DCF0 /* Pods_BatteryMonitorBL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BatteryMonitorBL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -143,6 +145,7 @@
 		324213B02A1A359300DC7FFC /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				6A7F09862DE08592004FAB0B /* BatteryStatusView.swift */,
 				6A64C0562DD5E6D000097A22 /* TemperatureTabView.swift */,
 				6A64C0542DD5DAAE00097A22 /* CellVoltageTabView.swift */,
 				6A5BA6802DD36A7C006C1EB8 /* TabsContainerView.swift */,
@@ -333,6 +336,7 @@
 				324213C32A1A359300DC7FFC /* AppDelegate.swift in Sources */,
 				324213CE2A1A359300DC7FFC /* ConnectivityViewController.swift in Sources */,
 				324213D42A1A359300DC7FFC /* SettingsViewController.swift in Sources */,
+				6A7F09872DE08592004FAB0B /* BatteryStatusView.swift in Sources */,
 				324213C82A1A359300DC7FFC /* GradientBackgroundView.swift in Sources */,
 				6A55CB552DCE6A0F00B3C34B /* TimerView.swift in Sources */,
 				6A5BA6812DD36A7C006C1EB8 /* TabsContainerView.swift in Sources */,
@@ -500,9 +504,9 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 15;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = 8WJJB8HG42;
+				DEVELOPMENT_TEAM = L9FD4J2A6P;
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = "$(SRCROOT)/BatteryMonitorBL/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = BigBattery;
@@ -513,13 +517,17 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.4.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.evgenedoronin.bigbattery;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bigbattery.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/**";
 			};
 			name = Debug;
@@ -533,9 +541,9 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 15;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = 8WJJB8HG42;
+				DEVELOPMENT_TEAM = L9FD4J2A6P;
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = "$(SRCROOT)/BatteryMonitorBL/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = BigBattery;
@@ -546,12 +554,16 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.4.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.evgenedoronin.bigbattery;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bigbattery.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/**";
 			};
 			name = Release;

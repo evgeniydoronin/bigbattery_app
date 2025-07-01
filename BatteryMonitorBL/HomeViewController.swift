@@ -22,6 +22,7 @@ import class BatteryMonitorBL.BatteryParametersView
 import class BatteryMonitorBL.TimerView
 import class BatteryMonitorBL.BatteryProgressView
 import class BatteryMonitorBL.TabsContainerView
+import class BatteryMonitorBL.BatteryStatusView
 
 // Удаляем импорт BatteryInfoView
 
@@ -87,6 +88,9 @@ class HomeViewController: UIViewController {
     
     // Свойство для компонента BluetoothConnectionView
     private var bluetoothConnectionView: UIView!
+    
+    // Свойство для компонента BatteryStatusView
+    private var batteryStatusView: BatteryStatusView!
     
     // Свойства для табов
     private var tabsContainer: UIView!
@@ -212,6 +216,7 @@ class HomeViewController: UIViewController {
         // 2. Скроллируемый контейнер (scrollView) с вертикальным стеком (contentStackView), содержащим:
         //    - Плашка Bluetooth для подключения устройства
         //    - Визуализация уровня заряда батареи
+        //    - Индикатор статуса батареи
         //    - Контейнер с параметрами батареи (напряжение, ток, температура)
         //    - Контейнер с табами (Summary, Cell Voltage, Temperature)
         //    - Контейнер с временем последнего обновления
@@ -259,15 +264,19 @@ class HomeViewController: UIViewController {
         let batteryContainer = UIView()
         batteryContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        // 3. Контейнер для параметров батареи - отображает напряжение, ток и температуру
+        // 3. Контейнер для индикатора статуса батареи
+        let batteryStatusContainer = UIView()
+        batteryStatusContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 4. Контейнер для параметров батареи - отображает напряжение, ток и температуру
         let componentsContainer = UIView()
         componentsContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        // 4. Контейнер для табов (Summary, Cell Voltage, Temperature)
+        // 5. Контейнер для табов (Summary, Cell Voltage, Temperature)
         let tabsContainer = UIView()
         tabsContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        // 5. Контейнер для времени последнего обновления данных
+        // 6. Контейнер для времени последнего обновления данных
         let timerContainer = UIView()
         timerContainer.translatesAutoresizingMaskIntoConstraints = false
         
@@ -277,9 +286,10 @@ class HomeViewController: UIViewController {
         // Добавляем контейнеры в стек
         contentStackView.addArrangedSubview(bluetoothConnectionContainer) // 1. Плашка для подключения Bluetooth
         contentStackView.addArrangedSubview(batteryContainer)            // 2. Визуализация уровня заряда батареи
-        contentStackView.addArrangedSubview(componentsContainer)         // 3. Контейнер с параметрами батареи (напряжение, ток, температура)
-        contentStackView.addArrangedSubview(tabsContainer)               // 4. Контейнер с табами
-        contentStackView.addArrangedSubview(timerContainer)              // 5. Контейнер с временем последнего обновления
+        contentStackView.addArrangedSubview(batteryStatusContainer)      // 3. Индикатор статуса батареи
+        contentStackView.addArrangedSubview(componentsContainer)         // 4. Контейнер с параметрами батареи (напряжение, ток, температура)
+        contentStackView.addArrangedSubview(tabsContainer)               // 5. Контейнер с табами
+        contentStackView.addArrangedSubview(timerContainer)              // 6. Контейнер с временем последнего обновления
         
         // Добавляем отступы между контейнерами
         // contentStackView.setCustomSpacing(-1, after: bluetoothConnectionContainer) // Удаляем отрицательный отступ
@@ -334,6 +344,12 @@ class HomeViewController: UIViewController {
         batteryProgressView = BatteryProgressView()
         batteryProgressView.translatesAutoresizingMaskIntoConstraints = false
         batteryContainer.addSubview(batteryProgressView)
+        
+        // Создаем компонент BatteryStatusView
+        batteryStatusView = BatteryStatusView()
+        batteryStatusView.translatesAutoresizingMaskIntoConstraints = false
+        batteryStatusContainer.addSubview(batteryStatusView)
+        
         // Создаем горизонтальный стек для компонентов
         let componentsStackView = UIStackView()
         componentsStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -395,6 +411,16 @@ class HomeViewController: UIViewController {
             // Высота определяется содержимым
         }
         
+        // Настраиваем ограничения для batteryStatusView
+        batteryStatusView.snp.makeConstraints { make in
+            make.edges.equalToSuperview() // Просто заполняем весь контейнер
+        }
+        
+        // Настраиваем ограничения для batteryStatusContainer - адаптируется к размеру компонента
+        batteryStatusContainer.snp.makeConstraints { make in
+            // Высота определяется содержимым
+        }
+        
         // Настраиваем ограничения для componentsContainer
         componentsContainer.snp.makeConstraints { make in
             make.height.equalTo(80) // Задаем явную высоту
@@ -453,6 +479,9 @@ class HomeViewController: UIViewController {
             batteryProgressView.level = battery
             batteryProgressView.updateChargingStatus(isCharging: data.status == .charging)
             
+            /// Статус батареи
+            batteryStatusView.updateStatusAnimated(data.status)
+            
             /// Информация о параметрах
             batteryParametersView.updateVoltage("\(data.voltage)V")
             batteryParametersView.updateCurrent("\(data.current)A")
@@ -499,6 +528,9 @@ class HomeViewController: UIViewController {
             /// Уровень заряда (показываем 0%)
             batteryProgressView.level = 0
             batteryProgressView.updateChargingStatus(isCharging: false)
+            
+            /// Статус батареи (показываем Standby)
+            batteryStatusView.updateStatus(.standby)
             
             /// Информация о параметрах
             batteryParametersView.updateVoltage("-- V")

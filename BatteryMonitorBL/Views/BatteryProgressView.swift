@@ -139,7 +139,7 @@ class BatteryProgressView: UIView {
         // Контейнер для процента (в центре)
         percentLabelContainer.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.bottom.equalToSuperview().offset(-40)
+            make.bottom.equalToSuperview().offset(0)
         }
         
         // Метка процента (внутри своего контейнера)
