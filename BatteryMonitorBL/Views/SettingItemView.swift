@@ -65,6 +65,7 @@ class SettingItemView: UIView {
         $0.setImage(R.image.settingsDown(), for: .normal)
     }
     
+    
     func setupUI() {
         // Добавляем полупрозрачный фон
         backgroundColor = UIColor.white.withAlphaComponent(0.7)
@@ -115,6 +116,7 @@ class SettingItemView: UIView {
             make.centerY.equalToSuperview()
             make.trailing.equalTo(optionsButton.snp.leading).offset(-18)
         }
+        
     }
     
     fileprivate func expandOptionsMenu() {
@@ -176,4 +178,5 @@ class SettingItemView: UIView {
     fileprivate func update(label: String) {
         self.selectedButton.setTitle(label, for: .normal)
     }
+    
 }
