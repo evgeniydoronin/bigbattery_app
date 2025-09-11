@@ -25,6 +25,9 @@ class SettingsViewController: UIViewController {
     // Кнопка Save для подтверждения изменений настроек
     private var saveButton: UIButton?
     
+    // Кнопка Refresh Connection для обновления подключения
+    private var refreshConnectionButton: UIButton?
+    
     // Флаг для отслеживания несохраненных изменений
     private var hasUnsavedChanges: Bool = false {
         didSet {
@@ -137,11 +140,17 @@ class SettingsViewController: UIViewController {
         // Создаем отдельные индикаторы статуса (без constraints - они будут в контейнерах)
         setupStatusIndicatorsForStackView()
         
+        // Добавляем кнопку Refresh Connection (без constraints - будет в StackView)
+        setupRefreshConnectionButtonForStackView()
+        
         // Добавляем кнопку Save (без constraints - будет в StackView)
         setupSaveButtonForStackView()
         
         // Добавляем информационный баннер (без constraints - будет в StackView)
         setupInformationBannerForStackView()
+        
+        // Настраиваем автоматический refresh при восстановлении связи
+        setupAutoRefresh()
         
         // Создаем и настраиваем основной UIStackView
         setupMainStackView()
@@ -430,6 +439,41 @@ class SettingsViewController: UIViewController {
         }.disposed(by: self.disposeBag)
     }
     
+    /// Возвращает Observable версию getAllSettings для использования в refresh логике
+    private func getAllSettingsObservable() -> Single<Void> {
+        return Single.create { [weak self] observer in
+            // Загружаем все настройки последовательно
+            self?.getModuleId().subscribe { [weak self] idData in
+                self?.moduleIdData = idData
+                self?.moduleIdSettingItemView?.label = idData.readableId()
+                self?.toggleRS485AndCAN(idData.otherProtocolsEnabled())
+                
+                self?.getRS485().subscribe(onSuccess: { [weak self] rs485 in
+                    self?.rs485Data = rs485
+                    self?.rs485ProtocolView?.options = rs485.readableProtocols()
+                    self?.rs485ProtocolView?.label = rs485.readableProtocol()
+                    
+                    self?.getCAN().subscribe(onSuccess: { can in
+                        self?.canData = can
+                        self?.canProtocolView?.options = can.readableProtocols()
+                        self?.canProtocolView?.label = can.readableProtocol()
+                        
+                        // Все настройки загружены успешно
+                        observer(.success(()))
+                    }, onError: { error in
+                        observer(.failure(error))
+                    })
+                }, onError: { error in
+                    observer(.failure(error))
+                })
+            } onError: { error in
+                observer(.failure(error))
+            }.disposed(by: self?.disposeBag ?? DisposeBag())
+            
+            return Disposables.create()
+        }
+    }
+    
     func setModuleId(at index: Int) {
         Alert.show("Setting, please wait patiently", timeout: 3)
         // module id 从 1 开始的
@@ -521,6 +565,113 @@ class SettingsViewController: UIViewController {
     func getCAN() -> Maybe<Zetara.Data.CANControlData> {
         print("get control data: can")
         return ZetaraManager.shared.getCAN().timeout(.seconds(3), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
+    }
+    
+    // MARK: - Refresh Connection Methods
+    
+    /// Обработчик нажатия на кнопку Refresh Connection - выполняет двухэтапную логику переподключения
+    @objc private func refreshConnectionTapped() {
+        print("Refresh Connection button tapped")
+        
+        // Показываем индикатор загрузки
+        Alert.show("Refreshing connection...", timeout: 10)
+        
+        // Этап 1: Мягкий refresh - просто перезагрузка данных
+        getAllSettingsObservable()
+            .subscribe(
+                onSuccess: { [weak self] in
+                    Alert.hide()
+                    Alert.show("Connection refreshed successfully", timeout: 2)
+                    // Сбрасываем флаг несохраненных изменений
+                    self?.hasUnsavedChanges = false
+                    // Скрываем все индикаторы статуса
+                    self?.hideAllStatusIndicators()
+                },
+                onFailure: { [weak self] error in
+                    print("Soft refresh failed, attempting full reconnect: \(error)")
+                    // Если мягкий refresh не помог, переходим к жесткому
+                    self?.performFullReconnect()
+                }
+            ).disposed(by: disposeBag)
+    }
+    
+    /// Выполняет полное переподключение к устройству (жесткий refresh)
+    private func performFullReconnect() {
+        print("Performing full reconnect")
+        Alert.show("Attempting full reconnection...", timeout: 15)
+        
+        // Получаем текущее подключенное устройство
+        guard let currentPeripheral = try? ZetaraManager.shared.connectedPeripheralSubject.value() else {
+            Alert.hide()
+            Alert.show("No device connected", timeout: 3)
+            return
+        }
+        
+        // Отключаемся от текущего устройства
+        ZetaraManager.shared.disconnect(currentPeripheral)
+        
+        // Ждем отключения и пытаемся переподключиться
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            ZetaraManager.shared.connect(currentPeripheral)
+                .subscribe(
+                    onNext: { [weak self] _ in
+                        print("Full reconnection successful, loading settings")
+                        // После успешного переподключения загружаем настройки
+                        self?.getAllSettingsObservable()
+                            .subscribe(
+                                onSuccess: { [weak self] in
+                                    Alert.hide()
+                                    Alert.show("Full reconnection successful", timeout: 2)
+                                    self?.hasUnsavedChanges = false
+                                    self?.hideAllStatusIndicators()
+                                },
+                                onFailure: { _ in
+                                    Alert.hide()
+                                    Alert.show("Reconnection failed", timeout: 3)
+                                }
+                            ).disposed(by: self?.disposeBag ?? DisposeBag())
+                    },
+                    onError: { _ in
+                        Alert.hide()
+                        Alert.show("Reconnection failed", timeout: 3)
+                    }
+                ).disposed(by: self?.disposeBag ?? DisposeBag())
+        }
+    }
+    
+    /// Настраивает автоматический refresh при восстановлении связи
+    private func setupAutoRefresh() {
+        print("Setting up auto-refresh monitoring")
+        
+        // Мониторим переподключения через существующие Observable
+        ZetaraManager.shared.connectedPeripheralSubject
+            .distinctUntilChanged { $0?.identifier == $1?.identifier }
+            .skip(1) // Пропускаем первое значение
+            .filter { $0 != nil } // Только успешные подключения
+            .delay(.seconds(1), scheduler: MainScheduler.instance) // Небольшая задержка
+            .subscribe { [weak self] _ in
+                self?.performAutoRefresh()
+            }.disposed(by: disposeBag)
+    }
+    
+    /// Выполняет автоматическое обновление данных при восстановлении связи
+    private func performAutoRefresh() {
+        print("Auto-refresh triggered after reconnection")
+        
+        // Автоматически загружаем настройки без показа алертов
+        getAllSettingsObservable()
+            .subscribe(
+                onSuccess: { [weak self] in
+                    print("Auto-refresh completed successfully")
+                    // Сбрасываем состояние без уведомлений пользователя
+                    self?.hasUnsavedChanges = false
+                    self?.hideAllStatusIndicators()
+                },
+                onFailure: { error in
+                    print("Auto-refresh failed: \(error)")
+                    // Не показываем ошибки пользователю при автоматическом обновлении
+                }
+            ).disposed(by: disposeBag)
     }
     
     // MARK: - Тестовые кнопки для демонстрации индикаторов
@@ -640,47 +791,52 @@ class SettingsViewController: UIViewController {
         // Очищаем существующие элементы
         mainStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
-        // 1. Version field (без контейнера, так как нет индикатора)
-        if let versionView = versionItemView {
-            mainStackView.addArrangedSubview(versionView)
-        }
-        
-        // 2. Module ID field + индикатор
+        // 1. Module ID field + индикатор
         if let moduleIdView = moduleIdSettingItemView, let moduleIdLabel = moduleIdStatusLabel {
             let container = createSettingContainer(settingView: moduleIdView, statusLabel: moduleIdLabel)
             moduleIdContainer = container
             mainStackView.addArrangedSubview(container)
         }
         
-        // 3. CAN Protocol field + индикатор
+        // 2. CAN Protocol field + индикатор
         if let canView = canProtocolView, let canLabel = canProtocolStatusLabel {
             let container = createSettingContainer(settingView: canView, statusLabel: canLabel)
             canProtocolContainer = container
             mainStackView.addArrangedSubview(container)
         }
         
-        // 4. RS485 Protocol field + индикатор
+        // 3. RS485 Protocol field + индикатор
         if let rs485View = rs485ProtocolView, let rs485Label = rs485ProtocolStatusLabel {
             let container = createSettingContainer(settingView: rs485View, statusLabel: rs485Label)
             rs485ProtocolContainer = container
             mainStackView.addArrangedSubview(container)
         }
         
-        // 5. Spacer для отталкивания нижних элементов
+        // 4. Version field (последнее поле настроек, без контейнера, так как нет индикатора)
+        if let versionView = versionItemView {
+            mainStackView.addArrangedSubview(versionView)
+        }
+        
+        // 5. Refresh Connection button (после Version field)
+        if let refreshButton = refreshConnectionButton {
+            mainStackView.addArrangedSubview(refreshButton)
+        }
+        
+        // 6. Spacer для отталкивания нижних элементов
         let spacer = UIView()
         spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         spacer.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
         mainStackView.addArrangedSubview(spacer)
         
-        // 6. Тестовые кнопки (временно)
+        // 7. Тестовые кнопки (временно)
         // Будут добавлены отдельно в setupTestButtons()
         
-        // 7. Save кнопка
+        // 8. Save кнопка
         if let saveBtn = saveButton {
             mainStackView.addArrangedSubview(saveBtn)
         }
         
-        // 8. Информационный баннер
+        // 9. Информационный баннер
         if let bannerView = informationBannerView {
             mainStackView.addArrangedSubview(bannerView)
         }
@@ -800,6 +956,38 @@ class SettingsViewController: UIViewController {
         
         // Сохраняем ссылку на баннер
         self.informationBannerView = bannerContainer
+    }
+    
+    /// Создает кнопку Refresh Connection для использования в StackView (без constraints)
+    private func setupRefreshConnectionButtonForStackView() {
+        // Создаем кнопку Refresh Connection в стиле Secondary
+        let button = UIButton(type: .system)
+        button.setTitle("🔄 Refresh Connection", for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        button.backgroundColor = UIColor.white
+        button.setTitleColor(.systemBlue, for: .normal)
+        button.layer.cornerRadius = 12
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor.systemBlue.cgColor
+        button.clipsToBounds = true
+        
+        // Добавляем тень для эффекта глубины
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOffset = CGSize(width: 0, height: 1)
+        button.layer.shadowOpacity = 0.1
+        button.layer.shadowRadius = 2
+        button.layer.masksToBounds = false
+        
+        // Добавляем действие для кнопки
+        button.addTarget(self, action: #selector(refreshConnectionTapped), for: .touchUpInside)
+        
+        // Устанавливаем фиксированную высоту для StackView
+        button.snp.makeConstraints { make in
+            make.height.equalTo(44)
+        }
+        
+        // Сохраняем ссылку на кнопку
+        self.refreshConnectionButton = button
     }
     
     /// Создает тестовые кнопки для использования в StackView
