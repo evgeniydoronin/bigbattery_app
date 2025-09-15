@@ -524,13 +524,13 @@ class HomeViewController: UIViewController {
             }
         } else {
             // Если нет реального подключения, отображаем прочерки
-            
+
             /// Уровень заряда (показываем 0%)
             batteryProgressView.level = 0
             batteryProgressView.updateChargingStatus(isCharging: false)
-            
-            /// Статус батареи (показываем Standby)
-            batteryStatusView.updateStatus(.standby)
+
+            /// Статус батареи (показываем Not Connected)
+            batteryStatusView.updateStatus(.notConnected)
             
             /// Информация о параметрах
             batteryParametersView.updateVoltage("-- V")

@@ -93,6 +93,9 @@ class BatteryStatusView: UIView {
         case .standby:
             backgroundColor = UIColor.systemGray.withAlphaComponent(0.2)
             textColor = UIColor.systemGray
+        case .notConnected:
+            backgroundColor = UIColor.systemRed.withAlphaComponent(0.2)
+            textColor = UIColor.systemRed
         }
         
         containerView.backgroundColor = backgroundColor
