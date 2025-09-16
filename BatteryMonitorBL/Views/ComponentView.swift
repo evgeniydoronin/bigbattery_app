@@ -26,10 +26,9 @@ class ComponentView: UIView {
     
     var titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .bold)
+        label.font = .systemFont(ofSize: 10, weight: .medium)
         label.textColor = .black //R.color.homeComponentTitle()
         label.autoresizingMask = [.flexibleWidth, ]
-        label.adjustsFontSizeToFitWidth = true
         label.textAlignment = .center
         return label
     }()
@@ -133,7 +132,7 @@ class ComponentView: UIView {
         }
         
         // Настраиваем заголовок (нижняя строка, справа от иконки)
-        titleLabel.font = .systemFont(ofSize: 16, weight: .medium)
+        titleLabel.font = .systemFont(ofSize: 10, weight: .medium)
         titleLabel.textColor = .darkGray
         titleLabel.textAlignment = .left
         titleLabel.snp.makeConstraints { make in

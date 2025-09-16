@@ -23,6 +23,7 @@ import class BatteryMonitorBL.TimerView
 import class BatteryMonitorBL.BatteryProgressView
 import class BatteryMonitorBL.TabsContainerView
 import class BatteryMonitorBL.BatteryStatusView
+import class BatteryMonitorBL.ProtocolParametersView
 
 // Удаляем импорт BatteryInfoView
 
@@ -91,6 +92,9 @@ class HomeViewController: UIViewController {
     
     // Свойство для компонента BatteryStatusView
     private var batteryStatusView: BatteryStatusView!
+
+    // Свойство для компонента ProtocolParametersView
+    private var protocolParametersView: ProtocolParametersView!
     
     // Свойства для табов
     private var tabsContainer: UIView!
@@ -99,6 +103,11 @@ class HomeViewController: UIViewController {
     private var summaryView: SummaryTabView?
     private var cellVoltageView: CellVoltageTabView?
     private var temperatureView: TemperatureTabView?
+
+    // Данные протоколов для отображения
+    private var moduleIdData: Zetara.Data.ModuleIdControlData?
+    private var canData: Zetara.Data.CANControlData?
+    private var rs485Data: Zetara.Data.RS485ControlData?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -168,6 +177,14 @@ class HomeViewController: UIViewController {
             .observe(on: MainScheduler.instance) // Гарантирует, что все последующие операции будут на главном потоке
             .subscribe { [weak self] (peripheral: ZetaraManager.ConnectedPeripheral?) in
                 self?.updateTitle(peripheral)
+
+                // При подключении к устройству загружаем данные протоколов
+                if peripheral != nil {
+                    self?.loadProtocolData()
+                } else {
+                    // При отключении сбрасываем данные протоколов
+                    self?.clearProtocolData()
+                }
             }.disposed(by: disposeBag)
         
         
@@ -180,6 +197,15 @@ class HomeViewController: UIViewController {
         // Показываем навигационную панель перед переходом
         self.navigationController?.setNavigationBarHidden(false, animated: true)
         performSegue(withIdentifier: R.segue.homeViewController.pushConnectivityPage, sender: navigationController)
+    }
+
+    func navigateToSettings() {
+        print("🟡 [HomeViewController] navigateToSettings() called")
+
+        // Переключаемся на таб Settings (индекс 1)
+        print("🟡 [HomeViewController] Switching to Settings tab (index 1)")
+        self.tabBarController?.selectedIndex = 1
+        print("🟡 [HomeViewController] Tab switch completed")
     }
     
     /// Обновление имени устройства
@@ -271,6 +297,10 @@ class HomeViewController: UIViewController {
         // 4. Контейнер для параметров батареи - отображает напряжение, ток и температуру
         let componentsContainer = UIView()
         componentsContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        // 5. Контейнер для параметров протоколов - отображает Module ID, CAN и RS485
+        let protocolContainer = UIView()
+        protocolContainer.translatesAutoresizingMaskIntoConstraints = false
         
         // 5. Контейнер для табов (Summary, Cell Voltage, Temperature)
         let tabsContainer = UIView()
@@ -288,8 +318,9 @@ class HomeViewController: UIViewController {
         contentStackView.addArrangedSubview(batteryContainer)            // 2. Визуализация уровня заряда батареи
         contentStackView.addArrangedSubview(batteryStatusContainer)      // 3. Индикатор статуса батареи
         contentStackView.addArrangedSubview(componentsContainer)         // 4. Контейнер с параметрами батареи (напряжение, ток, температура)
-        contentStackView.addArrangedSubview(tabsContainer)               // 5. Контейнер с табами
-        contentStackView.addArrangedSubview(timerContainer)              // 6. Контейнер с временем последнего обновления
+        contentStackView.addArrangedSubview(protocolContainer)           // 5. Контейнер с параметрами протоколов (Module ID, CAN, RS485)
+        contentStackView.addArrangedSubview(tabsContainer)               // 6. Контейнер с табами
+        contentStackView.addArrangedSubview(timerContainer)              // 7. Контейнер с временем последнего обновления
         
         // Добавляем отступы между контейнерами
         // contentStackView.setCustomSpacing(-1, after: bluetoothConnectionContainer) // Удаляем отрицательный отступ
@@ -349,6 +380,25 @@ class HomeViewController: UIViewController {
         batteryStatusView = BatteryStatusView()
         batteryStatusView.translatesAutoresizingMaskIntoConstraints = false
         batteryStatusContainer.addSubview(batteryStatusView)
+
+        // Создаем компонент ProtocolParametersView
+        protocolParametersView = ProtocolParametersView()
+        protocolParametersView.translatesAutoresizingMaskIntoConstraints = false
+        protocolContainer.addSubview(protocolParametersView)
+
+        // Настраиваем обработчики нажатий для параметров протоколов
+        protocolParametersView.onModuleIdTap = { [weak self] in
+            print("🟠 [HomeViewController] Module ID callback triggered")
+            self?.navigateToSettings()
+        }
+        protocolParametersView.onCanProtocolTap = { [weak self] in
+            print("🟠 [HomeViewController] CAN Protocol callback triggered")
+            self?.navigateToSettings()
+        }
+        protocolParametersView.onRS485ProtocolTap = { [weak self] in
+            print("🟠 [HomeViewController] RS485 Protocol callback triggered")
+            self?.navigateToSettings()
+        }
         
         // Создаем горизонтальный стек для компонентов
         let componentsStackView = UIStackView()
@@ -425,6 +475,11 @@ class HomeViewController: UIViewController {
         componentsContainer.snp.makeConstraints { make in
             make.height.equalTo(80) // Задаем явную высоту
         }
+
+        // Настраиваем ограничения для protocolContainer
+        protocolContainer.snp.makeConstraints { make in
+            make.height.equalTo(80) // Задаем явную высоту
+        }
         
         // Настраиваем ограничения для tabsContainer (только высота, без отступов)
         tabsContainer.snp.makeConstraints { make in
@@ -458,6 +513,11 @@ class HomeViewController: UIViewController {
         
         // Настраиваем ограничения для batteryParametersView
         batteryParametersView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+
+        // Настраиваем ограничения для protocolParametersView
+        protocolParametersView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
         
@@ -581,8 +641,79 @@ class HomeViewController: UIViewController {
         d.dateFormat = "yyyy/MM/dd HH:mm:ss"
         return d
     }()
-    
+
     // Методы для работы с табами перенесены в TabsContainerView
+
+    // MARK: - Protocol Data Methods
+
+    /// Загрузка данных протоколов при подключении к устройству
+    private func loadProtocolData() {
+        // Загружаем Module ID
+        ZetaraManager.shared.getModuleId()
+            .subscribeOn(MainScheduler.instance)
+            .observe(on: MainScheduler.instance)
+            .subscribe { [weak self] idData in
+                self?.moduleIdData = idData
+                self?.updateProtocolUI()
+            } onError: { error in
+                print("Ошибка загрузки Module ID: \(error)")
+            }.disposed(by: disposeBag)
+
+        // Загружаем CAN данные
+        ZetaraManager.shared.getCAN()
+            .subscribeOn(MainScheduler.instance)
+            .observe(on: MainScheduler.instance)
+            .subscribe { [weak self] canData in
+                self?.canData = canData
+                self?.updateProtocolUI()
+            } onError: { error in
+                print("Ошибка загрузки CAN данных: \(error)")
+            }.disposed(by: disposeBag)
+
+        // Загружаем RS485 данные
+        ZetaraManager.shared.getRS485()
+            .subscribeOn(MainScheduler.instance)
+            .observe(on: MainScheduler.instance)
+            .subscribe { [weak self] rs485Data in
+                self?.rs485Data = rs485Data
+                self?.updateProtocolUI()
+            } onError: { error in
+                print("Ошибка загрузки RS485 данных: \(error)")
+            }.disposed(by: disposeBag)
+    }
+
+    /// Сбрасывает данные протоколов при отключении от устройства
+    private func clearProtocolData() {
+        moduleIdData = nil
+        canData = nil
+        rs485Data = nil
+        updateProtocolUI()
+    }
+
+    /// Обновляет UI блоков протоколов в зависимости от состояния подключения
+    private func updateProtocolUI() {
+        let isDeviceConnected = ZetaraManager.shared.connectedPeripheral() != nil
+
+        if isDeviceConnected {
+            // Если устройство подключено, показываем данные
+            let moduleIdText = moduleIdData?.readableId() ?? "--"
+            let canText = canData?.readableProtocol() ?? "--"
+            let rs485Text = rs485Data?.readableProtocol() ?? "--"
+
+            protocolParametersView.updateAllParameters(
+                moduleId: moduleIdText,
+                canProtocol: canText,
+                rs485Protocol: rs485Text
+            )
+        } else {
+            // Если устройство не подключено, показываем прочерки
+            protocolParametersView.updateAllParameters(
+                moduleId: "--",
+                canProtocol: "--",
+                rs485Protocol: "--"
+            )
+        }
+    }
 }
 
 
