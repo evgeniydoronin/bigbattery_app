@@ -570,6 +570,11 @@ class SettingsViewController: UIViewController {
     }
     
     func setModuleId(at index: Int) {
+        // Предупреждение для инвертора
+        if index != 0 {  // ID1 имеет индекс 0
+            Alert.show("⚠️ Warning: For inverter communication, Module ID must be set to ID1", timeout: 5)
+        }
+
         Alert.show("Setting, please wait patiently", timeout: 3)
         // module id 从 1 开始的
         ZetaraManager.shared.setModuleId(index + 1)

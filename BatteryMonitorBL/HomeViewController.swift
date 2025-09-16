@@ -55,9 +55,14 @@ class HomeViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        
+
         // Скрываем навигационный бар при возвращении на главный экран
         self.navigationController?.setNavigationBarHidden(true, animated: animated)
+
+        // Загружаем данные протоколов если устройство подключено
+        if ZetaraManager.shared.connectedPeripheral() != nil {
+            loadProtocolData()
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -663,23 +668,23 @@ class HomeViewController: UIViewController {
         ZetaraManager.shared.getCAN()
             .subscribeOn(MainScheduler.instance)
             .observe(on: MainScheduler.instance)
-            .subscribe { [weak self] canData in
+            .subscribe(onSuccess: { [weak self] canData in
                 self?.canData = canData
                 self?.updateProtocolUI()
-            } onError: { error in
+            }, onError: { error in
                 print("Ошибка загрузки CAN данных: \(error)")
-            }.disposed(by: disposeBag)
+            }).disposed(by: disposeBag)
 
         // Загружаем RS485 данные
         ZetaraManager.shared.getRS485()
             .subscribeOn(MainScheduler.instance)
             .observe(on: MainScheduler.instance)
-            .subscribe { [weak self] rs485Data in
+            .subscribe(onSuccess: { [weak self] rs485Data in
                 self?.rs485Data = rs485Data
                 self?.updateProtocolUI()
-            } onError: { error in
+            }, onError: { error in
                 print("Ошибка загрузки RS485 данных: \(error)")
-            }.disposed(by: disposeBag)
+            }).disposed(by: disposeBag)
     }
 
     /// Сбрасывает данные протоколов при отключении от устройства
