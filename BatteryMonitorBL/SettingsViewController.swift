@@ -27,6 +27,13 @@ class SettingsViewController: UIViewController {
     
     // Кнопка Refresh Connection для обновления подключения
     private var refreshConnectionButton: UIButton?
+
+    // Баннер статуса подключения батареи
+    private var connectionStatusBanner: UIView?
+
+    // Заголовки секций
+    private var protocolSettingsLabel: UILabel?
+    private var applicationInfoLabel: UILabel?
     
     // Флаг для отслеживания несохраненных изменений
     private var hasUnsavedChanges: Bool = false {
@@ -54,7 +61,10 @@ class SettingsViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
+        // Скрываем навигационный бар, так как мы добавляем свою шапку
+        navigationController?.setNavigationBarHidden(true, animated: false)
+
         // Добавляем фоновое изображение
         let backgroundImageView = UIImageView(image: R.image.background())
         backgroundImageView.contentMode = .scaleAspectFill
@@ -62,8 +72,15 @@ class SettingsViewController: UIViewController {
         backgroundImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(backgroundImageView)
         view.sendSubviewToBack(backgroundImageView)
+
+        // Добавляем шапку с логотипом
+        setupLogoHeader()
         
         moduleIdSettingItemView?.title = "Module ID"
+        moduleIdSettingItemView?.subtitle = "BMS module identifier"
+        moduleIdSettingItemView?.iconColor = UIColor(hex: "#165EA0")
+        moduleIdSettingItemView?.valueColor = UIColor(hex: "#165EA0")
+        moduleIdSettingItemView?.label = "" // Покажет "--"
         moduleIdSettingItemView?.options = Zetara.Data.ModuleIdControlData.readableIds()
         moduleIdSettingItemView?.selectedOptionIndex
             .skip(1)
@@ -73,11 +90,18 @@ class SettingsViewController: UIViewController {
                 self?.setModuleId(at:index)
         }.disposed(by: disposeBag)
         
-        versionItemView?.title = "Version"
+        versionItemView?.title = "App Version"
+        versionItemView?.subtitle = "BigBattery Husky 2"
+        versionItemView?.icon = R.image.homeBluetooth()
+        versionItemView?.iconColor = .systemBlue
         versionItemView?.label = version()
         versionItemView?.options = [] // Явно устанавливаем пустой массив опций, чтобы скрыть стрелочку
         
         canProtocolView?.title = "CAN Protocol"
+        canProtocolView?.subtitle = "Controller area network protocol"
+        canProtocolView?.iconColor = UIColor(hex: "#12C04C")
+        canProtocolView?.valueColor = UIColor(hex: "#12C04C")
+        canProtocolView?.label = "" // Покажет "--"
         canProtocolView?.options = []
         canProtocolView?.selectedOptionIndex
             .skip(1)
@@ -88,6 +112,10 @@ class SettingsViewController: UIViewController {
             }.disposed(by: disposeBag)
         
         rs485ProtocolView?.title = "RS485 Protocol"
+        rs485ProtocolView?.subtitle = "Serial communication protocol"
+        rs485ProtocolView?.iconColor = UIColor(hex: "#ED1000")
+        rs485ProtocolView?.valueColor = UIColor(hex: "#ED1000")
+        rs485ProtocolView?.label = "" // Покажет "--"
         rs485ProtocolView?.options = []
         rs485ProtocolView?.selectedOptionIndex
             .skip(1)
@@ -122,30 +150,52 @@ class SettingsViewController: UIViewController {
                 // Теперь этот блок гарантированно выполняется на главном потоке
                 self?.canProtocolView?.options = []
                 self?.rs485ProtocolView?.options = []
-                self?.canProtocolView?.label = nil
-                self?.rs485ProtocolView?.label = nil
+                self?.canProtocolView?.label = ""
+                self?.rs485ProtocolView?.label = ""
                 self?.canData = nil
                 self?.rs485Data = nil
-                self?.moduleIdSettingItemView?.label = nil
+                self?.moduleIdSettingItemView?.label = ""
             }.disposed(by: disposeBag)
-        
+
+        // Подписка на изменения состояния подключения для обновления баннера статуса
+        ZetaraManager.shared.connectedPeripheralSubject
+            .subscribeOn(MainScheduler.instance)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] peripheral in
+                let isConnected = peripheral != nil
+                self?.updateConnectionStatus(isConnected: isConnected)
+                // Включаем/выключаем Module ID в зависимости от подключения
+                self?.toggleModuleId(isConnected)
+                // CAN и RS485 остаются выключенными до загрузки настроек
+                if !isConnected {
+                    self?.toggleRS485AndCAN(false)
+                }
+            }).disposed(by: disposeBag)
+
 //        self.moduleIdSettingItemView.selectedOptionIndex
 //            .map { $0 == 0 }
 //            .bind(to: self.canProtocolView.optionsButton.rx.isEnabled,
 //                  self.rs485ProtocolView.optionsButton.rx.isEnabled)
 //            .disposed(by: disposeBag)
-        
+
+        self.toggleModuleId(false)
         self.toggleRS485AndCAN(false)
         
         // Создаем отдельные индикаторы статуса (без constraints - они будут в контейнерах)
         setupStatusIndicatorsForStackView()
-        
+
+        // Добавляем баннер статуса подключения (без constraints - будет в StackView)
+        setupConnectionStatusBannerForStackView()
+
+        // Добавляем заголовки секций
+        setupSectionHeaders()
+
         // Добавляем кнопку Refresh Connection (без constraints - будет в StackView)
-        setupRefreshConnectionButtonForStackView()
-        
+        // setupRefreshConnectionButtonForStackView()
+
         // Добавляем кнопку Save (без constraints - будет в StackView)
         setupSaveButtonForStackView()
-        
+
         // Добавляем информационный баннер (без constraints - будет в StackView)
         setupInformationBannerForStackView()
         
@@ -162,6 +212,44 @@ class SettingsViewController: UIViewController {
         // setupTestButtonsForStackView()
     }
     
+    // MARK: - Logo Header
+
+    /// Создает и настраивает шапку с логотипом BigBattery (точно как в HomeViewController)
+    private func setupLogoHeader() {
+        // Создаем шапку точно как в HomeViewController
+        let headerView = UIView()
+        headerView.backgroundColor = .white
+        headerView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Создаем логотип точно как в HomeViewController
+        let headerLogoImageView = UIImageView(image: R.image.headerLogo())
+        headerLogoImageView.contentMode = .scaleAspectFit
+        headerLogoImageView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Добавляем шапку на экран
+        view.addSubview(headerView)
+
+        // Добавляем логотип в шапку
+        headerView.addSubview(headerLogoImageView)
+
+        // Настраиваем ограничения для шапки точно как в HomeViewController
+        NSLayoutConstraint.activate([
+            headerView.topAnchor.constraint(equalTo: view.topAnchor),
+            headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            headerView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 60) // 60 пикселей ниже safeArea
+        ])
+
+        // Настраиваем ограничения для логотипа точно как в HomeViewController
+        NSLayoutConstraint.activate([
+            headerLogoImageView.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
+            // Центрируем логотип по вертикали в безопасной зоне
+            headerLogoImageView.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 30),
+            headerLogoImageView.widthAnchor.constraint(equalToConstant: 200), // Ширина логотипа
+            headerLogoImageView.heightAnchor.constraint(equalToConstant: 60) // Высота логотипа
+        ])
+    }
+
     // MARK: - Информационный баннер
     
     /// Создает и настраивает информационный баннер внизу экрана
@@ -234,7 +322,7 @@ class SettingsViewController: UIViewController {
     private func createStatusLabel() -> UILabel {
         let label = UILabel()
         label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .systemOrange
+        label.textColor = UIColor(hex: "#808080")
         label.numberOfLines = 2
         label.textAlignment = .left
         label.isHidden = true // Скрыт по умолчанию
@@ -356,17 +444,17 @@ class SettingsViewController: UIViewController {
     /// Обновляет состояние кнопки Save в зависимости от наличия несохраненных изменений
     private func updateSaveButtonState() {
         guard let button = saveButton else { return }
-        
+
         if hasUnsavedChanges {
             // Активное состояние - синяя кнопка
             button.isEnabled = true
             button.backgroundColor = UIColor.systemBlue
             button.alpha = 1.0
         } else {
-            // Неактивное состояние - серая кнопка
+            // Неактивное состояние - серая кнопка (как у неактивных кнопок протоколов)
             button.isEnabled = false
-            button.backgroundColor = UIColor.systemGray4
-            button.alpha = 0.6
+            button.backgroundColor = UIColor.lightGray.withAlphaComponent(0.3)
+            button.alpha = 1.0
         }
     }
     
@@ -382,6 +470,8 @@ class SettingsViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "Understood", style: .default) { [weak self] _ in
             // После подтверждения сбрасываем флаг несохраненных изменений
             self?.hasUnsavedChanges = false
+            // Скрываем все индикаторы статуса после сохранения
+            self?.hideAllStatusIndicators()
         })
         
         present(alert, animated: true)
@@ -401,9 +491,13 @@ class SettingsViewController: UIViewController {
     
     var disposeBag = DisposeBag()
     
+    func toggleModuleId(_ enabled: Bool) {
+        self.moduleIdSettingItemView?.setOptionsEnabled(enabled)
+    }
+
     func toggleRS485AndCAN(_ enabled: Bool) {
-        self.rs485ProtocolView?.optionsButton.isEnabled = enabled
-        self.canProtocolView?.optionsButton.isEnabled = enabled
+        self.rs485ProtocolView?.setOptionsEnabled(enabled)
+        self.canProtocolView?.setOptionsEnabled(enabled)
     }
     
     func getAllSettings() {
@@ -414,6 +508,7 @@ class SettingsViewController: UIViewController {
             Alert.hide()
             self?.moduleIdData = idData
             self?.moduleIdSettingItemView?.label = idData.readableId()
+            self?.toggleModuleId(true)
             self?.toggleRS485AndCAN(idData.otherProtocolsEnabled())
             self?.getRS485().subscribe(onSuccess: { [weak self] rs485 in
                 Alert.hide()
@@ -754,7 +849,7 @@ class SettingsViewController: UIViewController {
         view.addSubview(mainStackView)
         mainStackView.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview().inset(20)
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(20)
+            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(75) // Отступ под headerView (60px + 15px)
             make.bottom.equalTo(view.safeAreaLayoutGuide.snp.bottom).offset(-20)
         }
     }
@@ -790,7 +885,25 @@ class SettingsViewController: UIViewController {
     private func populateStackView() {
         // Очищаем существующие элементы
         mainStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
+
+        // 0. Connection status banner (самый первый элемент)
+        if let statusBanner = connectionStatusBanner {
+            mainStackView.addArrangedSubview(statusBanner)
+        }
+
+        // 0.5. Заголовок Protocol Settings
+        if let protocolHeader = protocolSettingsLabel {
+            let containerView = UIView()
+            containerView.addSubview(protocolHeader)
+            protocolHeader.snp.makeConstraints { make in
+                make.top.bottom.equalToSuperview()
+                make.leading.equalToSuperview().offset(4)
+                make.trailing.equalToSuperview().offset(-4)
+                make.height.equalTo(30)
+            }
+            mainStackView.addArrangedSubview(containerView)
+        }
+
         // 1. Module ID field + индикатор
         if let moduleIdView = moduleIdSettingItemView, let moduleIdLabel = moduleIdStatusLabel {
             let container = createSettingContainer(settingView: moduleIdView, statusLabel: moduleIdLabel)
@@ -811,16 +924,30 @@ class SettingsViewController: UIViewController {
             rs485ProtocolContainer = container
             mainStackView.addArrangedSubview(container)
         }
-        
+
+        // 3.5. Заголовок Application Information
+        if let appInfoHeader = applicationInfoLabel {
+            let containerView = UIView()
+            containerView.addSubview(appInfoHeader)
+            appInfoHeader.snp.makeConstraints { make in
+                make.top.equalToSuperview().offset(10)
+                make.bottom.equalToSuperview()
+                make.leading.equalToSuperview().offset(4)
+                make.trailing.equalToSuperview().offset(-4)
+                make.height.equalTo(30)
+            }
+            mainStackView.addArrangedSubview(containerView)
+        }
+
         // 4. Version field (последнее поле настроек, без контейнера, так как нет индикатора)
         if let versionView = versionItemView {
             mainStackView.addArrangedSubview(versionView)
         }
         
         // 5. Refresh Connection button (после Version field)
-        if let refreshButton = refreshConnectionButton {
-            mainStackView.addArrangedSubview(refreshButton)
-        }
+        // if let refreshButton = refreshConnectionButton {
+        //     mainStackView.addArrangedSubview(refreshButton)
+        // }
         
         // 6. Spacer для отталкивания нижних элементов
         let spacer = UIView()
@@ -844,9 +971,9 @@ class SettingsViewController: UIViewController {
     
     /// Обновленные методы показа/скрытия индикаторов с поддержкой UIStackView анимаций
     private func showStatusIndicatorWithStackView(label: UILabel, selectedValue: String) {
-        label.text = "Selected: \(selectedValue) – Restart the battery to apply changes"
+        label.text = "Selected: \(selectedValue) - Click 'Save' below, then restart the battery and reconnect to the app to verify changes."
         label.isHidden = false
-        
+
         // Анимированное появление с автоматическим перестроением layout
         label.alpha = 0
         UIView.animate(withDuration: 0.3) {
@@ -925,20 +1052,20 @@ class SettingsViewController: UIViewController {
         bannerContainer.backgroundColor = UIColor.white.withAlphaComponent(0.95)
         bannerContainer.layer.cornerRadius = 12
         bannerContainer.clipsToBounds = true
-        
+
         // Добавляем тень для эффекта глубины
         bannerContainer.layer.shadowColor = UIColor.black.cgColor
         bannerContainer.layer.shadowOffset = CGSize(width: 0, height: -2)
         bannerContainer.layer.shadowOpacity = 0.15
         bannerContainer.layer.shadowRadius = 4
         bannerContainer.layer.masksToBounds = false
-        
+
         // Создаем текстовый лейбл
         let messageLabel = UILabel()
-        messageLabel.text = "Changes will only take effect after\nrestarting the battery"
+        messageLabel.text = "You must restart the battery using the power button after saving, then reconnect to the app to verify changes."
         messageLabel.textAlignment = .center
-        messageLabel.numberOfLines = 2
-        messageLabel.font = .systemFont(ofSize: 16, weight: .medium)
+        messageLabel.numberOfLines = 0
+        messageLabel.font = .systemFont(ofSize: 12, weight: .medium)
         messageLabel.textColor = .black
         
         // Добавляем лейбл в контейнер
@@ -989,7 +1116,103 @@ class SettingsViewController: UIViewController {
         // Сохраняем ссылку на кнопку
         self.refreshConnectionButton = button
     }
-    
+
+    /// Создает баннер статуса подключения для использования в StackView
+    private func setupConnectionStatusBannerForStackView() {
+        // Создаем контейнер для баннера
+        let bannerContainer = UIView()
+        bannerContainer.backgroundColor = UIColor.white
+        bannerContainer.layer.cornerRadius = 12
+        bannerContainer.clipsToBounds = true
+        bannerContainer.layer.borderWidth = 2
+        bannerContainer.layer.borderColor = UIColor.red.cgColor
+
+        // Создаем иконку Bluetooth
+        let bluetoothImageView = UIImageView(image: R.image.homeBluetooth())
+        bluetoothImageView.contentMode = .scaleAspectFit
+        bluetoothImageView.tintColor = .systemBlue
+
+        // Создаем текстовый лейбл
+        let statusLabel = UILabel()
+        statusLabel.text = "Not Connected"
+        statusLabel.textAlignment = .center
+        statusLabel.font = .systemFont(ofSize: 18, weight: .medium)
+        statusLabel.textColor = .black
+        statusLabel.tag = 100 // Тег для идентификации лейбла при обновлении
+
+        // Добавляем элементы в иерархию
+        bannerContainer.addSubview(bluetoothImageView)
+        bannerContainer.addSubview(statusLabel)
+
+        // Настраиваем ограничения
+        bluetoothImageView.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(16)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(32)
+        }
+
+        statusLabel.snp.makeConstraints { make in
+            make.leading.equalTo(bluetoothImageView.snp.trailing).offset(16)
+            make.centerY.equalToSuperview()
+            make.trailing.lessThanOrEqualToSuperview().offset(-16)
+        }
+
+        // Устанавливаем фиксированную высоту для StackView
+        bannerContainer.snp.makeConstraints { make in
+            make.height.equalTo(40)
+        }
+
+        // Сохраняем ссылку на баннер
+        self.connectionStatusBanner = bannerContainer
+
+        // Устанавливаем начальное состояние на основе текущего подключения
+        let peripheral = try? ZetaraManager.shared.connectedPeripheralSubject.value()
+        let isConnected = peripheral != nil
+        updateConnectionStatus(isConnected: isConnected)
+    }
+
+    /// Обновляет внешний вид баннера статуса подключения
+    /// - Parameter isConnected: Статус подключения батареи
+    private func updateConnectionStatus(isConnected: Bool) {
+        guard let banner = connectionStatusBanner,
+              let statusLabel = banner.viewWithTag(100) as? UILabel else { return }
+
+        UIView.animate(withDuration: 0.3) {
+            if isConnected {
+                // Подключено: зеленая рамка, белый фон
+                banner.layer.borderColor = UIColor.systemGreen.cgColor
+                banner.backgroundColor = UIColor.white
+                statusLabel.text = "Connected"
+                statusLabel.textColor = .black
+            } else {
+                // Не подключено: красная рамка, красный полупрозрачный фон
+                banner.layer.borderColor = UIColor.red.cgColor
+                banner.backgroundColor = UIColor.red.withAlphaComponent(0.1)
+                statusLabel.text = "Not Connected"
+                statusLabel.textColor = .black
+            }
+        }
+    }
+
+    /// Создает заголовки секций для использования в StackView
+    private func setupSectionHeaders() {
+        // Заголовок Protocol Settings
+        let protocolLabel = UILabel()
+        protocolLabel.text = "Protocol Settings"
+        protocolLabel.font = .systemFont(ofSize: 24, weight: .bold)
+        protocolLabel.textColor = .black
+        protocolLabel.textAlignment = .left
+        self.protocolSettingsLabel = protocolLabel
+
+        // Заголовок Application Information
+        let appInfoLabel = UILabel()
+        appInfoLabel.text = "Application Information"
+        appInfoLabel.font = .systemFont(ofSize: 24, weight: .bold)
+        appInfoLabel.textColor = .black
+        appInfoLabel.textAlignment = .left
+        self.applicationInfoLabel = appInfoLabel
+    }
+
     /// Создает тестовые кнопки для использования в StackView
     private func setupTestButtonsForStackView() {
         let stackView = UIStackView()

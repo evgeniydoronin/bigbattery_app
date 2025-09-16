@@ -19,7 +19,31 @@ class SettingItemView: UIView {
             titleLabel.text = title
         }
     }
+
+    var icon: UIImage? {
+        didSet {
+            iconImageView.image = icon
+        }
+    }
     
+    var subtitle: String = "" {
+        didSet {
+            subtitleLabel.text = subtitle
+        }
+    }
+
+    var iconColor: UIColor = .systemBlue {
+        didSet {
+            iconImageView.tintColor = iconColor
+        }
+    }
+
+    var valueColor: UIColor = .systemBlue {
+        didSet {
+            selectedButton.setTitleColor(valueColor, for: .normal)
+        }
+    }
+
     var label: String? {
         didSet {
             if let label = label {
@@ -50,9 +74,21 @@ class SettingItemView: UIView {
         setupUI()
     }
     
+    private let iconImageView = UIImageView().then {
+        $0.image = UIImage(systemName: "gearshape.fill")
+        $0.contentMode = .scaleAspectFit
+        $0.tintColor = .systemBlue
+    }
+
     private let titleLabel = UILabel().then {
         $0.font = .systemFont(ofSize: 16, weight: .bold)
         $0.textColor = .black
+    }
+
+    private let subtitleLabel = UILabel().then {
+        $0.font = .systemFont(ofSize: 12, weight: .regular)
+        $0.textColor = .gray
+        $0.numberOfLines = 1
     }
     
     private let selectedButton = UIButton().then {
@@ -88,7 +124,9 @@ class SettingItemView: UIView {
             make.edges.equalToSuperview().inset(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0))
         }
         
+        contentView.addSubview(iconImageView)
         contentView.addSubview(titleLabel)
+        contentView.addSubview(subtitleLabel)
         contentView.addSubview(optionsButton)
         contentView.addSubview(selectedButton)
         
@@ -96,29 +134,69 @@ class SettingItemView: UIView {
             self?.expandOptionsMenu()
         }
         selectedButton.addAction(action, for: .touchUpInside)
+
+        // Добавляем tap gesture на всю view для лучшего UX
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleViewTap))
+        addGestureRecognizer(tapGesture)
         
         // Обновляем стиль шрифтов
         titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         selectedButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
         
-        titleLabel.snp.makeConstraints { make in
+        // Иконка слева
+        iconImageView.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(16)
             make.centerY.equalToSuperview()
-            make.leading.equalToSuperview().offset(24)
+            make.width.height.equalTo(32)
         }
-        
+
+        // Заголовок
+        titleLabel.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(12)
+            make.leading.equalTo(iconImageView.snp.trailing).offset(12)
+        }
+
+        // Подзаголовок
+        subtitleLabel.snp.makeConstraints { make in
+            make.top.equalTo(titleLabel.snp.bottom).offset(2)
+            make.leading.equalTo(iconImageView.snp.trailing).offset(12)
+            make.bottom.equalToSuperview().offset(-12)
+        }
+
+        // Стрелка справа
         optionsButton.snp.makeConstraints { make in
             make.centerY.equalToSuperview()
-            make.trailing.equalToSuperview().offset(-24)
-            make.width.height.equalTo(24) // Фиксированный размер для кнопки
+            make.trailing.equalToSuperview().offset(-16)
+            make.width.height.equalTo(24)
         }
-        
+
+        // Значение рядом со стрелкой
         selectedButton.snp.makeConstraints { make in
             make.centerY.equalToSuperview()
-            make.trailing.equalTo(optionsButton.snp.leading).offset(-18)
+            make.trailing.equalTo(optionsButton.snp.leading).offset(-8)
         }
         
     }
-    
+
+    @objc private func handleViewTap() {
+        expandOptionsMenu()
+    }
+
+    /// Обновляет внешний вид в зависимости от состояния enabled кнопки
+    private func updateAppearanceForEnabledState() {
+        if optionsButton.isEnabled {
+            backgroundColor = UIColor.white.withAlphaComponent(0.7)
+        } else {
+            backgroundColor = UIColor.lightGray.withAlphaComponent(0.3)
+        }
+    }
+
+    /// Публичный метод для установки состояния enabled и обновления внешнего вида
+    public func setOptionsEnabled(_ enabled: Bool) {
+        optionsButton.isEnabled = enabled
+        updateAppearanceForEnabledState()
+    }
+
     fileprivate func expandOptionsMenu() {
         
         guard self.optionsButton.isEnabled else {
@@ -141,7 +219,7 @@ class SettingItemView: UIView {
     
     fileprivate func update(options: [String]?) {
         // Специальная обработка для ячейки версии
-        if self.title == "Version" {
+        if self.title == "App Version" {
             // Для ячейки версии всегда скрываем кнопку с опциями
             self.optionsButton.isHidden = true
             optionsButton.menu = nil
@@ -176,7 +254,11 @@ class SettingItemView: UIView {
     }
     
     fileprivate func update(label: String) {
-        self.selectedButton.setTitle(label, for: .normal)
+        if label.isEmpty {
+            self.selectedButton.setTitle("--", for: .normal)
+        } else {
+            self.selectedButton.setTitle(label, for: .normal)
+        }
     }
     
 }
