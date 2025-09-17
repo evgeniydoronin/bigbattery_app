@@ -217,6 +217,18 @@ public class ZetaraManager: NSObject {
 
     public func disconnect(_ peripheral: Peripheral) {
         print("disconnect peripheral: \(peripheral.name ?? "") identifier: \(peripheral.identifier.uuidString)")
+
+        // В RxBluetoothKit отключение происходит через dispose() подписки
+        // cleanConnection() уже делает это через connectionDisposable?.dispose()
+        cleanConnection()
+
+        // Очищаем данные BMS
+        cleanData()
+
+        // Очищаем сканированные устройства
+        cleanScanning()
+
+        print("Peripheral disconnected successfully")
     }
 
     func cleanData() {

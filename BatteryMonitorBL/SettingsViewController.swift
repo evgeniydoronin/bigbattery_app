@@ -33,6 +33,7 @@ class SettingsViewController: UIViewController {
 
     // Заголовки секций
     private var protocolSettingsLabel: UILabel?
+    private var protocolNoteLabel: UILabel?
     private var applicationInfoLabel: UILabel?
     
     // Флаг для отслеживания несохраненных изменений
@@ -47,6 +48,8 @@ class SettingsViewController: UIViewController {
     private var canProtocolStatusLabel: UILabel?
     private var rs485ProtocolStatusLabel: UILabel?
     
+    // ScrollView для прокрутки контента
+    private var scrollView: UIScrollView!
     // Основной UIStackView для гибкого layout
     private var mainStackView: UIStackView!
     
@@ -472,6 +475,19 @@ class SettingsViewController: UIViewController {
             self?.hasUnsavedChanges = false
             // Скрываем все индикаторы статуса после сохранения
             self?.hideAllStatusIndicators()
+
+            // 🔧 ИСПРАВЛЕНИЕ ФАНТОМНОГО ПОДКЛЮЧЕНИЯ:
+            // При сохранении настроек принудительно отключаем устройство
+            // чтобы изменения применились корректно
+            if let connectedPeripheral = ZetaraManager.shared.connectedPeripheral() {
+                print("🔄 [SettingsViewController] Disconnecting device after settings save...")
+                ZetaraManager.shared.disconnect(connectedPeripheral)
+
+                // Показываем уведомление о необходимости переподключения
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    Alert.show("Please reconnect to apply new settings", timeout: 5)
+                }
+            }
         })
         
         present(alert, animated: true)
@@ -498,6 +514,20 @@ class SettingsViewController: UIViewController {
     func toggleRS485AndCAN(_ enabled: Bool) {
         self.rs485ProtocolView?.setOptionsEnabled(enabled)
         self.canProtocolView?.setOptionsEnabled(enabled)
+
+        // Если протоколы отключены (Module ID != 1), очищаем значения
+        if !enabled {
+            self.rs485ProtocolView?.label = "--"
+            self.canProtocolView?.label = "--"
+        } else {
+            // Если протоколы включены (Module ID = 1), восстанавливаем актуальные значения
+            if let rs485Data = self.rs485Data {
+                self.rs485ProtocolView?.label = rs485Data.readableProtocol()
+            }
+            if let canData = self.canData {
+                self.canProtocolView?.label = canData.readableProtocol()
+            }
+        }
     }
     
     func getAllSettings() {
@@ -845,17 +875,29 @@ class SettingsViewController: UIViewController {
     
     /// Создает и настраивает основной UIStackView для гибкого layout
     private func setupMainStackView() {
+        // Создаем ScrollView
+        scrollView = UIScrollView()
+        scrollView.showsVerticalScrollIndicator = true
+        scrollView.alwaysBounceVertical = true
+        view.addSubview(scrollView)
+
+        scrollView.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview()
+            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(75) // Отступ под headerView (60px + 15px)
+            make.bottom.equalTo(view.safeAreaLayoutGuide.snp.bottom)
+        }
+
+        // Создаем StackView внутри ScrollView
         mainStackView = UIStackView()
         mainStackView.axis = .vertical
         mainStackView.distribution = .fill
         mainStackView.alignment = .fill
         mainStackView.spacing = 16
-        
-        view.addSubview(mainStackView)
+
+        scrollView.addSubview(mainStackView)
         mainStackView.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview().inset(20)
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(75) // Отступ под headerView (60px + 15px)
-            make.bottom.equalTo(view.safeAreaLayoutGuide.snp.bottom).offset(-20)
+            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 0, left: 20, bottom: 20, right: 20))
+            make.width.equalTo(scrollView).offset(-40) // Учитываем отступы слева и справа
         }
     }
     
@@ -907,6 +949,18 @@ class SettingsViewController: UIViewController {
                 make.height.equalTo(30)
             }
             mainStackView.addArrangedSubview(containerView)
+        }
+
+        // 0.6. Note текст
+        if let noteLabel = protocolNoteLabel {
+            mainStackView.addArrangedSubview(noteLabel)
+
+            // Добавляем отступы для Note через пустой UIView
+            let spacerAfterNote = UIView()
+            spacerAfterNote.snp.makeConstraints { make in
+                make.height.equalTo(8)
+            }
+            mainStackView.addArrangedSubview(spacerAfterNote)
         }
 
         // 1. Module ID field + индикатор
@@ -1208,6 +1262,37 @@ class SettingsViewController: UIViewController {
         protocolLabel.textColor = .black
         protocolLabel.textAlignment = .left
         self.protocolSettingsLabel = protocolLabel
+
+        // Note текст с форматированием
+        let noteLabel = UILabel()
+        let noteText = "Note: The battery connected directly to the inverter or meter via the communication cable must be set to ID1. All other batteries should be assigned unique IDs (ID2, ID3, etc.)."
+
+        let attributedString = NSMutableAttributedString(string: noteText)
+
+        // Базовые атрибуты для всего текста
+        let baseAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 12),
+            .foregroundColor: UIColor(red: 0x80/255.0, green: 0x80/255.0, blue: 0x80/255.0, alpha: 1.0)
+        ]
+        attributedString.addAttributes(baseAttributes, range: NSRange(location: 0, length: noteText.count))
+
+        // Выделяем "Note:" жирным
+        if let noteRange = noteText.range(of: "Note:") {
+            let nsRange = NSRange(noteRange, in: noteText)
+            attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 12, weight: .bold), range: nsRange)
+        }
+
+        // Выделяем "ID1" жирным
+        if let id1Range = noteText.range(of: "ID1") {
+            let nsRange = NSRange(id1Range, in: noteText)
+            attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 12, weight: .bold), range: nsRange)
+        }
+
+        noteLabel.attributedText = attributedString
+        noteLabel.numberOfLines = 0
+        noteLabel.lineBreakMode = .byWordWrapping
+        noteLabel.textAlignment = .left
+        self.protocolNoteLabel = noteLabel
 
         // Заголовок Application Information
         let appInfoLabel = UILabel()

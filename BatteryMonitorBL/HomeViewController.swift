@@ -191,8 +191,25 @@ class HomeViewController: UIViewController {
                     self?.clearProtocolData()
                 }
             }.disposed(by: disposeBag)
-        
-        
+
+        // Обработка отключения устройства для исправления "фантомного подключения"
+        ZetaraManager.shared.observeDisconect()
+            .subscribeOn(MainScheduler.instance)
+            .observe(on: MainScheduler.instance)
+            .subscribe { [weak self] (disconnectedPeripheral: ZetaraManager.ConnectedPeripheral) in
+                print("🔴 [HomeViewController] Device disconnected: \(disconnectedPeripheral.name ?? "Unknown")")
+
+                // Принудительно очищаем состояние подключения
+                self?.updateTitle(nil)
+                self?.clearProtocolData()
+
+                // Можно добавить уведомление пользователю о потере связи
+                // Alert.show("Connection lost. Please reconnect.", timeout: 3)
+            } onError: { error in
+                print("🔴 [HomeViewController] Disconnect observation error: \(error)")
+            }.disposed(by: disposeBag)
+
+
         // Удаляем использование bluetoothButton из batteryInfoView
         
         // Обработка нажатия на bluetoothConnectionView теперь устанавливается через свойство onTap
