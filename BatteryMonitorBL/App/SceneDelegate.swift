@@ -32,14 +32,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     var viewControllers = tabBarController.viewControllers ?? []
                     viewControllers.remove(at: 1) // Удаляем вкладку Details
                     
-                    // Временно скрываем вкладку Diagnostics для тестирования
-                    // Код вкладки Diagnostics закомментирован, но не удален
-                    // Чтобы вернуть вкладку, раскомментируйте код ниже
-                    /*
                     // Создаем DiagnosticsViewController и оборачиваем его в NavigationController
                     let diagnosticsViewController = DiagnosticsViewController()
                     let diagnosticsNavigationController = UINavigationController(rootViewController: diagnosticsViewController)
-                    
+
                     // Создаем TabBarItem для вкладки Diagnostics с использованием системных иконок
                     let diagnosticsTabBarItem = UITabBarItem(
                         title: "Diagnostics",
@@ -47,10 +43,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                         selectedImage: UIImage(systemName: "waveform.path.ecg.fill")
                     )
                     diagnosticsNavigationController.tabBarItem = diagnosticsTabBarItem
-                    
+
                     // Добавляем вкладку Diagnostics после вкладки Settings
                     viewControllers.append(diagnosticsNavigationController)
-                    */
                     
                     // Создаем новый ViewController для вкладки Shop
                     let shopViewController = UIViewController()

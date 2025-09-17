@@ -26,6 +26,7 @@
 		324213D62A1A37B800DC7FFC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 32049E88260774F000058371 /* LaunchScreen.storyboard */; };
 		324213D72A1A37B800DC7FFC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 32049E83260774EF00058371 /* Main.storyboard */; };
 		4ADCF3E5870DF851190206F7 /* Pods_BatteryMonitorBL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F9A2BDB4DCDEB49487D3DCF0 /* Pods_BatteryMonitorBL.framework */; };
+		6A314C4E2E7AE92800561845 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A314C4D2E7AE92800561845 /* AppLogger.swift */; };
 		6A55CB4B2DCE566400B3C34B /* SummaryTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A55CB4A2DCE566400B3C34B /* SummaryTabView.swift */; };
 		6A55CB552DCE6A0F00B3C34B /* TimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A55CB542DCE6A0F00B3C34B /* TimerView.swift */; };
 		6A55CB582DCE6AFB00B3C34B /* BatteryParametersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A55CB562DCE6AFB00B3C34B /* BatteryParametersView.swift */; };
@@ -61,6 +62,7 @@
 		324213BB2A1A359300DC7FFC /* UIView+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIView+Extensions.swift"; sourceTree = "<group>"; };
 		324213C22A1A359300DC7FFC /* SettingsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		4DD148754BC3E68BD751DD64 /* Pods-BatteryMonitorBL.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.debug.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.debug.xcconfig"; sourceTree = "<group>"; };
+		6A314C4D2E7AE92800561845 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppLogger.swift; path = Utils/AppLogger.swift; sourceTree = "<group>"; };
 		6A55CB4A2DCE566400B3C34B /* SummaryTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryTabView.swift; sourceTree = "<group>"; };
 		6A55CB542DCE6A0F00B3C34B /* TimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerView.swift; sourceTree = "<group>"; };
 		6A55CB562DCE6AFB00B3C34B /* BatteryParametersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryParametersView.swift; sourceTree = "<group>"; };
@@ -110,6 +112,7 @@
 		32049E7C260774EF00058371 /* BatteryMonitorBL */ = {
 			isa = PBXGroup;
 			children = (
+				6A314C4D2E7AE92800561845 /* AppLogger.swift */,
 				32049E99260779EB00058371 /* Assets */,
 				324213AB2A1A359300DC7FFC /* App */,
 				324213B92A1A359300DC7FFC /* Extensions */,
@@ -345,6 +348,7 @@
 				6A55CB552DCE6A0F00B3C34B /* TimerView.swift in Sources */,
 				6A5BA6812DD36A7C006C1EB8 /* TabsContainerView.swift in Sources */,
 				324213AA2A1A354100DC7FFC /* R.generated.swift in Sources */,
+				6A314C4E2E7AE92800561845 /* AppLogger.swift in Sources */,
 				324213CB2A1A359300DC7FFC /* SettingItemView.swift in Sources */,
 				6A64C0572DD5E6D100097A22 /* TemperatureTabView.swift in Sources */,
 				324213C42A1A359300DC7FFC /* SceneDelegate.swift in Sources */,
@@ -508,7 +512,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = L9FD4J2A6P;
 				GCC_PREFIX_HEADER = "";
@@ -545,7 +549,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = L9FD4J2A6P;
 				GCC_PREFIX_HEADER = "";

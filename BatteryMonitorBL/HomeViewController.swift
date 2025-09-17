@@ -116,7 +116,9 @@ class HomeViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
+        AppLogger.shared.info(screen: AppLogger.Screen.home, event: AppLogger.Event.viewDidLoad, message: "Home screen loaded")
+
         /// Настройка внешнего вида панели вкладок
         let appearance = UITabBarAppearance()
 
@@ -199,6 +201,14 @@ class HomeViewController: UIViewController {
             .subscribe { [weak self] (disconnectedPeripheral: ZetaraManager.ConnectedPeripheral) in
                 print("🔴 [HomeViewController] Device disconnected: \(disconnectedPeripheral.name ?? "Unknown")")
 
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.home,
+                    component: AppLogger.Component.connectionStatus,
+                    event: AppLogger.Event.disconnectionCompleted,
+                    message: "Device disconnected on Home screen",
+                    details: ["deviceName": disconnectedPeripheral.name ?? "Unknown"]
+                )
+
                 // Принудительно очищаем состояние подключения
                 self?.updateTitle(nil)
                 self?.clearProtocolData()
@@ -207,6 +217,13 @@ class HomeViewController: UIViewController {
                 // Alert.show("Connection lost. Please reconnect.", timeout: 3)
             } onError: { error in
                 print("🔴 [HomeViewController] Disconnect observation error: \(error)")
+                AppLogger.shared.error(
+                    screen: AppLogger.Screen.home,
+                    component: AppLogger.Component.connectionStatus,
+                    event: AppLogger.Event.errorOccurred,
+                    message: "Disconnect observation error",
+                    details: ["error": error.localizedDescription]
+                )
             }.disposed(by: disposeBag)
 
 
@@ -234,7 +251,21 @@ class HomeViewController: UIViewController {
     func updateTitle(_ peripheral: ZetaraManager.ConnectedPeripheral?) {
         // Проверяем, есть ли реальное подключение к устройству
         let isDeviceActuallyConnected = ZetaraManager.shared.connectedPeripheral() != nil
-        
+
+        // КРИТИЧЕСКОЕ ЛОГИРОВАНИЕ для фантомного подключения
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.stateChanged,
+            message: "updateTitle called - checking connection status",
+            details: [
+                "passedPeripheralName": peripheral?.name ?? "nil",
+                "passedPeripheralId": peripheral?.identifier.uuidString ?? "nil",
+                "isDeviceActuallyConnected": isDeviceActuallyConnected,
+                "realPeripheralName": ZetaraManager.shared.connectedPeripheral()?.name ?? "nil",
+                "mismatch": (peripheral != nil) != isDeviceActuallyConnected ? "PHANTOM CONNECTION DETECTED!" : "OK"
+            ]
+        )
+
         if isDeviceActuallyConnected {
             // Если есть реальное подключение, отображаем имя устройства
             timerView.setHidden(false) // Показываем таймер
@@ -411,14 +442,35 @@ class HomeViewController: UIViewController {
         // Настраиваем обработчики нажатий для параметров протоколов
         protocolParametersView.onModuleIdTap = { [weak self] in
             print("🟠 [HomeViewController] Module ID callback triggered")
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                component: AppLogger.Component.protocolButtonID,
+                event: AppLogger.Event.buttonTapped,
+                message: "Module ID button tapped",
+                details: ["currentValue": self?.moduleIdData?.readableId() ?? "unknown"]
+            )
             self?.navigateToSettings()
         }
         protocolParametersView.onCanProtocolTap = { [weak self] in
             print("🟠 [HomeViewController] CAN Protocol callback triggered")
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                component: AppLogger.Component.protocolButtonCAN,
+                event: AppLogger.Event.buttonTapped,
+                message: "CAN Protocol button tapped",
+                details: ["currentValue": self?.canData?.readableProtocol() ?? "unknown"]
+            )
             self?.navigateToSettings()
         }
         protocolParametersView.onRS485ProtocolTap = { [weak self] in
             print("🟠 [HomeViewController] RS485 Protocol callback triggered")
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                component: AppLogger.Component.protocolButtonRS485,
+                event: AppLogger.Event.buttonTapped,
+                message: "RS485 Protocol button tapped",
+                details: ["currentValue": self?.rs485Data?.readableProtocol() ?? "unknown"]
+            )
             self?.navigateToSettings()
         }
         
@@ -706,6 +758,11 @@ class HomeViewController: UIViewController {
 
     /// Сбрасывает данные протоколов при отключении от устройства
     private func clearProtocolData() {
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.protocolsCleared,
+            message: "Protocol data cleared due to disconnection"
+        )
         moduleIdData = nil
         canData = nil
         rs485Data = nil
@@ -722,6 +779,18 @@ class HomeViewController: UIViewController {
             let canText = canData?.readableProtocol() ?? "--"
             let rs485Text = rs485Data?.readableProtocol() ?? "--"
 
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "Protocol UI updated with device data",
+                details: [
+                    "moduleId": moduleIdText,
+                    "canProtocol": canText,
+                    "rs485Protocol": rs485Text,
+                    "connected": true
+                ]
+            )
+
             protocolParametersView.updateAllParameters(
                 moduleId: moduleIdText,
                 canProtocol: canText,
@@ -729,6 +798,18 @@ class HomeViewController: UIViewController {
             )
         } else {
             // Если устройство не подключено, показываем прочерки
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "Protocol UI updated - device disconnected",
+                details: [
+                    "moduleId": "--",
+                    "canProtocol": "--",
+                    "rs485Protocol": "--",
+                    "connected": false
+                ]
+            )
+
             protocolParametersView.updateAllParameters(
                 moduleId: "--",
                 canProtocol: "--",

@@ -65,6 +65,8 @@ class SettingsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        AppLogger.shared.info(screen: AppLogger.Screen.settings, event: AppLogger.Event.viewDidLoad, message: "Settings screen loaded")
+
         // Скрываем навигационный бар, так как мы добавляем свою шапку
         navigationController?.setNavigationBarHidden(true, animated: false)
 
@@ -90,6 +92,22 @@ class SettingsViewController: UIViewController {
             .subscribe {[weak self] index in
                 // Отмечаем, что есть несохраненные изменения
                 self?.hasUnsavedChanges = true
+
+                let newValue = Zetara.Data.ModuleIdControlData.readableIds()[index]
+                let oldValue = self?.moduleIdData?.readableId() ?? "unknown"
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.settings,
+                    component: AppLogger.Component.moduleIdPicker,
+                    event: AppLogger.Event.valueChanged,
+                    message: "Module ID changed",
+                    details: [
+                        "oldValue": oldValue,
+                        "newValue": newValue,
+                        "index": index
+                    ]
+                )
+
                 self?.setModuleId(at:index)
         }.disposed(by: disposeBag)
         
@@ -111,6 +129,22 @@ class SettingsViewController: UIViewController {
             .subscribe { [weak self] index in
                 // Отмечаем, что есть несохраненные изменения
                 self?.hasUnsavedChanges = true
+
+                let newValue = self?.canData?.readableProtocol(at: index) ?? "unknown"
+                let oldValue = self?.canData?.readableProtocol() ?? "unknown"
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.settings,
+                    component: AppLogger.Component.canProtocolPicker,
+                    event: AppLogger.Event.valueChanged,
+                    message: "CAN Protocol changed",
+                    details: [
+                        "oldValue": oldValue,
+                        "newValue": newValue,
+                        "index": index
+                    ]
+                )
+
                 self?.setCAN(at: index)
             }.disposed(by: disposeBag)
         
@@ -125,6 +159,22 @@ class SettingsViewController: UIViewController {
             .subscribe { [weak self] index in
                 // Отмечаем, что есть несохраненные изменения
                 self?.hasUnsavedChanges = true
+
+                let newValue = self?.rs485Data?.readableProtocol(at: index) ?? "unknown"
+                let oldValue = self?.rs485Data?.readableProtocol() ?? "unknown"
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.settings,
+                    component: AppLogger.Component.rs485ProtocolPicker,
+                    event: AppLogger.Event.valueChanged,
+                    message: "RS485 Protocol changed",
+                    details: [
+                        "oldValue": oldValue,
+                        "newValue": newValue,
+                        "index": index
+                    ]
+                )
+
                 self?.setRS485(at: index)
         }.disposed(by: disposeBag)
         
@@ -463,6 +513,19 @@ class SettingsViewController: UIViewController {
     
     /// Обработчик нажатия на кнопку Save
     @objc private func saveButtonTapped() {
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.settings,
+            component: AppLogger.Component.saveButton,
+            event: AppLogger.Event.buttonTapped,
+            message: "Save button tapped",
+            details: [
+                "hasUnsavedChanges": hasUnsavedChanges,
+                "moduleId": moduleIdData?.readableId() ?? "unknown",
+                "canProtocol": canData?.readableProtocol() ?? "unknown",
+                "rs485Protocol": rs485Data?.readableProtocol() ?? "unknown"
+            ]
+        )
+
         // Показываем упрощенный алерт с основным сообщением
         let alert = UIAlertController(
             title: "Settings Saved",
@@ -481,6 +544,19 @@ class SettingsViewController: UIViewController {
             // чтобы изменения применились корректно
             if let connectedPeripheral = ZetaraManager.shared.connectedPeripheral() {
                 print("🔄 [SettingsViewController] Disconnecting device after settings save...")
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.settings,
+                    event: AppLogger.Event.settingsSaved,
+                    message: "Settings saved, disconnecting device for changes to apply",
+                    details: [
+                        "deviceName": connectedPeripheral.name ?? "unknown",
+                        "moduleId": self?.moduleIdData?.readableId() ?? "unknown",
+                        "canProtocol": self?.canData?.readableProtocol() ?? "unknown",
+                        "rs485Protocol": self?.rs485Data?.readableProtocol() ?? "unknown"
+                    ]
+                )
+
                 ZetaraManager.shared.disconnect(connectedPeripheral)
 
                 // Показываем уведомление о необходимости переподключения
@@ -512,6 +588,18 @@ class SettingsViewController: UIViewController {
     }
 
     func toggleRS485AndCAN(_ enabled: Bool) {
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.settings,
+            event: enabled ? AppLogger.Event.protocolEnabled : AppLogger.Event.protocolDisabled,
+            message: "CAN and RS485 protocols \(enabled ? "enabled" : "disabled")",
+            details: [
+                "enabled": enabled,
+                "reason": enabled ? "Module ID = 1" : "Module ID != 1",
+                "currentCanValue": canData?.readableProtocol() ?? "unknown",
+                "currentRS485Value": rs485Data?.readableProtocol() ?? "unknown"
+            ]
+        )
+
         self.rs485ProtocolView?.setOptionsEnabled(enabled)
         self.canProtocolView?.setOptionsEnabled(enabled)
 
@@ -519,6 +607,13 @@ class SettingsViewController: UIViewController {
         if !enabled {
             self.rs485ProtocolView?.label = "--"
             self.canProtocolView?.label = "--"
+
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.settings,
+                event: AppLogger.Event.protocolsCleared,
+                message: "Protocol values cleared to '--'",
+                details: ["reason": "protocols disabled"]
+            )
         } else {
             // Если протоколы включены (Module ID = 1), восстанавливаем актуальные значения
             if let rs485Data = self.rs485Data {
@@ -527,11 +622,27 @@ class SettingsViewController: UIViewController {
             if let canData = self.canData {
                 self.canProtocolView?.label = canData.readableProtocol()
             }
+
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.settings,
+                event: AppLogger.Event.protocolValueChanged,
+                message: "Protocol values restored",
+                details: [
+                    "canValue": canData?.readableProtocol() ?? "no data",
+                    "rs485Value": rs485Data?.readableProtocol() ?? "no data"
+                ]
+            )
         }
     }
     
     func getAllSettings() {
         Alert.show("Loading...", timeout: 3)
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.settings,
+            event: AppLogger.Event.settingsLoaded,
+            message: "Starting to load all settings from device"
+        )
         
         // 一个一个来
         self.getModuleId().subscribe { [weak self] idData in
@@ -605,6 +716,20 @@ class SettingsViewController: UIViewController {
             Alert.show("⚠️ Warning: For inverter communication, Module ID must be set to ID1", timeout: 5)
         }
 
+        let newModuleId = index + 1
+        let oldModuleId = self.moduleIdData?.moduleId ?? 0
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.settings,
+            event: "setModuleId_started",
+            message: "Attempting to set Module ID",
+            details: [
+                "oldModuleId": oldModuleId,
+                "newModuleId": newModuleId,
+                "willDisableProtocols": newModuleId != 1
+            ]
+        )
+
         Alert.show("Setting, please wait patiently", timeout: 3)
         // module id 从 1 开始的
         ZetaraManager.shared.setModuleId(index + 1)
@@ -615,22 +740,51 @@ class SettingsViewController: UIViewController {
                 if success, let idData = self?.moduleIdData {
                     let selectedValue = idData.readableId(at: index)
                     self?.moduleIdSettingItemView?.label = selectedValue
+
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.settings,
+                        event: "setModuleId_success",
+                        message: "Module ID set successfully",
+                        details: [
+                            "newModuleId": index + 1,
+                            "displayValue": selectedValue,
+                            "protocolsEnabled": index == 0
+                        ]
+                    )
+
                     self?.toggleRS485AndCAN(index == 0) // 这里是 0 ，因为这里的 id 从 0 开始
-                    
+
                     // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
                     if let statusLabel = self?.moduleIdStatusLabel {
                         self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
                     }
                 } else {
+                    AppLogger.shared.error(
+                        screen: AppLogger.Screen.settings,
+                        event: "setModuleId_failed",
+                        message: "Failed to set Module ID",
+                        details: ["attemptedModuleId": index + 1]
+                    )
                     Alert.show("Set module id failed")
                 }
-            } onError: { _ in
+            } onError: { error in
                 Alert.hide()
+
+                AppLogger.shared.error(
+                    screen: AppLogger.Screen.settings,
+                    event: "setModuleId_error",
+                    message: "Error setting Module ID",
+                    details: [
+                        "attemptedModuleId": index + 1,
+                        "error": error.localizedDescription
+                    ]
+                )
+
                 Alert.show("Set module id error")
-                
+
 //                self?.moduleIdSettingItemView.set(label: "ID\(id + 1)")
 //                self?.toggleRS485AndCAN(id == 0) // 这里是 0 ，因为这里的 id 从 0 开始
-                
+
             }.disposed(by: disposeBag)
     }
     

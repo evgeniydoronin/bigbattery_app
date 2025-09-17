@@ -157,13 +157,14 @@ class DiagnosticsViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         setupView()
         setupTableView()
         setupObservers()
-        
+
         // Добавляем событие о запуске экрана диагностики
         addEvent(type: .connection, message: "Diagnostics screen launched")
+        AppLogger.shared.info(screen: AppLogger.Screen.diagnostics, event: AppLogger.Event.viewDidLoad, message: "Diagnostics screen loaded")
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -534,7 +535,7 @@ class DiagnosticsViewController: UIViewController {
             systemInfo["batteryLevel"] = 0
         }
         
-        // Журнал событий
+        // Журнал событий из старой системы
         let events = eventLogs.map { event -> [String: String] in
             return [
                 "timestamp": dateFormatter.string(from: event.timestamp),
@@ -542,6 +543,9 @@ class DiagnosticsViewController: UIViewController {
                 "message": event.message
             ]
         }
+
+        // Новые подробные логи из AppLogger
+        let detailedLogs = AppLogger.shared.getAllLogs()
         
         // Собираем все данные
         return [
@@ -555,6 +559,7 @@ class DiagnosticsViewController: UIViewController {
             "communicationErrorsInfo": communicationErrorsInfo,
             "systemInfo": systemInfo,
             "events": events,
+            "detailedLogs": detailedLogs,
             "timestamp": dateFormatter.string(from: Date())
         ]
     }

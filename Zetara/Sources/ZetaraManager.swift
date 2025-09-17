@@ -189,6 +189,7 @@ public class ZetaraManager: NSObject {
                 let observer = self!.connectedPeripheralSubject.asObserver()
                 switch event {
                     case .error(let error):
+                        print("Connection failed with error: \(error.localizedDescription)")
                         observer.onError(error)
                     case .next(let characteristics):
                         if let identifier = Identifier.identifier(of: characteristics.first!),
@@ -198,10 +199,14 @@ public class ZetaraManager: NSObject {
                             self?.writeCharacteristic = writeCharacteristic
                             self?.notifyCharacteristic = notifyCharacteristic
                             self?.identifier = identifier
+
+                            print("Peripheral connected successfully: \(peripheral.name ?? "")")
+
                             observer.onNext(peripheral)
                             self?.startRefreshBMSData()
                         } else {
                             // 一般不会走到这里
+                            print("Not a Zetara peripheral: \(peripheral.name ?? "")")
                             observer.onError(ZetaraManager.Error.notZetaraPeripheralError)
                         }
                     case .completed:
