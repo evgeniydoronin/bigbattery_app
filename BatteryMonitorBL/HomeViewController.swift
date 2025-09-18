@@ -61,7 +61,19 @@ class HomeViewController: UIViewController {
 
         // Загружаем данные протоколов если устройство подключено
         if ZetaraManager.shared.connectedPeripheral() != nil {
+            // Очищаем кэшированные данные для принудительного обновления
+            moduleIdData = nil
+            canData = nil
+            rs485Data = nil
+
+            // Принудительно обновляем UI с дефолтными значениями
+            updateProtocolUI()
+
+            // Загружаем свежие данные протоколов
             loadProtocolData()
+        } else {
+            // Если устройство отключено, обновляем UI соответственно
+            updateProtocolUI()
         }
     }
     

@@ -260,15 +260,33 @@ class DiagnosticsViewController: UIViewController {
     private func addEvent(type: DiagnosticsEvent.EventType, message: String) {
         let event = DiagnosticsEvent(timestamp: Date(), type: type, message: message)
         eventLogs.insert(event, at: 0) // Добавляем в начало, чтобы новые события были сверху
-        
+
         // Ограничиваем количество событий в журнале
         if eventLogs.count > 100 {
             eventLogs.removeLast()
         }
-        
+
         // Обновляем таблицу, если она уже загружена
-        if isViewLoaded {
-            tableView.reloadSections(IndexSet(integer: Section.eventLogs.rawValue), with: .automatic)
+        // Используем DispatchQueue.main.async для безопасного обновления UI
+        if isViewLoaded && Thread.isMainThread {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self,
+                      self.isViewLoaded,
+                      self.view.window != nil else { return }
+
+                // Проверяем, что таблица не находится в процессе обновления
+                if !self.tableView.isDragging && !self.tableView.isDecelerating {
+                    self.tableView.reloadData()
+                }
+            }
+        } else if isViewLoaded {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self,
+                      self.isViewLoaded,
+                      self.view.window != nil else { return }
+
+                self.tableView.reloadData()
+            }
         }
     }
     
