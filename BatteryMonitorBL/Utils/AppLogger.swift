@@ -12,8 +12,8 @@ import UIKit
 class AppLogger {
     static let shared = AppLogger()
 
-    /// Максимальное количество логов в памяти
-    private let maxLogCount = 500
+    /// Максимальное количество логов в памяти (увеличено для детальной диагностики протоколов)
+    private let maxLogCount = 2000
 
     /// Массив всех логов
     private var logs: [LogEntry] = []
@@ -210,6 +210,12 @@ extension AppLogger {
         // Bluetooth components
         static let bluetoothManager = "bluetoothManager"
         static let peripheral = "peripheral"
+        
+        // ZetaraManager components
+        static let protocolModule = "protocolModule"
+        static let protocolModuleId = "protocolModule_ID"
+        static let protocolModuleCAN = "protocolModule_CAN"
+        static let protocolModuleRS485 = "protocolModule_RS485"
     }
 
     /// Типы событий
@@ -239,6 +245,11 @@ extension AppLogger {
         static let protocolDisabled = "protocolDisabled"
         static let protocolValueChanged = "protocolValueChanged"
         static let protocolsCleared = "protocolsCleared"
+        static let protocolOperationStarted = "protocolOperationStarted"
+        static let protocolOperationCompleted = "protocolOperationCompleted"
+        static let protocolOperationFailed = "protocolOperationFailed"
+        static let protocolDataParsed = "protocolDataParsed"
+        static let protocolDataParsingFailed = "protocolDataParsingFailed"
 
         // Settings Events
         static let settingsLoaded = "settingsLoaded"

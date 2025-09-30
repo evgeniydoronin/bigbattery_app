@@ -36,7 +36,6 @@ public class ZetaraManager: NSObject {
     private var refreshBMSDataDisposable: Disposable?
     private var disposeBag = DisposeBag()
 
-
     private var identifier: Identifier?
     private var writeCharacteristic: Characteristic?
     private var notifyCharacteristic: Characteristic?
@@ -50,6 +49,9 @@ public class ZetaraManager: NSObject {
 
     private override init() {
         super.init()
+        
+        // Тестовый лог для проверки ZetaraLogger интеграции
+        ZetaraLogger.info("🚀 ZetaraManager initialized", details: ["testMessage": "ZetaraLogger integration working"])
 
         manager.observeState()
             .observeOn(MainScheduler.instance)
@@ -402,7 +404,85 @@ public class ZetaraManager: NSObject {
     }
 
     public func getModuleId() -> Maybe<Data.ModuleIdControlData> {
-        writeControlData(.getModuleId).compactMap { Data.ModuleIdControlData($0) }
+        let startTime = Date()
+        let deviceConnected = (try? connectedPeripheralSubject.value()) != nil
+        let deviceName = getDeviceName()
+
+        ZetaraLogger.info("📡 getModuleId() called", details: [
+            "deviceConnected": deviceConnected,
+            "deviceName": deviceName,
+            "timestamp": startTime.timeIntervalSince1970
+        ])
+
+        // Если устройство не подключено, но есть Mock данные, возвращаем Mock Module ID
+        if !deviceConnected && Self.configuration.mockData != nil {
+            print("!!! Возвращаем Mock Module ID !!!")
+            ZetaraLogger.info("🎭 Returning Mock Module ID data (device not connected)", details: ["mockDataEnabled": true, "mockModuleId": 1])
+
+            // Создаем Mock данные для Module ID = 1 (включает протоколы)
+            let mockBytes: [UInt8] = [0x10, 0x02, 0x00, 0x01] // Module ID = 1
+            if let mockData = Data.ModuleIdControlData(mockBytes) {
+                return Maybe.just(mockData)
+            }
+        }
+
+        ZetaraLogger.info("📤 Sending Module ID command to real device", details: [
+            "command": "getModuleId",
+            "commandByte": "0x02",
+            "deviceName": deviceName
+        ])
+
+        return writeControlData(.getModuleId)
+            .do(onNext: { rawData in
+                let hexString = rawData.map { String(format: "%02X", $0) }.joined(separator: " ")
+                let duration = Date().timeIntervalSince(startTime) * 1000
+
+                ZetaraLogger.debug("📥 Module ID raw response received", details: [
+                    "rawBytes": hexString,
+                    "bytesCount": rawData.count,
+                    "durationMs": duration,
+                    "firstByte": String(format: "0x%02X", rawData.first ?? 0)
+                ])
+            })
+            .compactMap { rawData in
+                let parsedData = Data.ModuleIdControlData(rawData)
+                let duration = Date().timeIntervalSince(startTime) * 1000
+
+                if let data = parsedData {
+                    ZetaraLogger.info(
+"[PROTOCOL_DEBUG] ✅ Module ID data parsed successfully",
+                        details: [
+                            "moduleId": data.moduleId,
+                            "readableId": data.readableId(),
+                            "otherProtocolsEnabled": data.otherProtocolsEnabled(),
+                            "totalDurationMs": duration
+                        ]
+                    )
+                } else {
+                    ZetaraLogger.error(
+"[PROTOCOL_DEBUG] ❌ Failed to parse Module ID response",
+                        details: [
+                            "rawBytes": rawData.map { String(format: "%02X", $0) }.joined(separator: " "),
+                            "bytesCount": rawData.count,
+                            "totalDurationMs": duration
+                        ]
+                    )
+                }
+
+                return parsedData
+            }
+            .do(onError: { error in
+                let duration = Date().timeIntervalSince(startTime) * 1000
+
+                ZetaraLogger.error(
+"[PROTOCOL_DEBUG] 💥 Module ID request failed",
+                    details: [
+                        "error": error.localizedDescription,
+                        "errorType": String(describing: type(of: error)),
+                        "totalDurationMs": duration
+                    ]
+                )
+            })
     }
 
     public func setModuleId(_ number: Int) -> Maybe<Bool> {
@@ -412,7 +492,115 @@ public class ZetaraManager: NSObject {
     }
 
     public func getRS485() -> Maybe<Data.RS485ControlData> {
-        writeControlData(.getRS485).compactMap { Data.RS485ControlData($0) }
+        let startTime = Date()
+        let deviceConnected = (try? connectedPeripheralSubject.value()) != nil
+        let deviceName = getDeviceName()
+
+        ZetaraLogger.info(
+            "[PROTOCOL_DEBUG] 📡 getRS485() called",
+            details: [
+                "deviceConnected": deviceConnected,
+                "deviceName": deviceName,
+                "timestamp": startTime.timeIntervalSince1970
+            ]
+        )
+
+        // Если устройство не подключено, но есть Mock данные, возвращаем Mock RS485
+        if !deviceConnected && Self.configuration.mockData != nil {
+            print("!!! Возвращаем Mock RS485 !!!")
+            ZetaraLogger.info(
+"[PROTOCOL_DEBUG] 🎭 Returning Mock RS485 data (device not connected)",
+                details: ["mockDataEnabled": true]
+            )
+
+            // Создаем Mock данные для RS485 с несколькими протоколами
+            // Формат: [command, subcommand, 0x00, selectedIndex, protocolCount, protocol1_length, protocol1_bytes, protocol2_length, protocol2_bytes, ...]
+            let p02lux = "P02-LUX".data(using: .ascii)!.map { $0 }
+            let p01lux = "P01-LUX".data(using: .ascii)!.map { $0 }
+            let p06lux = "P06-LUX".data(using: .ascii)!.map { $0 }
+
+            var mockBytes: [UInt8] = [0x10, 0x03, 0x00, 0x00, 0x03] // selectedIndex=0, protocolCount=3
+            // Добавляем протоколы
+            mockBytes.append(UInt8(p02lux.count))
+            mockBytes.append(contentsOf: p02lux)
+            mockBytes.append(UInt8(p01lux.count))
+            mockBytes.append(contentsOf: p01lux)
+            mockBytes.append(UInt8(p06lux.count))
+            mockBytes.append(contentsOf: p06lux)
+
+            if let mockData = Data.RS485ControlData(mockBytes) {
+                return Maybe.just(mockData)
+            }
+        }
+
+        ZetaraLogger.info(
+            "[PROTOCOL_DEBUG] 📤 Sending RS485 command to real device",
+            details: [
+                "command": "getRS485",
+                "commandByte": "0x06",
+                "deviceName": deviceName
+            ]
+        )
+
+        return writeControlData(.getRS485)
+            .do(onNext: { rawData in
+                let hexString = rawData.map { String(format: "%02X", $0) }.joined(separator: " ")
+                let duration = Date().timeIntervalSince(startTime) * 1000 // в миллисекундах
+
+                ZetaraLogger.debug(
+"[PROTOCOL_DEBUG] 📥 RS485 raw response received",
+                    details: [
+                        "rawBytes": hexString,
+                        "bytesCount": rawData.count,
+                        "durationMs": duration,
+                        "firstByte": String(format: "0x%02X", rawData.first ?? 0)
+                    ]
+                )
+            })
+            .compactMap { rawData in
+                let parsedData = Data.RS485ControlData(rawData)
+                let duration = Date().timeIntervalSince(startTime) * 1000
+
+                if let data = parsedData {
+                    ZetaraLogger.info(
+"[PROTOCOL_DEBUG] ✅ RS485 data parsed successfully",
+                        details: [
+                            "selectedIndex": data.selectedIndex,
+                            "protocolsCount": data.protocols.count,
+                            "selectedProtocol": data.readableProtocol(),
+                            "allProtocols": data.readableProtocols(),
+                            "totalDurationMs": duration
+                        ]
+                    )
+                } else {
+                    ZetaraLogger.error(
+"[PROTOCOL_DEBUG] ❌ Failed to parse RS485 response",
+                        details: [
+                            "rawBytes": rawData.map { String(format: "%02X", $0) }.joined(separator: " "),
+                            "bytesCount": rawData.count,
+                            "totalDurationMs": duration
+                        ]
+                    )
+                }
+
+                return parsedData
+            }
+            .do(onError: { error in
+                let duration = Date().timeIntervalSince(startTime) * 1000
+                let isTimeout = error is RxError && error.localizedDescription.contains("timeout")
+
+                ZetaraLogger.error(
+"[PROTOCOL_DEBUG] 💥 RS485 request failed",
+                    details: [
+                        "error": error.localizedDescription,
+                        "errorType": String(describing: type(of: error)),
+                        "totalDurationMs": duration,
+                        "isTimeout": isTimeout,
+                        "deviceName": deviceName,
+                        "possibleCauses": isTimeout ? "Device not responding, Bluetooth interference, Device in bad state" : "Unknown"
+                    ]
+                )
+            })
     }
 
     public func setRS485(_ number: Int) -> Maybe<Bool> {
@@ -421,13 +609,114 @@ public class ZetaraManager: NSObject {
     }
 
     public func getCAN() -> Maybe<Data.CANControlData> {
-        writeControlData(.getCAN).compactMap {
-            if let data = Data.CANControlData($0) {
-                return data
-            } else {
-                return nil
+        let startTime = Date()
+        let deviceConnected = (try? connectedPeripheralSubject.value()) != nil
+        let deviceName = getDeviceName()
+
+        ZetaraLogger.info(
+            "[PROTOCOL_DEBUG] 📡 getCAN() called",
+            details: [
+                "deviceConnected": deviceConnected,
+                "deviceName": deviceName,
+                "timestamp": startTime.timeIntervalSince1970
+            ]
+        )
+
+        // Если устройство не подключено, но есть Mock данные, возвращаем Mock CAN
+        if !deviceConnected && Self.configuration.mockData != nil {
+            print("!!! Возвращаем Mock CAN !!!")
+            ZetaraLogger.info(
+"[PROTOCOL_DEBUG] 🎭 Returning Mock CAN data (device not connected)",
+                details: ["mockDataEnabled": true]
+            )
+
+            // Создаем Mock данные для CAN с несколькими протоколами
+            let p06lux = "P06-LUX".data(using: .ascii)!.map { $0 }
+            let p01lux = "P01-LUX".data(using: .ascii)!.map { $0 }
+            let p02lux = "P02-LUX".data(using: .ascii)!.map { $0 }
+
+            var mockBytes: [UInt8] = [0x10, 0x04, 0x00, 0x01, 0x03] // selectedIndex=1, protocolCount=3
+            // Добавляем протоколы
+            mockBytes.append(UInt8(p06lux.count))
+            mockBytes.append(contentsOf: p06lux)
+            mockBytes.append(UInt8(p01lux.count))
+            mockBytes.append(contentsOf: p01lux)
+            mockBytes.append(UInt8(p02lux.count))
+            mockBytes.append(contentsOf: p02lux)
+
+            if let mockData = Data.CANControlData(mockBytes) {
+                return Maybe.just(mockData)
             }
         }
+
+        ZetaraLogger.info(
+            "[PROTOCOL_DEBUG] 📤 Sending CAN command to real device",
+            details: [
+                "command": "getCAN",
+                "commandByte": "0x04",
+                "deviceName": deviceName
+            ]
+        )
+
+        return writeControlData(.getCAN)
+            .do(onNext: { rawData in
+                let hexString = rawData.map { String(format: "%02X", $0) }.joined(separator: " ")
+                let duration = Date().timeIntervalSince(startTime) * 1000 // в миллисекундах
+
+                ZetaraLogger.debug(
+"[PROTOCOL_DEBUG] 📥 CAN raw response received",
+                    details: [
+                        "rawBytes": hexString,
+                        "bytesCount": rawData.count,
+                        "durationMs": duration,
+                        "firstByte": String(format: "0x%02X", rawData.first ?? 0)
+                    ]
+                )
+            })
+            .compactMap { rawData in
+                let parsedData = Data.CANControlData(rawData)
+                let duration = Date().timeIntervalSince(startTime) * 1000
+
+                if let data = parsedData {
+                    ZetaraLogger.info(
+"[PROTOCOL_DEBUG] ✅ CAN data parsed successfully",
+                        details: [
+                            "selectedIndex": data.selectedIndex,
+                            "protocolsCount": data.protocols.count,
+                            "selectedProtocol": data.readableProtocol(),
+                            "allProtocols": data.readableProtocols(),
+                            "totalDurationMs": duration
+                        ]
+                    )
+                } else {
+                    ZetaraLogger.error(
+"[PROTOCOL_DEBUG] ❌ Failed to parse CAN response",
+                        details: [
+                            "rawBytes": rawData.map { String(format: "%02X", $0) }.joined(separator: " "),
+                            "bytesCount": rawData.count,
+                            "totalDurationMs": duration
+                        ]
+                    )
+                }
+
+                return parsedData
+            }
+            .do(onError: { error in
+                let duration = Date().timeIntervalSince(startTime) * 1000
+                let isTimeout = error is RxError && error.localizedDescription.contains("timeout")
+
+                ZetaraLogger.error(
+"[PROTOCOL_DEBUG] 💥 CAN request failed",
+                    details: [
+                        "error": error.localizedDescription,
+                        "errorType": String(describing: type(of: error)),
+                        "totalDurationMs": duration,
+                        "isTimeout": isTimeout,
+                        "deviceName": deviceName,
+                        "possibleCauses": isTimeout ? "Device not responding, Bluetooth interference, Device in bad state" : "Unknown"
+                    ]
+                )
+            })
     }
 
     public func setCAN(_ number: Int) -> Maybe<Bool> {
@@ -437,39 +726,132 @@ public class ZetaraManager: NSObject {
 
     var moduleIdDisposeBag: DisposeBag?
     func writeControlData(_ data: Foundation.Data) -> Maybe<[UInt8]> {
+        let startTime = Date()
+        let hexCommand = data.toHexString()
+
+        ZetaraLogger.debug(
+            "[PROTOCOL_DEBUG] 🔄 writeControlData() started",
+            details: [
+                "commandHex": hexCommand,
+                "commandBytes": data.map { String(format: "0x%02X", $0) }.joined(separator: " "),
+                "dataLength": data.count,
+                "timestamp": startTime.timeIntervalSince1970
+            ]
+        )
+
         guard let peripheral = try? connectedPeripheralSubject.value(),
               let writeCharacteristic = writeCharacteristic,
               let notifyCharacteristic = notifyCharacteristic else {
             print("send data error. no connected peripheral")
+
+            ZetaraLogger.error(
+"[PROTOCOL_DEBUG] ❌ writeControlData failed - no peripheral or characteristics",
+                details: [
+                    "commandHex": hexCommand,
+                    "hasPeripheral": (try? connectedPeripheralSubject.value()) != nil,
+                    "hasWriteChar": writeCharacteristic != nil,
+                    "hasNotifyChar": notifyCharacteristic != nil
+                ]
+            )
+
             cleanConnection()
             return Maybe.error(Error.writeControlDataError)
         }
 
-        moduleIdDisposeBag = nil
-        moduleIdDisposeBag = DisposeBag()
+        ZetaraLogger.debug(
+            "[PROTOCOL_DEBUG] 📡 Bluetooth characteristics ready",
+            details: [
+                "peripheralName": peripheral.name ?? "Unknown",
+                "writeCharUUID": writeCharacteristic.uuid.uuidString,
+                "notifyCharUUID": notifyCharacteristic.uuid.uuidString,
+                "writeType": writeCharacteristic.writeType == .withResponse ? "withResponse" : "withoutResponse"
+            ]
+        )
+
+        self.moduleIdDisposeBag = nil
+        self.moduleIdDisposeBag = DisposeBag()
 
         print("write control data: \(data.toHexString())")
 
+        ZetaraLogger.debug(
+            "[PROTOCOL_DEBUG] 📤 Sending command via Bluetooth",
+            details: [
+                "commandHex": hexCommand,
+                "peripheralName": peripheral.name ?? "Unknown",
+                "writingToCharacteristic": writeCharacteristic.uuid.uuidString
+            ]
+        )
+
         peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
             .subscribe()
-            .disposed(by: moduleIdDisposeBag!)
+            .disposed(by: self.moduleIdDisposeBag!)
 
         return Maybe.create { observer in
+            ZetaraLogger.debug(
+"[PROTOCOL_DEBUG] 👂 Listening for Bluetooth response",
+                details: [
+                    "commandHex": hexCommand,
+                    "listeningOnCharacteristic": notifyCharacteristic.uuid.uuidString
+                ]
+            )
+
             peripheral.observeValueUpdateAndSetNotification(for: notifyCharacteristic)
                 .compactMap { $0.value }
                 .map { [UInt8]($0) }
                 .filter { Data.isControlData($0) }
-                .do { print("receive control data: \($0.toHexString())") }
+                .timeout(.seconds(10), scheduler: MainScheduler.instance)
+                .do(onNext: { responseData in
+                    let duration = Date().timeIntervalSince(startTime) * 1000
+                    let hexResponse = responseData.toHexString()
+
+                    print("receive control data: \(hexResponse)")
+
+                    ZetaraLogger.debug(
+"[PROTOCOL_DEBUG] 📥 Bluetooth response received",
+                        details: [
+                            "responseHex": hexResponse,
+                            "responseBytes": responseData.map { String(format: "0x%02X", $0) }.joined(separator: " "),
+                            "responseLength": responseData.count,
+                            "durationMs": duration,
+                            "isControlData": Data.isControlData(responseData),
+                            "matchingCommand": hexCommand
+                        ]
+                    )
+                })
                 .observeOn(MainScheduler.instance)
                 .subscribeOn(MainScheduler.instance)
-                .subscribe { event in
-                    switch event {
-                        case .next(let _data):
-                            observer(.success(_data))
-                        default:
-                            return observer(.error(ZetaraManager.Error.writeControlDataError))
-                    }
-                }
+                .subscribe(onNext: { _data in
+                    let totalDuration = Date().timeIntervalSince(startTime) * 1000
+
+                    ZetaraLogger.info(
+"[PROTOCOL_DEBUG] ✅ writeControlData completed successfully",
+                        details: [
+                            "commandHex": hexCommand,
+                            "responseHex": _data.toHexString(),
+                            "totalDurationMs": totalDuration,
+                            "success": true
+                        ]
+                    )
+
+                    observer(.success(_data))
+                }, onError: { error in
+                    let totalDuration = Date().timeIntervalSince(startTime) * 1000
+                    let isTimeout = error is RxError && error.localizedDescription.contains("timeout")
+
+                    ZetaraLogger.error(
+"[PROTOCOL_DEBUG] 💥 writeControlData failed with error",
+                        details: [
+                            "commandHex": hexCommand,
+                            "totalDurationMs": totalDuration,
+                            "errorType": String(describing: type(of: error)),
+                            "errorDescription": error.localizedDescription,
+                            "isTimeout": isTimeout
+                        ]
+                    )
+
+                    observer(.error(error))
+                })
+                .disposed(by: self.moduleIdDisposeBag!)
 
             return Disposables.create { [weak self] in
                 self?.moduleIdDisposeBag = nil

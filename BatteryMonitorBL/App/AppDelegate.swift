@@ -17,6 +17,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         RxBluetoothKitLog.setLogLevel(.info)
+        
+        // Инициализируем мост для логирования ZetaraManager -> AppLogger
+        let loggerBridge = ZetaraLoggerBridge()
+        ZetaraLogger.shared = loggerBridge
+        
+        AppLogger.shared.info(
+            screen: "AppDelegate",
+            event: AppLogger.Event.stateChanged,
+            message: "ZetaraLogger bridge initialized successfully",
+            details: [
+                "bridgeType": "ZetaraLoggerBridge",
+                "loggerSet": ZetaraLogger.shared != nil
+            ]
+        )
+        
         // Активируем мок-данные mockCellTempsData для отображения данных на главном экране и экране деталей
         // Это позволяет тестировать приложение без физического подключения к батарее
         // mockCellTempsData содержит данные о температуре ячеек

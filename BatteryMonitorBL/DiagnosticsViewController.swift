@@ -165,6 +165,9 @@ class DiagnosticsViewController: UIViewController {
         // Добавляем событие о запуске экрана диагностики
         addEvent(type: .connection, message: "Diagnostics screen launched")
         AppLogger.shared.info(screen: AppLogger.Screen.diagnostics, event: AppLogger.Event.viewDidLoad, message: "Diagnostics screen loaded")
+
+        // Логируем текущий статус протоколов для диагностики
+        logCurrentProtocolStatus()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -302,33 +305,108 @@ class DiagnosticsViewController: UIViewController {
             showAlert(title: "Error", message: "Unable to send email. Check your device mail settings.")
             return
         }
-        
-        // Создаем JSON с данными для отправки
-        let logsData = createLogsData()
-        
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.diagnostics,
+            event: AppLogger.Event.buttonTapped,
+            message: "[PROTOCOL_DEBUG] 📧 Send logs button pressed - capturing current protocol state",
+            details: [
+                "timestamp": Date().timeIntervalSince1970
+            ]
+        )
+
+        // Принудительно захватываем текущее состояние протоколов перед отправкой
+        logCurrentProtocolStatus()
+
+        // Небольшая задержка, чтобы дать время завершиться асинхронным запросам протоколов
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+
+            // Создаем JSON с данными для отправки
+            let logsData = self.createLogsData()
+
+            self.performEmailSend(with: logsData)
+        }
+    }
+
+    /// Выполняет отправку email с логами
+    private func performEmailSend(with logsData: [String: Any]) {
         // Создаем контроллер для отправки email
         let mailComposer = MFMailComposeViewController()
         mailComposer.mailComposeDelegate = self
-        
+
         // Настраиваем email
         mailComposer.setToRecipients(["evgeniydoronin@gmail.com"]) // Замените на свой email
         mailComposer.setSubject("BigBattery Diagnostic Data")
         mailComposer.setMessageBody("Diagnostic data from BigBattery app", isHTML: false)
-        
+
         // Добавляем вложение с данными
         if let jsonData = try? JSONSerialization.data(withJSONObject: logsData, options: .prettyPrinted) {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
             let dateString = dateFormatter.string(from: Date())
             let fileName = "bigbattery_logs_\(dateString).json"
-            
+
             mailComposer.addAttachmentData(jsonData, mimeType: "application/json", fileName: fileName)
+
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.diagnostics,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] 📎 Logs data prepared for email",
+                details: [
+                    "fileName": fileName,
+                    "dataSize": jsonData.count,
+                    "sectionsIncluded": Array(logsData.keys)
+                ]
+            )
+        } else {
+            AppLogger.shared.error(
+                screen: AppLogger.Screen.diagnostics,
+                event: AppLogger.Event.errorOccurred,
+                message: "[PROTOCOL_DEBUG] ❌ Failed to serialize logs data to JSON",
+                details: [
+                    "sectionsAttempted": Array(logsData.keys)
+                ]
+            )
         }
-        
+
         // Показываем контроллер для отправки email
         present(mailComposer, animated: true)
     }
-    
+
+    /// Очищает значения от потенциально проблемных для JSON типов
+    private func sanitizeForJSON(_ value: Any) -> Any {
+        switch value {
+        case let dict as [String: Any]:
+            return dict.mapValues { sanitizeForJSON($0) }
+        case let array as [Any]:
+            return array.map { sanitizeForJSON($0) }
+        case let number as NSNumber:
+            // Проверяем на NaN и бесконечность
+            if number.doubleValue.isNaN || number.doubleValue.isInfinite {
+                return 0
+            }
+            return number
+        case let double as Double:
+            if double.isNaN || double.isInfinite {
+                return 0.0
+            }
+            return double
+        case let float as Float:
+            if float.isNaN || float.isInfinite {
+                return 0.0
+            }
+            return float
+        case is String, is Int, is Bool:
+            return value
+        case Optional<Any>.none:
+            return NSNull()
+        default:
+            // Преобразуем неизвестные типы в строку
+            return String(describing: value)
+        }
+    }
+
     /// Создает словарь с данными для отправки
     private func createLogsData() -> [String: Any] {
         // Информация об устройстве
@@ -564,9 +642,15 @@ class DiagnosticsViewController: UIViewController {
 
         // Новые подробные логи из AppLogger
         let detailedLogs = AppLogger.shared.getAllLogs()
-        
+
+        // Информация о протоколах
+        let protocolInfo = createProtocolInfo()
+
+        // События протоколов (фильтруем из detailedLogs)
+        let protocolEvents = createProtocolEvents(from: detailedLogs)
+
         // Собираем все данные
-        return [
+        let rawData: [String: Any] = [
             "deviceInfo": deviceInfo,
             "appInfo": appInfo,
             "batteryInfo": batteryInfo,
@@ -576,12 +660,345 @@ class DiagnosticsViewController: UIViewController {
             "rawDataInfo": rawDataInfo,
             "communicationErrorsInfo": communicationErrorsInfo,
             "systemInfo": systemInfo,
+            "protocolInfo": protocolInfo,
+            "protocolEvents": protocolEvents,
             "events": events,
             "detailedLogs": detailedLogs,
             "timestamp": dateFormatter.string(from: Date())
         ]
+
+        // Применяем очистку для обеспечения JSON-совместимости
+        let sanitizedData = sanitizeForJSON(rawData) as! [String: Any]
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.diagnostics,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 🧹 Logs data sanitized for JSON serialization",
+            details: [
+                "sections": Array(sanitizedData.keys),
+                "protocolInfoExists": sanitizedData["protocolInfo"] != nil,
+                "protocolEventsExists": sanitizedData["protocolEvents"] != nil
+            ]
+        )
+
+        return sanitizedData
     }
-    
+
+    /// Создает информацию о протоколах
+    private func createProtocolInfo() -> [String: Any] {
+        let deviceConnected = ZetaraManager.shared.connectedPeripheral() != nil
+
+        // Получаем статистику из AppLogger
+        let allLogs = AppLogger.shared.getAllLogs()
+        let protocolLogs = allLogs.filter { log in
+            if let message = log["message"] as? String {
+                return message.contains("[PROTOCOL_DEBUG]")
+            }
+            return false
+        }
+
+        // Debug logging для диагностики
+        print("🔍 [DEBUG] createProtocolInfo called:")
+        print("  - Total logs: \(allLogs.count)")
+        print("  - Protocol logs: \(protocolLogs.count)")
+        print("  - Device connected: \(deviceConnected)")
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.diagnostics,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 🔍 createProtocolInfo called for logs generation",
+            details: [
+                "totalLogs": allLogs.count,
+                "protocolLogs": protocolLogs.count,
+                "deviceConnected": deviceConnected
+            ]
+        )
+
+        // Пытаемся получить данные из HomeViewController (если доступны)
+        var moduleId = "--"
+        var canProtocol = "--"
+        var rs485Protocol = "--"
+        var lastUpdateTime: String? = nil
+        var loadAttempts = [String: Int]()
+        var loadErrors = [String]()
+
+        // Подсчитываем попытки загрузки
+        loadAttempts["moduleId"] = protocolLogs.filter { log in
+            if let message = log["message"] as? String {
+                return message.contains("Loading Module ID")
+            }
+            return false
+        }.count
+
+        loadAttempts["can"] = protocolLogs.filter { log in
+            if let message = log["message"] as? String {
+                return message.contains("Loading CAN protocol")
+            }
+            return false
+        }.count
+
+        loadAttempts["rs485"] = protocolLogs.filter { log in
+            if let message = log["message"] as? String {
+                return message.contains("Loading RS485 protocol")
+            }
+            return false
+        }.count
+
+        // Собираем ошибки
+        let errorLogs = protocolLogs.filter { log in
+            if let level = log["level"] as? String {
+                return level == "ERROR"
+            }
+            return false
+        }
+
+        loadErrors = errorLogs.compactMap { log in
+            if let message = log["message"] as? String,
+               let timestamp = log["timestamp"] as? String {
+                return "[\(timestamp)] \(message)"
+            }
+            return nil
+        }
+
+        // Находим последние успешные значения протоколов
+        for log in protocolLogs.reversed() {
+            if let message = log["message"] as? String,
+               let details = log["details"] as? [String: Any] {
+
+                if message.contains("UI Updated:") {
+                    if let mid = details["moduleId"] as? String, mid != "--" {
+                        moduleId = mid
+                    }
+                    if let can = details["canProtocol"] as? String, can != "--" {
+                        canProtocol = can
+                    }
+                    if let rs485 = details["rs485Protocol"] as? String, rs485 != "--" {
+                        rs485Protocol = rs485
+                    }
+
+                    if moduleId != "--" || canProtocol != "--" || rs485Protocol != "--" {
+                        lastUpdateTime = log["timestamp"] as? String
+                        break
+                    }
+                }
+            }
+        }
+
+        // Статистика успешных загрузок
+        let successCount = [
+            "moduleId": protocolLogs.filter { log in
+                if let message = log["message"] as? String {
+                    return message.contains("Module ID loaded:")
+                }
+                return false
+            }.count,
+            "can": protocolLogs.filter { log in
+                if let message = log["message"] as? String {
+                    return message.contains("CAN loaded:")
+                }
+                return false
+            }.count,
+            "rs485": protocolLogs.filter { log in
+                if let message = log["message"] as? String {
+                    return message.contains("RS485 loaded:")
+                }
+                return false
+            }.count
+        ]
+
+        let result: [String: Any] = [
+            "deviceConnected": deviceConnected,
+            "currentValues": [
+                "moduleId": moduleId,
+                "canProtocol": canProtocol,
+                "rs485Protocol": rs485Protocol
+            ],
+            "lastUpdateTime": lastUpdateTime ?? "Never",
+            "loadStatistics": [
+                "attempts": loadAttempts,
+                "successes": successCount,
+                "errors": loadErrors.count
+            ],
+            "loadErrors": loadErrors,
+            "totalProtocolLogs": protocolLogs.count
+        ]
+
+        // Debug logging результата
+        print("🔍 [DEBUG] createProtocolInfo result:")
+        print("  - Protocol logs found: \(protocolLogs.count)")
+        print("  - Load attempts: \(loadAttempts)")
+        print("  - Load errors: \(loadErrors.count)")
+        print("  - Current values: moduleId='\(moduleId)', can='\(canProtocol)', rs485='\(rs485Protocol)'")
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.diagnostics,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 📊 createProtocolInfo result prepared",
+            details: [
+                "protocolLogsFound": protocolLogs.count,
+                "moduleId": moduleId,
+                "canProtocol": canProtocol,
+                "rs485Protocol": rs485Protocol,
+                "loadErrors": loadErrors.count
+            ]
+        )
+
+        return result
+    }
+
+    /// Создает отфильтрованные события протоколов
+    private func createProtocolEvents(from detailedLogs: [[String: Any]]) -> [[String: Any]] {
+        let filteredLogs = detailedLogs.filter { log in
+            if let message = log["message"] as? String {
+                return message.contains("[PROTOCOL_DEBUG]")
+            }
+            return false
+        }
+
+        // Debug logging для диагностики
+        print("🔍 [DEBUG] createProtocolEvents called:")
+        print("  - Input logs: \(detailedLogs.count)")
+        print("  - Filtered protocol logs: \(filteredLogs.count)")
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.diagnostics,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 🔍 createProtocolEvents called for logs generation",
+            details: [
+                "inputLogs": detailedLogs.count,
+                "filteredProtocolLogs": filteredLogs.count
+            ]
+        )
+
+        return filteredLogs.map { log in
+            // Упрощаем формат для легкого чтения
+            var simplified: [String: Any] = [:]
+
+            if let timestamp = log["timestamp"] as? String {
+                simplified["timestamp"] = timestamp
+            }
+            if let message = log["message"] as? String {
+                simplified["message"] = message
+            }
+            if let level = log["level"] as? String {
+                simplified["level"] = level
+            }
+            if let screen = log["screen"] as? String {
+                simplified["screen"] = screen
+            }
+            if let event = log["event"] as? String {
+                simplified["event"] = event
+            }
+            if let details = log["details"] as? [String: Any] {
+                simplified["details"] = details
+            }
+
+            return simplified
+        }
+    }
+
+    /// Логирует текущий статус протоколов при запуске экрана диагностики
+    private func logCurrentProtocolStatus() {
+        let deviceConnected = ZetaraManager.shared.connectedPeripheral() != nil
+        let deviceName = ZetaraManager.shared.getDeviceName()
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.diagnostics,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 📋 Diagnostics screen loaded - capturing current protocol status",
+            details: [
+                "deviceConnected": deviceConnected,
+                "deviceName": deviceName,
+                "timestamp": Date().timeIntervalSince1970
+            ]
+        )
+
+        // Если устройство подключено, попытаемся получить текущие значения протоколов
+        if deviceConnected {
+            // Получаем текущие значения из ZetaraManager
+            ZetaraManager.shared.getModuleId()
+                .subscribeOn(MainScheduler.instance)
+                .subscribe(onSuccess: { moduleData in
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.diagnostics,
+                        event: AppLogger.Event.dataUpdated,
+                        message: "[PROTOCOL_DEBUG] 🆔 Current Module ID retrieved for diagnostics",
+                        details: [
+                            "moduleId": moduleData.moduleId,
+                            "source": "ZetaraManager.getModuleId()"
+                        ]
+                    )
+                }, onError: { error in
+                    AppLogger.shared.warning(
+                        screen: AppLogger.Screen.diagnostics,
+                        event: AppLogger.Event.errorOccurred,
+                        message: "[PROTOCOL_DEBUG] ⚠️ Could not retrieve Module ID for diagnostics",
+                        details: [
+                            "error": error.localizedDescription
+                        ]
+                    )
+                })
+                .disposed(by: disposeBag)
+
+            ZetaraManager.shared.getCAN()
+                .subscribeOn(MainScheduler.instance)
+                .subscribe(onSuccess: { canData in
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.diagnostics,
+                        event: AppLogger.Event.dataUpdated,
+                        message: "[PROTOCOL_DEBUG] 🚌 Current CAN protocol retrieved for diagnostics",
+                        details: [
+                            "canProtocol": canData.readableProtocol(),
+                            "source": "ZetaraManager.getCAN()"
+                        ]
+                    )
+                }, onError: { error in
+                    AppLogger.shared.warning(
+                        screen: AppLogger.Screen.diagnostics,
+                        event: AppLogger.Event.errorOccurred,
+                        message: "[PROTOCOL_DEBUG] ⚠️ Could not retrieve CAN protocol for diagnostics",
+                        details: [
+                            "error": error.localizedDescription
+                        ]
+                    )
+                })
+                .disposed(by: disposeBag)
+
+            ZetaraManager.shared.getRS485()
+                .subscribeOn(MainScheduler.instance)
+                .subscribe(onSuccess: { rs485Data in
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.diagnostics,
+                        event: AppLogger.Event.dataUpdated,
+                        message: "[PROTOCOL_DEBUG] 📡 Current RS485 protocol retrieved for diagnostics",
+                        details: [
+                            "rs485Protocol": rs485Data.readableProtocol(),
+                            "source": "ZetaraManager.getRS485()"
+                        ]
+                    )
+                }, onError: { error in
+                    AppLogger.shared.warning(
+                        screen: AppLogger.Screen.diagnostics,
+                        event: AppLogger.Event.errorOccurred,
+                        message: "[PROTOCOL_DEBUG] ⚠️ Could not retrieve RS485 protocol for diagnostics",
+                        details: [
+                            "error": error.localizedDescription
+                        ]
+                    )
+                })
+                .disposed(by: disposeBag)
+        } else {
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.diagnostics,
+                event: AppLogger.Event.stateChanged,
+                message: "[PROTOCOL_DEBUG] 🔌 No device connected - protocol values unavailable",
+                details: [
+                    "reason": "Device not connected"
+                ]
+            )
+        }
+    }
+
     /// Показывает алерт с сообщением
     private func showAlert(title: String, message: String) {
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)

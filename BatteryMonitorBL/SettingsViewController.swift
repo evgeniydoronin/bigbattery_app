@@ -711,6 +711,9 @@ class SettingsViewController: UIViewController {
     }
     
     func setModuleId(at index: Int) {
+        let startTime = Date()
+        let deviceName = ZetaraManager.shared.connectedPeripheral()?.name ?? "Unknown"
+
         // Предупреждение для инвертора
         if index != 0 {  // ID1 имеет индекс 0
             Alert.show("⚠️ Warning: For inverter communication, Module ID must be set to ID1", timeout: 5)
@@ -718,14 +721,20 @@ class SettingsViewController: UIViewController {
 
         let newModuleId = index + 1
         let oldModuleId = self.moduleIdData?.moduleId ?? 0
+        let oldValue = self.moduleIdData?.readableId() ?? "unknown"
+        let newValue = Zetara.Data.ModuleIdControlData.readableIds()[index]
 
         AppLogger.shared.info(
             screen: AppLogger.Screen.settings,
             event: "setModuleId_started",
-            message: "Attempting to set Module ID",
+            message: "[PROTOCOL_DEBUG] 🔧 Setting Module ID: \(oldValue) -> \(newValue) on device: \(deviceName)",
             details: [
+                "deviceName": deviceName,
                 "oldModuleId": oldModuleId,
                 "newModuleId": newModuleId,
+                "oldValue": oldValue,
+                "newValue": newValue,
+                "index": index,
                 "willDisableProtocols": newModuleId != 1
             ]
         )
@@ -736,7 +745,9 @@ class SettingsViewController: UIViewController {
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
             .subscribe { [weak self] (success: Bool) in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
+
                 if success, let idData = self?.moduleIdData {
                     let selectedValue = idData.readableId(at: index)
                     self?.moduleIdSettingItemView?.label = selectedValue
@@ -744,11 +755,15 @@ class SettingsViewController: UIViewController {
                     AppLogger.shared.info(
                         screen: AppLogger.Screen.settings,
                         event: "setModuleId_success",
-                        message: "Module ID set successfully",
+                        message: "[PROTOCOL_DEBUG] ✅ Module ID changed successfully: \(selectedValue) (took \(duration)ms)",
                         details: [
+                            "deviceName": deviceName,
+                            "oldValue": oldValue,
+                            "newValue": selectedValue,
                             "newModuleId": index + 1,
                             "displayValue": selectedValue,
-                            "protocolsEnabled": index == 0
+                            "protocolsEnabled": index == 0,
+                            "duration": duration
                         ]
                     )
 
@@ -758,25 +773,39 @@ class SettingsViewController: UIViewController {
                     if let statusLabel = self?.moduleIdStatusLabel {
                         self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
                     }
+
+                    // Отправляем уведомление об обновлении протоколов
+                    NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
                 } else {
                     AppLogger.shared.error(
                         screen: AppLogger.Screen.settings,
                         event: "setModuleId_failed",
-                        message: "Failed to set Module ID",
-                        details: ["attemptedModuleId": index + 1]
+                        message: "[PROTOCOL_DEBUG] ❌ Module ID change failed (took \(duration)ms)",
+                        details: [
+                            "deviceName": deviceName,
+                            "oldValue": oldValue,
+                            "targetValue": newValue,
+                            "attemptedModuleId": index + 1,
+                            "duration": duration
+                        ]
                     )
                     Alert.show("Set module id failed")
                 }
             } onError: { error in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
 
                 AppLogger.shared.error(
                     screen: AppLogger.Screen.settings,
                     event: "setModuleId_error",
-                    message: "Error setting Module ID",
+                    message: "[PROTOCOL_DEBUG] 💥 Module ID change error: \(error.localizedDescription) (took \(duration)ms)",
                     details: [
+                        "deviceName": deviceName,
+                        "error": error.localizedDescription,
+                        "oldValue": oldValue,
+                        "targetValue": newValue,
                         "attemptedModuleId": index + 1,
-                        "error": error.localizedDescription
+                        "duration": duration
                     ]
                 )
 
@@ -789,49 +818,173 @@ class SettingsViewController: UIViewController {
     }
     
     func setRS485(at index: Int) {
+        let startTime = Date()
+        let deviceName = ZetaraManager.shared.connectedPeripheral()?.name ?? "Unknown"
+        let oldValue = rs485Data?.readableProtocol() ?? "unknown"
+        let newValue = rs485Data?.readableProtocol(at: index) ?? "unknown"
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.settings,
+            event: "setRS485_started",
+            message: "[PROTOCOL_DEBUG] 🔧 Setting RS485: \(oldValue) -> \(newValue) on device: \(deviceName)",
+            details: [
+                "deviceName": deviceName,
+                "oldValue": oldValue,
+                "newValue": newValue,
+                "index": index
+            ]
+        )
+
         Alert.show("Setting, please wait patiently", timeout: 3)
         ZetaraManager.shared.setRS485(index)
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
             .subscribe { [weak self] success in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
+
                 if success, let rs485 = self?.rs485Data {
                     let selectedValue = rs485.readableProtocol(at: index)
                     self?.rs485ProtocolView?.label = selectedValue
-                    
+
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.settings,
+                        event: "setRS485_success",
+                        message: "[PROTOCOL_DEBUG] ✅ RS485 changed successfully: \(selectedValue) (took \(duration)ms)",
+                        details: [
+                            "deviceName": deviceName,
+                            "oldValue": oldValue,
+                            "newValue": selectedValue,
+                            "index": index,
+                            "duration": duration
+                        ]
+                    )
+
                     // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
                     if let statusLabel = self?.rs485ProtocolStatusLabel {
                         self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
                     }
+
+                    // Отправляем уведомление об обновлении протоколов
+                    NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
                 } else {
+                    AppLogger.shared.error(
+                        screen: AppLogger.Screen.settings,
+                        event: "setRS485_failed",
+                        message: "[PROTOCOL_DEBUG] ❌ RS485 change failed (took \(duration)ms)",
+                        details: [
+                            "deviceName": deviceName,
+                            "oldValue": oldValue,
+                            "targetValue": newValue,
+                            "index": index,
+                            "duration": duration
+                        ]
+                    )
                     self?.rs485ProtocolView?.label = "fail"
                 }
-            } onError: { [weak self] _ in
+            } onError: { [weak self] error in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
+
+                AppLogger.shared.error(
+                    screen: AppLogger.Screen.settings,
+                    event: "setRS485_error",
+                    message: "[PROTOCOL_DEBUG] 💥 RS485 change error: \(error.localizedDescription) (took \(duration)ms)",
+                    details: [
+                        "deviceName": deviceName,
+                        "error": error.localizedDescription,
+                        "oldValue": oldValue,
+                        "targetValue": newValue,
+                        "index": index,
+                        "duration": duration
+                    ]
+                )
                 self?.rs485ProtocolView?.label = "error"
             }.disposed(by: disposeBag)
     }
     
     func setCAN(at index: Int) {
+        let startTime = Date()
+        let deviceName = ZetaraManager.shared.connectedPeripheral()?.name ?? "Unknown"
+        let oldValue = canData?.readableProtocol() ?? "unknown"
+        let newValue = canData?.readableProtocol(at: index) ?? "unknown"
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.settings,
+            event: "setCAN_started",
+            message: "[PROTOCOL_DEBUG] 🔧 Setting CAN: \(oldValue) -> \(newValue) on device: \(deviceName)",
+            details: [
+                "deviceName": deviceName,
+                "oldValue": oldValue,
+                "newValue": newValue,
+                "index": index
+            ]
+        )
+
         Alert.show("Setting, please wait patiently", timeout: 3)
         ZetaraManager.shared.setCAN(index)
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
             .subscribe { [weak self] success in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
+
                 if success, let can = self?.canData {
                     let selectedValue = can.readableProtocol(at: index)
                     self?.canProtocolView?.label = selectedValue
-                    
+
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.settings,
+                        event: "setCAN_success",
+                        message: "[PROTOCOL_DEBUG] ✅ CAN changed successfully: \(selectedValue) (took \(duration)ms)",
+                        details: [
+                            "deviceName": deviceName,
+                            "oldValue": oldValue,
+                            "newValue": selectedValue,
+                            "index": index,
+                            "duration": duration
+                        ]
+                    )
+
                     // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
                     if let statusLabel = self?.canProtocolStatusLabel {
                         self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
                     }
+
+                    // Отправляем уведомление об обновлении протоколов
+                    NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
                 } else {
+                    AppLogger.shared.error(
+                        screen: AppLogger.Screen.settings,
+                        event: "setCAN_failed",
+                        message: "[PROTOCOL_DEBUG] ❌ CAN change failed (took \(duration)ms)",
+                        details: [
+                            "deviceName": deviceName,
+                            "oldValue": oldValue,
+                            "targetValue": newValue,
+                            "index": index,
+                            "duration": duration
+                        ]
+                    )
                     self?.canProtocolView?.label = "fail"
                 }
-            } onError: { [weak self] _ in
+            } onError: { [weak self] error in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
+
+                AppLogger.shared.error(
+                    screen: AppLogger.Screen.settings,
+                    event: "setCAN_error",
+                    message: "[PROTOCOL_DEBUG] 💥 CAN change error: \(error.localizedDescription) (took \(duration)ms)",
+                    details: [
+                        "deviceName": deviceName,
+                        "error": error.localizedDescription,
+                        "oldValue": oldValue,
+                        "targetValue": newValue,
+                        "index": index,
+                        "duration": duration
+                    ]
+                )
                 self?.canProtocolView?.label = "error"
             }.disposed(by: disposeBag)
     }

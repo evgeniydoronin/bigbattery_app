@@ -15,7 +15,12 @@ import RxSwift
 import RxBluetoothKit2
 
 class ConnectivityViewController : UIViewController {
-    
+
+    // MARK: - Constants
+
+    /// Уведомление об обновлении протоколов (должно совпадать с HomeViewController.protocolsDidUpdateNotification)
+    private static let protocolsDidUpdateNotification = Notification.Name("ProtocolsDidUpdateNotification")
+
     lazy var bluetoothSwitch = UISwitch()
     
     lazy var tableView = {
@@ -121,22 +126,84 @@ extension ConnectivityViewController: UITableViewDelegate {
         switch state {
             case .connected where indexPath.section == 0:
                 if let peripheral = try? ZetaraManager.shared.connectedPeripheralSubject.value() {
+                    let deviceName = peripheral.name ?? "Unknown"
+
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.connectivity,
+                        event: AppLogger.Event.disconnectionStarted,
+                        message: "[PROTOCOL_DEBUG] 🔌 Disconnecting from device: \(deviceName)",
+                        details: [
+                            "deviceName": deviceName,
+                            "deviceId": peripheral.identifier.uuidString
+                        ]
+                    )
+
                     ZetaraManager.shared.disconnect(peripheral)
                 }
                 return
             default:
                 let peripheral = self.scannedPeripherals[indexPath.row]
+                let deviceName = peripheral.peripheral.name ?? "Unknown"
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.connectivity,
+                    event: AppLogger.Event.connectionStarted,
+                    message: "[PROTOCOL_DEBUG] 🔗 Attempting to connect to device: \(deviceName)",
+                    details: [
+                        "deviceName": deviceName,
+                        "deviceId": peripheral.peripheral.identifier.uuidString,
+                        "rssi": peripheral.rssi ?? 0
+                    ]
+                )
+
                 ZetaraManager.shared.connect(peripheral.peripheral)
                     .subscribeOn(MainScheduler.instance)
                     .subscribe(onNext: { [weak self] (connectedPeripheral:ZetaraManager.ConnectedPeripheral) in
+                        let deviceName = connectedPeripheral.name ?? "Unknown"
+                        let deviceId = connectedPeripheral.identifier.uuidString
+
+                        AppLogger.shared.info(
+                            screen: AppLogger.Screen.connectivity,
+                            event: AppLogger.Event.connectionSucceeded,
+                            message: "[PROTOCOL_DEBUG] 🎉 Device connected successfully: \(deviceName)",
+                            details: [
+                                "deviceName": deviceName,
+                                "deviceId": deviceId,
+                                "connectionTime": Date().timeIntervalSince1970
+                            ]
+                        )
+
                         self?.state = .connected
                         self?.tableView.reloadData()
-                        
+
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            AppLogger.shared.info(
+                                screen: AppLogger.Screen.connectivity,
+                                event: AppLogger.Event.stateChanged,
+                                message: "[PROTOCOL_DEBUG] 🔙 Returning to Home screen after successful connection",
+                                details: [
+                                    "deviceName": deviceName,
+                                    "willTriggerProtocolLoad": true
+                                ]
+                            )
+
+                            // Отправляем уведомление об обновлении протоколов перед возвратом
+                            NotificationCenter.default.post(name: ConnectivityViewController.protocolsDidUpdateNotification, object: nil)
+
                             self?.navigationController?.popViewController(animated: true)
                         }
-                        
+
                     }, onError: { [weak self] error in
+                        AppLogger.shared.error(
+                            screen: AppLogger.Screen.connectivity,
+                            event: AppLogger.Event.connectionFailed,
+                            message: "[PROTOCOL_DEBUG] 💥 Device connection failed: \(error.localizedDescription)",
+                            details: [
+                                "error": error.localizedDescription,
+                                "errorCode": (error as NSError).code
+                            ]
+                        )
+
                         self?.state = .unconnected
                         Alert.show("Invalid device")
                     }).disposed(by: disposeBag)

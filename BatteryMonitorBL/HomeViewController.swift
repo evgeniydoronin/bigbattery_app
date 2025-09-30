@@ -28,7 +28,12 @@ import class BatteryMonitorBL.ProtocolParametersView
 // Удаляем импорт BatteryInfoView
 
 class HomeViewController: UIViewController {
-    
+
+    // MARK: - Constants
+
+    /// Уведомление об обновлении протоколов
+    static let protocolsDidUpdateNotification = Notification.Name("ProtocolsDidUpdateNotification")
+
     // Добавляем шапку с белым фоном
     private let headerView: UIView = {
         let view = UIView()
@@ -52,15 +57,41 @@ class HomeViewController: UIViewController {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+
+        let deviceName = ZetaraManager.shared.connectedPeripheral()?.name ?? "none"
+        let isConnected = ZetaraManager.shared.connectedPeripheral() != nil
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.viewWillAppear,
+            message: "[PROTOCOL_DEBUG] 📱 HomeViewController.viewWillAppear",
+            details: [
+                "deviceConnected": isConnected,
+                "deviceName": deviceName,
+                "previousModuleId": moduleIdData?.readableId() ?? "nil",
+                "previousCAN": canData?.readableProtocol() ?? "nil",
+                "previousRS485": rs485Data?.readableProtocol() ?? "nil"
+            ]
+        )
 
         // Скрываем навигационный бар при возвращении на главный экран
         self.navigationController?.setNavigationBarHidden(true, animated: animated)
 
         // Загружаем данные протоколов если устройство подключено
-        if ZetaraManager.shared.connectedPeripheral() != nil {
+        if isConnected {
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] 🔄 Device connected: \(deviceName), clearing cached data"
+            )
+
             // Очищаем кэшированные данные для принудительного обновления
             moduleIdData = nil
             canData = nil
@@ -69,9 +100,16 @@ class HomeViewController: UIViewController {
             // Принудительно обновляем UI с дефолтными значениями
             updateProtocolUI()
 
-            // Загружаем свежие данные протоколов
-            loadProtocolData()
+            // Загружаем свежие данные протоколов с небольшой задержкой
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.loadProtocolData()
+            }
         } else {
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] 🚫 No device connected, showing default UI"
+            )
             // Если устройство отключено, обновляем UI соответственно
             updateProtocolUI()
         }
@@ -195,11 +233,37 @@ class HomeViewController: UIViewController {
             .subscribeOn(MainScheduler.instance) // Определяет поток для подписки
             .observe(on: MainScheduler.instance) // Гарантирует, что все последующие операции будут на главном потоке
             .subscribe { [weak self] (peripheral: ZetaraManager.ConnectedPeripheral?) in
+                if let peripheral = peripheral {
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.home,
+                        event: AppLogger.Event.connectionSucceeded,
+                        message: "[PROTOCOL_DEBUG] 🔗 Device connected: \(peripheral.name ?? "Unknown")",
+                        details: [
+                            "deviceName": peripheral.name ?? "Unknown",
+                            "deviceId": peripheral.identifier.uuidString,
+                            "previouslyConnected": self?.moduleIdData != nil || self?.canData != nil || self?.rs485Data != nil
+                        ]
+                    )
+                } else {
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.home,
+                        event: AppLogger.Event.disconnectionCompleted,
+                        message: "[PROTOCOL_DEBUG] 🔌 Device disconnected",
+                        details: [
+                            "hadModuleId": self?.moduleIdData?.readableId() ?? "nil",
+                            "hadCAN": self?.canData?.readableProtocol() ?? "nil",
+                            "hadRS485": self?.rs485Data?.readableProtocol() ?? "nil"
+                        ]
+                    )
+                }
+
                 self?.updateTitle(peripheral)
 
-                // При подключении к устройству загружаем данные протоколов
+                // При подключении к устройству загружаем данные протоколов с небольшой задержкой
                 if peripheral != nil {
-                    self?.loadProtocolData()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self?.loadProtocolData()
+                    }
                 } else {
                     // При отключении сбрасываем данные протоколов
                     self?.clearProtocolData()
@@ -240,7 +304,15 @@ class HomeViewController: UIViewController {
 
 
         // Удаляем использование bluetoothButton из batteryInfoView
-        
+
+        // Подписываемся на уведомления об обновлении протоколов
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleProtocolsUpdateNotification),
+            name: HomeViewController.protocolsDidUpdateNotification,
+            object: nil
+        )
+
         // Обработка нажатия на bluetoothConnectionView теперь устанавливается через свойство onTap
     }
     
@@ -248,6 +320,23 @@ class HomeViewController: UIViewController {
         // Показываем навигационную панель перед переходом
         self.navigationController?.setNavigationBarHidden(false, animated: true)
         performSegue(withIdentifier: R.segue.homeViewController.pushConnectivityPage, sender: navigationController)
+    }
+
+    @objc func handleProtocolsUpdateNotification() {
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 📲 Received protocols update notification",
+            details: [
+                "deviceConnected": ZetaraManager.shared.connectedPeripheral() != nil,
+                "deviceName": ZetaraManager.shared.connectedPeripheral()?.name ?? "none"
+            ]
+        )
+
+        // Если устройство подключено, перезагружаем данные протоколов
+        if ZetaraManager.shared.connectedPeripheral() != nil {
+            loadProtocolData()
+        }
     }
 
     func navigateToSettings() {
@@ -734,38 +823,267 @@ class HomeViewController: UIViewController {
 
     /// Загрузка данных протоколов при подключении к устройству
     private func loadProtocolData() {
-        // Загружаем Module ID
+        let deviceName = ZetaraManager.shared.connectedPeripheral()?.name ?? "Unknown"
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 🚀 Starting protocol data loading for device: \(deviceName)"
+        )
+
+        // Загружаем Module ID с retry логикой
+        loadModuleIdWithRetry()
+
+        // Загружаем CAN данные с retry логикой
+        loadCANWithRetry()
+
+        // Загружаем RS485 данные с retry логикой
+        loadRS485WithRetry()
+    }
+
+    /// Загрузка Module ID с retry логикой
+    private func loadModuleIdWithRetry(attempt: Int = 1, maxAttempts: Int = 3) {
+        let startTime = Date()
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 📡 Loading Module ID (attempt \(attempt)/\(maxAttempts))..."
+        )
+
         ZetaraManager.shared.getModuleId()
             .subscribeOn(MainScheduler.instance)
             .observe(on: MainScheduler.instance)
             .subscribe { [weak self] idData in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
+                let readableId = idData.readableId()
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.home,
+                    event: AppLogger.Event.dataUpdated,
+                    message: "[PROTOCOL_DEBUG] ✅ Module ID loaded: \(readableId) (took \(duration)ms)",
+                    details: [
+                        "moduleId": readableId,
+                        "duration": duration,
+                        "attempt": attempt,
+                        "rawModuleId": idData.moduleId
+                    ]
+                )
+
                 self?.moduleIdData = idData
                 self?.updateProtocolUI()
-            } onError: { error in
-                print("Ошибка загрузки Module ID: \(error)")
-            }.disposed(by: disposeBag)
+            } onError: { [weak self] error in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
 
-        // Загружаем CAN данные
-        ZetaraManager.shared.getCAN()
-            .subscribeOn(MainScheduler.instance)
+                AppLogger.shared.error(
+                    screen: AppLogger.Screen.home,
+                    event: AppLogger.Event.errorOccurred,
+                    message: "[PROTOCOL_DEBUG] ❌ Module ID failed: \(error.localizedDescription) (attempt \(attempt)/\(maxAttempts), took \(duration)ms)",
+                    details: [
+                        "error": error.localizedDescription,
+                        "attempt": attempt,
+                        "maxAttempts": maxAttempts,
+                        "duration": duration
+                    ]
+                )
+
+                // Retry если не последняя попытка
+                if attempt < maxAttempts {
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.home,
+                        event: AppLogger.Event.dataUpdated,
+                        message: "[PROTOCOL_DEBUG] 🔄 Retrying Module ID in 1s..."
+                    )
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        self?.loadModuleIdWithRetry(attempt: attempt + 1, maxAttempts: maxAttempts)
+                    }
+                } else {
+                    AppLogger.shared.error(
+                        screen: AppLogger.Screen.home,
+                        event: AppLogger.Event.errorOccurred,
+                        message: "[PROTOCOL_DEBUG] 💀 Module ID loading failed after \(maxAttempts) attempts"
+                    )
+                }
+            }.disposed(by: disposeBag)
+    }
+
+    /// Загрузка CAN данных с retry логикой
+    private func loadCANWithRetry(attempt: Int = 1, maxAttempts: Int = 3) {
+        let startTime = Date()
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 📡 Loading CAN protocol (attempt \(attempt)/\(maxAttempts))..."
+        )
+
+        getCAN()
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] canData in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
+                let readableProtocol = canData.readableProtocol()
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.home,
+                    event: AppLogger.Event.dataUpdated,
+                    message: "[PROTOCOL_DEBUG] ✅ CAN loaded: \(readableProtocol) (took \(duration)ms)",
+                    details: [
+                        "canProtocol": readableProtocol,
+                        "duration": duration,
+                        "attempt": attempt,
+                        "selectedIndex": canData.selectedIndex,
+                        "totalProtocols": canData.protocols.count
+                    ]
+                )
+
                 self?.canData = canData
                 self?.updateProtocolUI()
-            }, onError: { error in
-                print("Ошибка загрузки CAN данных: \(error)")
-            }).disposed(by: disposeBag)
+            }, onError: { [weak self] error in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
 
-        // Загружаем RS485 данные
-        ZetaraManager.shared.getRS485()
-            .subscribeOn(MainScheduler.instance)
+                AppLogger.shared.error(
+                    screen: AppLogger.Screen.home,
+                    event: AppLogger.Event.errorOccurred,
+                    message: "[PROTOCOL_DEBUG] ❌ CAN failed: \(error.localizedDescription) (attempt \(attempt)/\(maxAttempts), took \(duration)ms)",
+                    details: [
+                        "error": error.localizedDescription,
+                        "attempt": attempt,
+                        "maxAttempts": maxAttempts,
+                        "duration": duration
+                    ]
+                )
+
+                // Retry если не последняя попытка
+                if attempt < maxAttempts {
+                    let isTimeout = error.localizedDescription.contains("timeout")
+                    let retryDelay = isTimeout ? 2.0 : 1.0 // Больше времени для timeout ошибок
+
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.home,
+                        event: AppLogger.Event.dataUpdated,
+                        message: "[PROTOCOL_DEBUG] 🔄 Retrying CAN in \(retryDelay)s...",
+                        details: [
+                            "isTimeoutError": isTimeout,
+                            "retryDelay": retryDelay,
+                            "nextAttempt": attempt + 1
+                        ]
+                    )
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay) {
+                        self?.loadCANWithRetry(attempt: attempt + 1, maxAttempts: maxAttempts)
+                    }
+                } else {
+                    AppLogger.shared.error(
+                        screen: AppLogger.Screen.home,
+                        event: AppLogger.Event.errorOccurred,
+                        message: "[PROTOCOL_DEBUG] 💀 CAN loading failed after \(maxAttempts) attempts"
+                    )
+                }
+            }).disposed(by: disposeBag)
+    }
+
+    /// Загрузка RS485 данных с retry логикой
+    private func loadRS485WithRetry(attempt: Int = 1, maxAttempts: Int = 3) {
+        let startTime = Date()
+
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 📡 Loading RS485 protocol (attempt \(attempt)/\(maxAttempts))..."
+        )
+
+        getRS485()
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] rs485Data in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
+                let readableProtocol = rs485Data.readableProtocol()
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.home,
+                    event: AppLogger.Event.dataUpdated,
+                    message: "[PROTOCOL_DEBUG] ✅ RS485 loaded: \(readableProtocol) (took \(duration)ms)",
+                    details: [
+                        "rs485Protocol": readableProtocol,
+                        "duration": duration,
+                        "attempt": attempt,
+                        "selectedIndex": rs485Data.selectedIndex,
+                        "totalProtocols": rs485Data.protocols.count
+                    ]
+                )
+
                 self?.rs485Data = rs485Data
                 self?.updateProtocolUI()
-            }, onError: { error in
-                print("Ошибка загрузки RS485 данных: \(error)")
+            }, onError: { [weak self] error in
+                let duration = Int(Date().timeIntervalSince(startTime) * 1000)
+
+                AppLogger.shared.error(
+                    screen: AppLogger.Screen.home,
+                    event: AppLogger.Event.errorOccurred,
+                    message: "[PROTOCOL_DEBUG] ❌ RS485 failed: \(error.localizedDescription) (attempt \(attempt)/\(maxAttempts), took \(duration)ms)",
+                    details: [
+                        "error": error.localizedDescription,
+                        "attempt": attempt,
+                        "maxAttempts": maxAttempts,
+                        "duration": duration
+                    ]
+                )
+
+                // Retry если не последняя попытка
+                if attempt < maxAttempts {
+                    let isTimeout = error.localizedDescription.contains("timeout")
+                    let retryDelay = isTimeout ? 2.0 : 1.0 // Больше времени для timeout ошибок
+
+                    AppLogger.shared.info(
+                        screen: AppLogger.Screen.home,
+                        event: AppLogger.Event.dataUpdated,
+                        message: "[PROTOCOL_DEBUG] 🔄 Retrying RS485 in \(retryDelay)s...",
+                        details: [
+                            "isTimeoutError": isTimeout,
+                            "retryDelay": retryDelay,
+                            "nextAttempt": attempt + 1
+                        ]
+                    )
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay) {
+                        self?.loadRS485WithRetry(attempt: attempt + 1, maxAttempts: maxAttempts)
+                    }
+                } else {
+                    AppLogger.shared.error(
+                        screen: AppLogger.Screen.home,
+                        event: AppLogger.Event.errorOccurred,
+                        message: "[PROTOCOL_DEBUG] 💀 RS485 loading failed after \(maxAttempts) attempts"
+                    )
+                }
             }).disposed(by: disposeBag)
+    }
+
+    // MARK: - Protocol Wrapper Methods
+
+    /// Wrapper метод для получения CAN протокола с коротким timeout (аналогично SettingsViewController)
+    private func getCAN() -> Maybe<Zetara.Data.CANControlData> {
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 🎁 HomeViewController.getCAN() wrapper called"
+        )
+
+        return ZetaraManager.shared.getCAN()
+            .timeout(.seconds(3), scheduler: MainScheduler.instance)
+            .subscribeOn(MainScheduler.instance)
+    }
+
+    /// Wrapper метод для получения RS485 протокола с коротким timeout (аналогично SettingsViewController)
+    private func getRS485() -> Maybe<Zetara.Data.RS485ControlData> {
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 🎁 HomeViewController.getRS485() wrapper called"
+        )
+
+        return ZetaraManager.shared.getRS485()
+            .timeout(.seconds(3), scheduler: MainScheduler.instance)
+            .subscribeOn(MainScheduler.instance)
     }
 
     /// Сбрасывает данные протоколов при отключении от устройства
@@ -784,6 +1102,7 @@ class HomeViewController: UIViewController {
     /// Обновляет UI блоков протоколов в зависимости от состояния подключения
     private func updateProtocolUI() {
         let isDeviceConnected = ZetaraManager.shared.connectedPeripheral() != nil
+        let deviceName = ZetaraManager.shared.connectedPeripheral()?.name ?? "none"
 
         if isDeviceConnected {
             // Если устройство подключено, показываем данные
@@ -791,14 +1110,23 @@ class HomeViewController: UIViewController {
             let canText = canData?.readableProtocol() ?? "--"
             let rs485Text = rs485Data?.readableProtocol() ?? "--"
 
+            // Определяем статус загрузки данных
+            let moduleIdStatus = moduleIdData != nil ? "loaded" : "pending"
+            let canStatus = canData != nil ? "loaded" : "pending"
+            let rs485Status = rs485Data != nil ? "loaded" : "pending"
+
             AppLogger.shared.info(
                 screen: AppLogger.Screen.home,
                 event: AppLogger.Event.dataUpdated,
-                message: "Protocol UI updated with device data",
+                message: "[PROTOCOL_DEBUG] 🎨 UI Updated: Module=\(moduleIdText), CAN=\(canText), RS485=\(rs485Text)",
                 details: [
+                    "deviceName": deviceName,
                     "moduleId": moduleIdText,
                     "canProtocol": canText,
                     "rs485Protocol": rs485Text,
+                    "moduleIdStatus": moduleIdStatus,
+                    "canStatus": canStatus,
+                    "rs485Status": rs485Status,
                     "connected": true
                 ]
             )
@@ -813,8 +1141,9 @@ class HomeViewController: UIViewController {
             AppLogger.shared.info(
                 screen: AppLogger.Screen.home,
                 event: AppLogger.Event.dataUpdated,
-                message: "Protocol UI updated - device disconnected",
+                message: "[PROTOCOL_DEBUG] 🎨 UI Updated: Device disconnected - showing dashes",
                 details: [
+                    "deviceName": deviceName,
                     "moduleId": "--",
                     "canProtocol": "--",
                     "rs485Protocol": "--",
