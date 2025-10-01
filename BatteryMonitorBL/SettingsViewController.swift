@@ -645,7 +645,7 @@ class SettingsViewController: UIViewController {
         )
         
         // 一个一个来
-        self.getModuleId().subscribe { [weak self] idData in
+        self.getModuleId().subscribe(onSuccess: { [weak self] idData in
             Alert.hide()
             self?.moduleIdData = idData
             self?.moduleIdSettingItemView?.label = idData.readableId()
@@ -669,31 +669,32 @@ class SettingsViewController: UIViewController {
                 Alert.hide()
 //                Alert.show("Invalid Response")
             })
-        } onError: { error in
+        }, onError: { error in
             Alert.hide()
 //            Alert.show("Invalid Response")
-        }.disposed(by: self.disposeBag)
+        })
+        .disposed(by: self.disposeBag)
     }
     
     /// Возвращает Observable версию getAllSettings для использования в refresh логике
     private func getAllSettingsObservable() -> Single<Void> {
         return Single.create { [weak self] observer in
             // Загружаем все настройки последовательно
-            self?.getModuleId().subscribe { [weak self] idData in
+            self?.getModuleId().subscribe(onSuccess: { [weak self] idData in
                 self?.moduleIdData = idData
                 self?.moduleIdSettingItemView?.label = idData.readableId()
                 self?.toggleRS485AndCAN(idData.otherProtocolsEnabled())
-                
+
                 self?.getRS485().subscribe(onSuccess: { [weak self] rs485 in
                     self?.rs485Data = rs485
                     self?.rs485ProtocolView?.options = rs485.readableProtocols()
                     self?.rs485ProtocolView?.label = rs485.readableProtocol()
-                    
+
                     self?.getCAN().subscribe(onSuccess: { can in
                         self?.canData = can
                         self?.canProtocolView?.options = can.readableProtocols()
                         self?.canProtocolView?.label = can.readableProtocol()
-                        
+
                         // Все настройки загружены успешно
                         observer(.success(()))
                     }, onError: { error in
@@ -702,9 +703,10 @@ class SettingsViewController: UIViewController {
                 }, onError: { error in
                     observer(.failure(error))
                 })
-            } onError: { error in
+            }, onError: { error in
                 observer(.failure(error))
-            }.disposed(by: self?.disposeBag ?? DisposeBag())
+            })
+            .disposed(by: self?.disposeBag ?? DisposeBag())
             
             return Disposables.create()
         }
@@ -744,7 +746,7 @@ class SettingsViewController: UIViewController {
         ZetaraManager.shared.setModuleId(index + 1)
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
-            .subscribe { [weak self] (success: Bool) in
+            .subscribe(onSuccess: { [weak self] success in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
 
@@ -791,7 +793,7 @@ class SettingsViewController: UIViewController {
                     )
                     Alert.show("Set module id failed")
                 }
-            } onError: { error in
+            }, onError: { error in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
 
@@ -814,7 +816,8 @@ class SettingsViewController: UIViewController {
 //                self?.moduleIdSettingItemView.set(label: "ID\(id + 1)")
 //                self?.toggleRS485AndCAN(id == 0) // 这里是 0 ，因为这里的 id 从 0 开始
 
-            }.disposed(by: disposeBag)
+            })
+            .disposed(by: disposeBag)
     }
     
     func setRS485(at index: Int) {
