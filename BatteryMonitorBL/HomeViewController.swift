@@ -851,10 +851,9 @@ class HomeViewController: UIViewController {
             message: "[PROTOCOL_DEBUG] 📡 Loading Module ID (attempt \(attempt)/\(maxAttempts))..."
         )
 
-        ZetaraManager.shared.getModuleId()
-            .subscribeOn(MainScheduler.instance)
+        getModuleId()
             .observe(on: MainScheduler.instance)
-            .subscribe { [weak self] idData in
+            .subscribe(onSuccess: { [weak self] idData in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 let readableId = idData.readableId()
 
@@ -872,7 +871,7 @@ class HomeViewController: UIViewController {
 
                 self?.moduleIdData = idData
                 self?.updateProtocolUI()
-            } onError: { [weak self] error in
+            }, onError: { [weak self] error in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
 
                 AppLogger.shared.error(
@@ -905,18 +904,36 @@ class HomeViewController: UIViewController {
                         message: "[PROTOCOL_DEBUG] 💀 Module ID loading failed after \(maxAttempts) attempts"
                     )
                 }
-            }.disposed(by: disposeBag)
+            })
+            .disposed(by: disposeBag)
     }
 
     /// Загрузка CAN данных с retry логикой
     private func loadCANWithRetry(attempt: Int = 1, maxAttempts: Int = 3) {
         let startTime = Date()
 
-        AppLogger.shared.info(
-            screen: AppLogger.Screen.home,
-            event: AppLogger.Event.dataUpdated,
-            message: "[PROTOCOL_DEBUG] 📡 Loading CAN protocol (attempt \(attempt)/\(maxAttempts))..."
-        )
+        // Диагностика: проверяем Module ID перед попыткой загрузки CAN
+        if let moduleIdData = self.moduleIdData {
+            let moduleId = moduleIdData.readableId()
+            let otherProtocolsEnabled = moduleIdData.otherProtocolsEnabled()
+
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] 📡 Loading CAN protocol (attempt \(attempt)/\(maxAttempts))...",
+                details: [
+                    "currentModuleId": moduleId,
+                    "otherProtocolsEnabled": otherProtocolsEnabled,
+                    "canLoadProtocols": moduleIdData.moduleId == 1
+                ]
+            )
+        } else {
+            AppLogger.shared.warning(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] ⚠️ Loading CAN without Module ID data (attempt \(attempt)/\(maxAttempts))"
+            )
+        }
 
         getCAN()
             .observe(on: MainScheduler.instance)
@@ -987,11 +1004,28 @@ class HomeViewController: UIViewController {
     private func loadRS485WithRetry(attempt: Int = 1, maxAttempts: Int = 3) {
         let startTime = Date()
 
-        AppLogger.shared.info(
-            screen: AppLogger.Screen.home,
-            event: AppLogger.Event.dataUpdated,
-            message: "[PROTOCOL_DEBUG] 📡 Loading RS485 protocol (attempt \(attempt)/\(maxAttempts))..."
-        )
+        // Диагностика: проверяем Module ID перед попыткой загрузки RS485
+        if let moduleIdData = self.moduleIdData {
+            let moduleId = moduleIdData.readableId()
+            let otherProtocolsEnabled = moduleIdData.otherProtocolsEnabled()
+
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] 📡 Loading RS485 protocol (attempt \(attempt)/\(maxAttempts))...",
+                details: [
+                    "currentModuleId": moduleId,
+                    "otherProtocolsEnabled": otherProtocolsEnabled,
+                    "canLoadProtocols": moduleIdData.moduleId == 1
+                ]
+            )
+        } else {
+            AppLogger.shared.warning(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] ⚠️ Loading RS485 without Module ID data (attempt \(attempt)/\(maxAttempts))"
+            )
+        }
 
         getRS485()
             .observe(on: MainScheduler.instance)
@@ -1059,6 +1093,19 @@ class HomeViewController: UIViewController {
     }
 
     // MARK: - Protocol Wrapper Methods
+
+    /// Wrapper метод для получения Module ID с коротким timeout (аналогично SettingsViewController)
+    private func getModuleId() -> Maybe<Zetara.Data.ModuleIdControlData> {
+        AppLogger.shared.info(
+            screen: AppLogger.Screen.home,
+            event: AppLogger.Event.dataUpdated,
+            message: "[PROTOCOL_DEBUG] 🎁 HomeViewController.getModuleId() wrapper called"
+        )
+
+        return ZetaraManager.shared.getModuleId()
+            .timeout(.seconds(3), scheduler: MainScheduler.instance)
+            .subscribeOn(MainScheduler.instance)
+    }
 
     /// Wrapper метод для получения CAN протокола с коротким timeout (аналогично SettingsViewController)
     private func getCAN() -> Maybe<Zetara.Data.CANControlData> {
