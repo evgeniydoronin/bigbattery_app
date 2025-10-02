@@ -798,7 +798,8 @@ public class ZetaraManager: NSObject {
 
         peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
             .subscribe()
-            .disposed(by: self.moduleIdDisposeBag!)
+            // ИСПРАВЛЕНИЕ КРАША (02.10.2025): убран force unwrap чтобы избежать краша когда DisposeBag nil
+            .disposed(by: self.moduleIdDisposeBag ?? DisposeBag())
 
         return Maybe.create { observer in
             ZetaraLogger.debug(
@@ -865,7 +866,8 @@ public class ZetaraManager: NSObject {
 
                     observer(.error(error))
                 })
-                .disposed(by: self.moduleIdDisposeBag!)
+                // ИСПРАВЛЕНИЕ КРАША (02.10.2025): убран force unwrap чтобы избежать краша когда DisposeBag nil
+                .disposed(by: self.moduleIdDisposeBag ?? DisposeBag())
 
             return Disposables.create { [weak self] in
                 self?.moduleIdDisposeBag = nil

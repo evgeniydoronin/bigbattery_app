@@ -176,6 +176,16 @@ extension ConnectivityViewController: UITableViewDelegate {
                         self?.state = .connected
                         self?.tableView.reloadData()
 
+                        // ИСПРАВЛЕНИЕ (02.10.2025): Загружаем протоколы сразу после подключения
+                        // Это решает проблему пустого кэша когда пользователь не открывает Settings
+                        AppLogger.shared.info(
+                            screen: AppLogger.Screen.connectivity,
+                            event: AppLogger.Event.dataUpdated,
+                            message: "[PROTOCOL_DEBUG] 📡 Loading protocols after connection to fill cache"
+                        )
+
+                        self?.loadProtocolsAfterConnection()
+
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             AppLogger.shared.info(
                                 screen: AppLogger.Screen.connectivity,
@@ -282,6 +292,86 @@ extension ConnectivityViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         71
+    }
+
+    // MARK: - Protocol Loading After Connection
+
+    /// Загружает протоколы сразу после подключения чтобы заполнить кэш
+    /// ИСПРАВЛЕНИЕ (02.10.2025): решает проблему пустого кэша когда пользователь не открывает Settings
+    private func loadProtocolsAfterConnection() {
+        let deviceName = ZetaraManager.shared.connectedPeripheral()?.name ?? "Unknown"
+
+        // Загружаем Module ID
+        ZetaraManager.shared.getModuleId()
+            .timeout(.seconds(3), scheduler: MainScheduler.instance)
+            .subscribe(onSuccess: { idData in
+                // Сохраняем в кэш
+                ZetaraManager.shared.cachedModuleIdData = idData
+
+                AppLogger.shared.info(
+                    screen: AppLogger.Screen.connectivity,
+                    event: AppLogger.Event.dataUpdated,
+                    message: "[PROTOCOL_DEBUG] ✅ Module ID loaded after connection: \(idData.readableId())",
+                    details: ["deviceName": deviceName]
+                )
+
+                // Загружаем RS485
+                ZetaraManager.shared.getRS485()
+                    .timeout(.seconds(3), scheduler: MainScheduler.instance)
+                    .subscribe(onSuccess: { rs485Data in
+                        // Сохраняем в кэш
+                        ZetaraManager.shared.cachedRS485Data = rs485Data
+
+                        AppLogger.shared.info(
+                            screen: AppLogger.Screen.connectivity,
+                            event: AppLogger.Event.dataUpdated,
+                            message: "[PROTOCOL_DEBUG] ✅ RS485 loaded after connection: \(rs485Data.readableProtocol())",
+                            details: ["deviceName": deviceName]
+                        )
+
+                        // Загружаем CAN
+                        ZetaraManager.shared.getCAN()
+                            .timeout(.seconds(3), scheduler: MainScheduler.instance)
+                            .subscribe(onSuccess: { canData in
+                                // Сохраняем в кэш
+                                ZetaraManager.shared.cachedCANData = canData
+
+                                AppLogger.shared.info(
+                                    screen: AppLogger.Screen.connectivity,
+                                    event: AppLogger.Event.dataUpdated,
+                                    message: "[PROTOCOL_DEBUG] ✅ CAN loaded after connection: \(canData.readableProtocol())",
+                                    details: ["deviceName": deviceName]
+                                )
+
+                                // ВСЕ протоколы загружены - отправляем уведомление для Home
+                                NotificationCenter.default.post(
+                                    name: HomeViewController.protocolsDidUpdateNotification,
+                                    object: nil
+                                )
+                            }, onError: { error in
+                                AppLogger.shared.error(
+                                    screen: AppLogger.Screen.connectivity,
+                                    event: AppLogger.Event.errorOccurred,
+                                    message: "[PROTOCOL_DEBUG] ❌ CAN load failed after connection: \(error.localizedDescription)",
+                                    details: ["deviceName": deviceName]
+                                )
+                            })
+                    }, onError: { error in
+                        AppLogger.shared.error(
+                            screen: AppLogger.Screen.connectivity,
+                            event: AppLogger.Event.errorOccurred,
+                            message: "[PROTOCOL_DEBUG] ❌ RS485 load failed after connection: \(error.localizedDescription)",
+                            details: ["deviceName": deviceName]
+                        )
+                    })
+            }, onError: { error in
+                AppLogger.shared.error(
+                    screen: AppLogger.Screen.connectivity,
+                    event: AppLogger.Event.errorOccurred,
+                    message: "[PROTOCOL_DEBUG] ❌ Module ID load failed after connection: \(error.localizedDescription)",
+                    details: ["deviceName": deviceName]
+                )
+            })
     }
 }
 
