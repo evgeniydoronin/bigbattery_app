@@ -219,9 +219,38 @@ class SettingsViewController: UIViewController {
                 self?.updateConnectionStatus(isConnected: isConnected)
                 // Включаем/выключаем Module ID в зависимости от подключения
                 self?.toggleModuleId(isConnected)
-                // CAN и RS485 остаются выключенными до загрузки настроек
+
+                // ИСПРАВЛЕНИЕ #7 (02.10.2025): НЕ отключаем протоколы при disconnect автоматически
+                // ПРОБЛЕМА: При disconnect код вызывал toggleRS485AndCAN(false) что делало протоколы некликабельными
+                //           даже если Module ID = 1 (что позволяет использовать протоколы)
+                // РЕШЕНИЕ: Проверяем Module ID из кэша и оставляем протоколы включенными если Module ID = 1
                 if !isConnected {
-                    self?.toggleRS485AndCAN(false)
+                    // При отключении проверяем Module ID из кэша
+                    if let cachedModuleId = ZetaraManager.shared.cachedModuleIdData {
+                        // Если Module ID = 1, протоколы остаются включенными (пользователь сможет их выбрать при переподключении)
+                        let shouldEnableProtocols = cachedModuleId.otherProtocolsEnabled()
+                        self?.toggleRS485AndCAN(shouldEnableProtocols)
+
+                        AppLogger.shared.info(
+                            screen: AppLogger.Screen.settings,
+                            event: AppLogger.Event.stateChanged,
+                            message: "[PROTOCOL_DEBUG] 🔌 Device disconnected, protocols state: \(shouldEnableProtocols ? "enabled" : "disabled") based on cached Module ID",
+                            details: [
+                                "moduleId": cachedModuleId.readableId(),
+                                "protocolsEnabled": shouldEnableProtocols
+                            ]
+                        )
+                    } else {
+                        // Если кэша нет, отключаем протоколы (безопасное поведение)
+                        self?.toggleRS485AndCAN(false)
+
+                        AppLogger.shared.info(
+                            screen: AppLogger.Screen.settings,
+                            event: AppLogger.Event.stateChanged,
+                            message: "[PROTOCOL_DEBUG] 🔌 Device disconnected, protocols disabled (no cached Module ID)",
+                            details: ["cacheEmpty": true]
+                        )
+                    }
                 }
             }).disposed(by: disposeBag)
 
@@ -763,9 +792,12 @@ class SettingsViewController: UIViewController {
 
         Alert.show("Setting, please wait patiently", timeout: 3)
         // module id 从 1 开始的
+        // ИСПРАВЛЕНИЕ #8 (02.10.2025): увеличен timeout с 3 до 10 секунд
+        // ПРОБЛЕМА: BMS может быть занята после подключения → timeout 3 сек показывал "failure" хотя команда работала
+        // РЕШЕНИЕ: Увеличиваем timeout до 10 секунд чтобы дать BMS больше времени на обработку
         ZetaraManager.shared.setModuleId(index + 1)
             .subscribeOn(MainScheduler.instance)
-            .timeout(.seconds(3), scheduler: MainScheduler.instance)
+            .timeout(.seconds(10), scheduler: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] success in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
@@ -871,9 +903,10 @@ class SettingsViewController: UIViewController {
         )
 
         Alert.show("Setting, please wait patiently", timeout: 3)
+        // ИСПРАВЛЕНИЕ #8 (02.10.2025): увеличен timeout с 3 до 10 секунд
         ZetaraManager.shared.setRS485(index)
             .subscribeOn(MainScheduler.instance)
-            .timeout(.seconds(3), scheduler: MainScheduler.instance)
+            .timeout(.seconds(10), scheduler: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] success in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
@@ -968,9 +1001,10 @@ class SettingsViewController: UIViewController {
         )
 
         Alert.show("Setting, please wait patiently", timeout: 3)
+        // ИСПРАВЛЕНИЕ #8 (02.10.2025): увеличен timeout с 3 до 10 секунд
         ZetaraManager.shared.setCAN(index)
             .subscribeOn(MainScheduler.instance)
-            .timeout(.seconds(3), scheduler: MainScheduler.instance)
+            .timeout(.seconds(10), scheduler: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] success in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
@@ -1046,19 +1080,22 @@ class SettingsViewController: UIViewController {
             .disposed(by: disposeBag)
     }
     
+    // ИСПРАВЛЕНИЕ #8 (02.10.2025): увеличен timeout с 3 до 10 секунд для всех get-методов
+    // ПРОБЛЕМА: BMS может быть занята → timeout 3 сек был слишком короткий
+    // РЕШЕНИЕ: Увеличиваем timeout до 10 секунд чтобы дать BMS больше времени на ответ
     func getModuleId() -> Maybe<Zetara.Data.ModuleIdControlData> {
         print("get control data: module id")
-        return ZetaraManager.shared.getModuleId().timeout(.seconds(3), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
+        return ZetaraManager.shared.getModuleId().timeout(.seconds(10), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
     }
-    
+
     func getRS485() -> Maybe<Zetara.Data.RS485ControlData> {
         print("get control data: rs485")
-        return ZetaraManager.shared.getRS485().timeout(.seconds(3), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
+        return ZetaraManager.shared.getRS485().timeout(.seconds(10), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
     }
-    
+
     func getCAN() -> Maybe<Zetara.Data.CANControlData> {
         print("get control data: can")
-        return ZetaraManager.shared.getCAN().timeout(.seconds(3), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
+        return ZetaraManager.shared.getCAN().timeout(.seconds(10), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
     }
     
     // MARK: - Refresh Connection Methods
