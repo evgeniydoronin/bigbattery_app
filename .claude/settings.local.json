@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Read(//Users/evgeniydoronin/Downloads/**)"
+      "Read(//Users/evgeniydoronin/Downloads/**)",
+      "Bash(cat:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

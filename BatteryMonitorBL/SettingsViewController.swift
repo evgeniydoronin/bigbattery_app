@@ -651,16 +651,27 @@ class SettingsViewController: UIViewController {
             self?.moduleIdSettingItemView?.label = idData.readableId()
             self?.toggleModuleId(true)
             self?.toggleRS485AndCAN(idData.otherProtocolsEnabled())
+
+            // Сохраняем Module ID в кэш ZetaraManager для Home экрана
+            // Home прочитает это БЕЗ Bluetooth запросов → нет конфликта
+            ZetaraManager.shared.cachedModuleIdData = idData
             self?.getRS485().subscribe(onSuccess: { [weak self] rs485 in
                 Alert.hide()
                 self?.rs485Data = rs485
                 self?.rs485ProtocolView?.options = rs485.readableProtocols()
                 self?.rs485ProtocolView?.label = rs485.readableProtocol()
+
+                // Сохраняем RS485 в кэш для Home экрана
+                ZetaraManager.shared.cachedRS485Data = rs485
+
                 self?.getCAN().subscribe(onSuccess: { can in
                     Alert.hide()
                     self?.canData = can
                     self?.canProtocolView?.options = can.readableProtocols()
                     self?.canProtocolView?.label = can.readableProtocol()
+
+                    // Сохраняем CAN в кэш для Home экрана
+                    ZetaraManager.shared.cachedCANData = can
                 }, onError: { error in
                     Alert.hide()
 //                    Alert.show("Invalid Response")
@@ -685,15 +696,24 @@ class SettingsViewController: UIViewController {
                 self?.moduleIdSettingItemView?.label = idData.readableId()
                 self?.toggleRS485AndCAN(idData.otherProtocolsEnabled())
 
+                // Сохраняем Module ID в кэш
+                ZetaraManager.shared.cachedModuleIdData = idData
+
                 self?.getRS485().subscribe(onSuccess: { [weak self] rs485 in
                     self?.rs485Data = rs485
                     self?.rs485ProtocolView?.options = rs485.readableProtocols()
                     self?.rs485ProtocolView?.label = rs485.readableProtocol()
 
+                    // Сохраняем RS485 в кэш
+                    ZetaraManager.shared.cachedRS485Data = rs485
+
                     self?.getCAN().subscribe(onSuccess: { can in
                         self?.canData = can
                         self?.canProtocolView?.options = can.readableProtocols()
                         self?.canProtocolView?.label = can.readableProtocol()
+
+                        // Сохраняем CAN в кэш
+                        ZetaraManager.shared.cachedCANData = can
 
                         // Все настройки загружены успешно
                         observer(.success(()))
@@ -771,13 +791,25 @@ class SettingsViewController: UIViewController {
 
                     self?.toggleRS485AndCAN(index == 0) // 这里是 0 ，因为这里的 id 从 0 开始
 
-                    // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
-                    if let statusLabel = self?.moduleIdStatusLabel {
-                        self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
-                    }
+                    // Перезагружаем Module ID с устройства чтобы получить актуальное значение
+                    // и обновляем кэш для Home экрана
+                    self?.getModuleId().subscribe(onSuccess: { [weak self] updatedIdData in
+                        self?.moduleIdData = updatedIdData
+                        // Обновляем кэш с новым значением Module ID
+                        ZetaraManager.shared.cachedModuleIdData = updatedIdData
 
-                    // Отправляем уведомление об обновлении протоколов
-                    NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                        // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
+                        if let statusLabel = self?.moduleIdStatusLabel {
+                            self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
+                        }
+
+                        // Отправляем уведомление об обновлении протоколов
+                        NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                    }, onError: { error in
+                        print("Failed to reload Module ID after change: \(error)")
+                        // Отправляем уведомление даже если перезагрузка не удалась
+                        NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                    })
                 } else {
                     AppLogger.shared.error(
                         screen: AppLogger.Screen.settings,
@@ -842,7 +874,7 @@ class SettingsViewController: UIViewController {
         ZetaraManager.shared.setRS485(index)
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
-            .subscribe { [weak self] success in
+            .subscribe(onSuccess: { [weak self] success in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
 
@@ -863,13 +895,23 @@ class SettingsViewController: UIViewController {
                         ]
                     )
 
-                    // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
-                    if let statusLabel = self?.rs485ProtocolStatusLabel {
-                        self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
-                    }
+                    // Перезагружаем RS485 с устройства и обновляем кэш
+                    self?.getRS485().subscribe(onSuccess: { [weak self] updatedRS485 in
+                        self?.rs485Data = updatedRS485
+                        // Обновляем кэш с новым значением RS485
+                        ZetaraManager.shared.cachedRS485Data = updatedRS485
 
-                    // Отправляем уведомление об обновлении протоколов
-                    NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                        // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
+                        if let statusLabel = self?.rs485ProtocolStatusLabel {
+                            self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
+                        }
+
+                        // Отправляем уведомление об обновлении протоколов
+                        NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                    }, onError: { error in
+                        print("Failed to reload RS485 after change: \(error)")
+                        NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                    })
                 } else {
                     AppLogger.shared.error(
                         screen: AppLogger.Screen.settings,
@@ -885,7 +927,7 @@ class SettingsViewController: UIViewController {
                     )
                     self?.rs485ProtocolView?.label = "fail"
                 }
-            } onError: { [weak self] error in
+            }, onError: { [weak self] error in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
 
@@ -903,7 +945,8 @@ class SettingsViewController: UIViewController {
                     ]
                 )
                 self?.rs485ProtocolView?.label = "error"
-            }.disposed(by: disposeBag)
+            })
+            .disposed(by: disposeBag)
     }
     
     func setCAN(at index: Int) {
@@ -928,7 +971,7 @@ class SettingsViewController: UIViewController {
         ZetaraManager.shared.setCAN(index)
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
-            .subscribe { [weak self] success in
+            .subscribe(onSuccess: { [weak self] success in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
 
@@ -949,13 +992,23 @@ class SettingsViewController: UIViewController {
                         ]
                     )
 
-                    // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
-                    if let statusLabel = self?.canProtocolStatusLabel {
-                        self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
-                    }
+                    // Перезагружаем CAN с устройства и обновляем кэш
+                    self?.getCAN().subscribe(onSuccess: { [weak self] updatedCAN in
+                        self?.canData = updatedCAN
+                        // Обновляем кэш с новым значением CAN
+                        ZetaraManager.shared.cachedCANData = updatedCAN
 
-                    // Отправляем уведомление об обновлении протоколов
-                    NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                        // Показываем индикатор подтверждения выбора с помощью отдельного лейбла
+                        if let statusLabel = self?.canProtocolStatusLabel {
+                            self?.showStatusIndicatorWithStackView(label: statusLabel, selectedValue: selectedValue)
+                        }
+
+                        // Отправляем уведомление об обновлении протоколов
+                        NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                    }, onError: { error in
+                        print("Failed to reload CAN after change: \(error)")
+                        NotificationCenter.default.post(name: HomeViewController.protocolsDidUpdateNotification, object: nil)
+                    })
                 } else {
                     AppLogger.shared.error(
                         screen: AppLogger.Screen.settings,
@@ -971,7 +1024,7 @@ class SettingsViewController: UIViewController {
                     )
                     self?.canProtocolView?.label = "fail"
                 }
-            } onError: { [weak self] error in
+            }, onError: { [weak self] error in
                 let duration = Int(Date().timeIntervalSince(startTime) * 1000)
                 Alert.hide()
 
@@ -989,7 +1042,8 @@ class SettingsViewController: UIViewController {
                     ]
                 )
                 self?.canProtocolView?.label = "error"
-            }.disposed(by: disposeBag)
+            })
+            .disposed(by: disposeBag)
     }
     
     func getModuleId() -> Maybe<Zetara.Data.ModuleIdControlData> {

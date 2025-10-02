@@ -84,26 +84,35 @@ class HomeViewController: UIViewController {
         // Скрываем навигационный бар при возвращении на главный экран
         self.navigationController?.setNavigationBarHidden(true, animated: animated)
 
-        // Загружаем данные протоколов если устройство подключено
+        // ИСПРАВЛЕНИЕ BLUETOOTH КОНФЛИКТА (02.10.2025):
+        // ПРОБЛЕМА: Home и Settings одновременно загружали протоколы → timeout'ы
+        // РЕШЕНИЕ: Читаем протоколы из кэша ZetaraManager (загружаются Settings экраном)
+        // БЕЗ Bluetooth запросов - избегаем конфликтов!
         if isConnected {
             AppLogger.shared.info(
                 screen: AppLogger.Screen.home,
                 event: AppLogger.Event.dataUpdated,
-                message: "[PROTOCOL_DEBUG] 🔄 Device connected: \(deviceName), clearing cached data"
+                message: "[PROTOCOL_DEBUG] 📖 Device connected: \(deviceName), reading protocols from cache (NO Bluetooth requests)"
             )
 
-            // Очищаем кэшированные данные для принудительного обновления
-            moduleIdData = nil
-            canData = nil
-            rs485Data = nil
+            // Читаем данные из кэша ZetaraManager (Settings загрузил через Bluetooth)
+            moduleIdData = ZetaraManager.shared.cachedModuleIdData
+            canData = ZetaraManager.shared.cachedCANData
+            rs485Data = ZetaraManager.shared.cachedRS485Data
 
-            // Принудительно обновляем UI с дефолтными значениями
+            // Обновляем UI с данными из кэша
             updateProtocolUI()
 
-            // Загружаем свежие данные протоколов с небольшой задержкой
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self.loadProtocolData()
-            }
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] 📊 Cache data loaded",
+                details: [
+                    "moduleId": moduleIdData?.readableId() ?? "--",
+                    "can": canData?.readableProtocol() ?? "--",
+                    "rs485": rs485Data?.readableProtocol() ?? "--"
+                ]
+            )
         } else {
             AppLogger.shared.info(
                 screen: AppLogger.Screen.home,
@@ -259,12 +268,10 @@ class HomeViewController: UIViewController {
 
                 self?.updateTitle(peripheral)
 
-                // При подключении к устройству загружаем данные протоколов с небольшой задержкой
-                if peripheral != nil {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        self?.loadProtocolData()
-                    }
-                } else {
+                // ИСПРАВЛЕНИЕ BLUETOOTH КОНФЛИКТА (02.10.2025):
+                // НЕ загружаем протоколы здесь! Settings загрузит их при открытии.
+                // Home прочитает из кэша в viewWillAppear или при получении уведомления.
+                if peripheral == nil {
                     // При отключении сбрасываем данные протоколов
                     self?.clearProtocolData()
                 }
@@ -333,9 +340,27 @@ class HomeViewController: UIViewController {
             ]
         )
 
-        // Если устройство подключено, перезагружаем данные протоколов
+        // ИСПРАВЛЕНИЕ BLUETOOTH КОНФЛИКТА (02.10.2025):
+        // Settings загрузил протоколы через Bluetooth и сохранил в кэш, а затем отправил уведомление
+        // Мы просто читаем из кэша БЕЗ Bluetooth запросов
         if ZetaraManager.shared.connectedPeripheral() != nil {
-            loadProtocolData()
+            moduleIdData = ZetaraManager.shared.cachedModuleIdData
+            canData = ZetaraManager.shared.cachedCANData
+            rs485Data = ZetaraManager.shared.cachedRS485Data
+
+            // Обновляем UI с новыми данными из кэша
+            updateProtocolUI()
+
+            AppLogger.shared.info(
+                screen: AppLogger.Screen.home,
+                event: AppLogger.Event.dataUpdated,
+                message: "[PROTOCOL_DEBUG] 📊 Cache data updated from notification",
+                details: [
+                    "moduleId": moduleIdData?.readableId() ?? "--",
+                    "can": canData?.readableProtocol() ?? "--",
+                    "rs485": rs485Data?.readableProtocol() ?? "--"
+                ]
+            )
         }
     }
 

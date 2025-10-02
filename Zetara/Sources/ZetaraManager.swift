@@ -45,6 +45,14 @@ public class ZetaraManager: NSObject {
 
     private static var configuration: Configuration = .default
 
+    // MARK: - Protocol Data Cache
+    // Кэш протоколов для избежания Bluetooth конфликтов между экранами
+    // ПРОБЛЕМА (02.10.2025): Home и Settings одновременно загружали протоколы → timeout'ы при открытии Settings
+    // РЕШЕНИЕ: Settings загружает через Bluetooth и кэширует здесь, Home только читает из кэша БЕЗ Bluetooth запросов
+    public var cachedModuleIdData: Data.ModuleIdControlData?
+    public var cachedCANData: Data.CANControlData?
+    public var cachedRS485Data: Data.RS485ControlData?
+
     public static let shared = ZetaraManager()
 
     private override init() {
@@ -240,6 +248,12 @@ public class ZetaraManager: NSObject {
 
     func cleanData() {
         self.bmsDataSubject.onNext(Data.BMS())
+
+        // Очищаем кэш протоколов при отключении устройства
+        // Важно: при переподключении Settings загрузит свежие данные
+        cachedModuleIdData = nil
+        cachedCANData = nil
+        cachedRS485Data = nil
     }
 
     func cleanScanning() {
