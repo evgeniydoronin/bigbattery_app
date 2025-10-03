@@ -262,10 +262,30 @@ public class ZetaraManager: NSObject {
     }
 
     func cleanConnection() {
+        // ИСПРАВЛЕНИЕ #11 (03.10.2025): Гарантируем полную очистку подключения
+        // ПРОБЛЕМА: Фантомное подключение - connectedPeripheralSubject не очищался при физическом отключении батареи
+        // РЕШЕНИЕ: Принудительно очищаем все ресурсы и состояние
+
+        ZetaraLogger.debug("[CONNECTION] Cleaning connection state", details: [
+            "hadConnectionDisposable": connectionDisposable != nil,
+            "hadTimer": timer != nil,
+            "currentPeripheralName": (try? connectedPeripheralSubject.value())?.name ?? "nil"
+        ])
+
         connectionDisposable?.dispose()
+        connectionDisposable = nil
+
         timer?.invalidate()
         timer = nil
+
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
+        identifier = nil
+
+        // КРИТИЧНО: Очищаем connectedPeripheralSubject чтобы избежать фантомного подключения
         connectedPeripheralSubject.onNext(nil)
+
+        ZetaraLogger.debug("[CONNECTION] Connection state cleaned successfully")
     }
 
     public func observeDisconect() -> Observable<Peripheral> {

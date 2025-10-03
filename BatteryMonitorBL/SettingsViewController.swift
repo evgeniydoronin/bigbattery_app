@@ -260,8 +260,15 @@ class SettingsViewController: UIViewController {
 //                  self.rs485ProtocolView.optionsButton.rx.isEnabled)
 //            .disposed(by: disposeBag)
 
+        // ИСПРАВЛЕНИЕ #10 (03.10.2025): НЕ отключаем протоколы в viewDidLoad!
+        // ПРОБЛЕМА: При открытии Settings эта строка отключала протоколы даже если Module ID = 1
+        //           Лог показывал: "protocols disabled (Module ID != 1)" → через 0.8 сек "protocols enabled (Module ID = 1)"
+        // РЕШЕНИЕ: Состояние протоколов управляется через:
+        //          1. connectedPeripheralSubject observer (линия 217) - при connect/disconnect
+        //          2. moduleIdData didSet (линия ~560) - при загрузке Module ID из устройства
+        //          НЕ нужно принудительно отключать здесь!
         self.toggleModuleId(false)
-        self.toggleRS485AndCAN(false)
+        // self.toggleRS485AndCAN(false) ← УДАЛЕНО
         
         // Создаем отдельные индикаторы статуса (без constraints - они будут в контейнерах)
         setupStatusIndicatorsForStackView()
