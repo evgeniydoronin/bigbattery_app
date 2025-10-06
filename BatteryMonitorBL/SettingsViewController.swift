@@ -12,8 +12,103 @@ import Zetara
 import RxSwift
 import RxBluetoothKit2
 import RxViewController
+import class BatteryMonitorBL.HeaderLogoView
+import class BatteryMonitorBL.ConnectionStatusBanner
 
 class SettingsViewController: UIViewController {
+
+    // Компонент для белой шапки с логотипом BigBattery
+    private let headerLogoView = HeaderLogoView()
+
+    // Connection Status Banner
+    private let connectionStatusBanner = ConnectionStatusBanner()
+
+    // Protocol Settings Header
+    private let protocolSettingsHeader: UILabel = {
+        let label = UILabel()
+        label.text = "Protocol Settings"
+        label.font = .systemFont(ofSize: 20, weight: .bold)
+        label.textColor = .black
+        label.textAlignment = .left
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    // Note Label
+    private let noteLabel: UILabel = {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.textAlignment = .left
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    // Application Information Header
+    private let applicationInfoHeader: UILabel = {
+        let label = UILabel()
+        label.text = "Application Information"
+        label.font = .systemFont(ofSize: 20, weight: .bold)
+        label.textColor = .black
+        label.textAlignment = .left
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    // Save Button
+    private let saveButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Save", for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        button.layer.cornerRadius = 12
+        button.translatesAutoresizingMaskIntoConstraints = false
+
+        // Тень
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowOpacity = 0.1
+        button.layer.shadowRadius = 4
+
+        // Изначально inactive
+        button.isEnabled = false
+        button.backgroundColor = UIColor.lightGray.withAlphaComponent(0.3)
+        button.setTitleColor(.white, for: .normal)
+
+        return button
+    }()
+
+    // Information Banner
+    private let informationBanner: UIView = {
+        let container = UIView()
+        container.backgroundColor = UIColor.white.withAlphaComponent(0.95)
+        container.layer.cornerRadius = 12
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        // Message Label
+        let messageLabel = UILabel()
+        messageLabel.text = "You must restart the battery using the power button after saving, then reconnect to the app to verify changes."
+        messageLabel.textAlignment = .center
+        messageLabel.numberOfLines = 0
+        messageLabel.font = .systemFont(ofSize: 10, weight: .medium)
+        messageLabel.textColor = .black
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        container.addSubview(messageLabel)
+        NSLayoutConstraint.activate([
+            messageLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            messageLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -8),
+            messageLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            messageLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16)
+        ])
+
+        return container
+    }()
+
+    // ScrollView для контента
+    private let scrollView = UIScrollView()
+
+    // StackView с настройками (находится программно из Storyboard)
+    private var settingsStackView: UIStackView?
+
     @IBOutlet weak var versionItemView: SettingItemView?
     @IBOutlet weak var moduleIdSettingItemView: SettingItemView?
     @IBOutlet weak var canProtocolView: SettingItemView?
@@ -25,7 +120,7 @@ class SettingsViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         // Добавляем фоновое изображение
         let backgroundImageView = UIImageView(image: R.image.background())
         backgroundImageView.contentMode = .scaleAspectFill
@@ -33,34 +128,68 @@ class SettingsViewController: UIViewController {
         backgroundImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(backgroundImageView)
         view.sendSubviewToBack(backgroundImageView)
-        
+
+        // Добавляем шапку с логотипом (переиспользуемый компонент)
+        view.addSubview(headerLogoView)
+        headerLogoView.setupConstraints(in: view)
+        view.bringSubviewToFront(headerLogoView)
+
+        // Скрываем navigation bar
+        self.navigationController?.setNavigationBarHidden(true, animated: false)
+
+        // Находим stackView программно (он уже создан в Storyboard)
+        if let stackView = view.subviews.first(where: { $0 is UIStackView }) as? UIStackView {
+            print("[SETTINGS] ✅ Found stackView programmatically")
+            settingsStackView = stackView
+            // Настраиваем ScrollView для контента
+            setupScrollView()
+        } else {
+            print("[SETTINGS] ❌ stackView not found in view.subviews!")
+        }
+
+        // Module ID Setting (синий)
         moduleIdSettingItemView?.title = "Module ID"
+        moduleIdSettingItemView?.subtitle = "BMS module identifier"
+        moduleIdSettingItemView?.icon = UIImage(systemName: "gearshape.fill")
+        moduleIdSettingItemView?.iconColor = UIColor(red: 0x16/255.0, green: 0x5E/255.0, blue: 0xA0/255.0, alpha: 1.0)
         moduleIdSettingItemView?.options = Zetara.Data.ModuleIdControlData.readableIds()
         moduleIdSettingItemView?.selectedOptionIndex
             .skip(1)
             .subscribe {[weak self] index in
                 self?.setModuleId(at:index)
         }.disposed(by: disposeBag)
-        
-        versionItemView?.title = "Version"
-        versionItemView?.label = version()
-        versionItemView?.options = [] // Явно устанавливаем пустой массив опций, чтобы скрыть стрелочку
-        
+
+        // CAN Protocol Setting (зеленый)
         canProtocolView?.title = "CAN Protocol"
+        canProtocolView?.subtitle = "Controller area network protocol"
+        canProtocolView?.icon = UIImage(systemName: "gearshape.fill")
+        canProtocolView?.iconColor = UIColor(red: 0x12/255.0, green: 0xC0/255.0, blue: 0x4C/255.0, alpha: 1.0)
         canProtocolView?.options = []
         canProtocolView?.selectedOptionIndex
             .skip(1)
             .subscribe { [weak self] index in
                 self?.setCAN(at: index)
             }.disposed(by: disposeBag)
-        
+
+        // RS485 Protocol Setting (красный)
         rs485ProtocolView?.title = "RS485 Protocol"
+        rs485ProtocolView?.subtitle = "Serial communication protocol"
+        rs485ProtocolView?.icon = UIImage(systemName: "gearshape.fill")
+        rs485ProtocolView?.iconColor = UIColor(red: 0xED/255.0, green: 0x10/255.0, blue: 0x00/255.0, alpha: 1.0)
         rs485ProtocolView?.options = []
         rs485ProtocolView?.selectedOptionIndex
             .skip(1)
             .subscribe { [weak self] index in
                 self?.setRS485(at: index)
         }.disposed(by: disposeBag)
+
+        // Version Setting (синий bluetooth icon)
+        versionItemView?.title = "App Version"
+        versionItemView?.subtitle = "BigBattery Husky 2"
+        versionItemView?.icon = R.image.homeBluetooth()
+        versionItemView?.iconColor = .systemBlue
+        versionItemView?.label = version()
+        versionItemView?.options = [] // Явно устанавливаем пустой массив опций, чтобы скрыть стрелочку
         
         // 进入设置页，就暂停 bms data 刷新，离开恢复
         self.rx.isVisible.subscribe { [weak self] (visible: Bool) in
@@ -102,7 +231,191 @@ class SettingsViewController: UIViewController {
         
         self.toggleRS485AndCAN(false)
     }
-    
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // Скрываем navigation bar при возвращении на экран
+        self.navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    // MARK: - Setup ScrollView
+
+    private func setupScrollView() {
+        guard let stackView = settingsStackView else {
+            print("[SETTINGS] ⚠️ settingsStackView is nil - check Storyboard outlet connection!")
+            return
+        }
+
+        // Настраиваем ScrollView
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.showsVerticalScrollIndicator = true
+        scrollView.alwaysBounceVertical = true
+        view.addSubview(scrollView)
+
+        // Constraints для ScrollView: под header, над tabbar
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: headerLogoView.bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        ])
+
+        // Добавляем Connection Status Banner в scrollView
+        connectionStatusBanner.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(connectionStatusBanner)
+
+        // Constraints для Connection Status Banner (margins 30pt как у StackView)
+        NSLayoutConstraint.activate([
+            connectionStatusBanner.topAnchor.constraint(equalTo: scrollView.topAnchor, constant: 16),
+            connectionStatusBanner.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
+            connectionStatusBanner.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -30),
+            connectionStatusBanner.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60), // -60 = -30*2
+            connectionStatusBanner.heightAnchor.constraint(equalToConstant: 40)
+        ])
+
+        // Удаляем stackView из superview и все его constraints
+        stackView.removeFromSuperview()
+
+        // Извлекаем versionItemView из stackView (последний элемент)
+        let versionView = stackView.arrangedSubviews.last
+        if let versionView = versionView {
+            stackView.removeArrangedSubview(versionView)
+            versionView.removeFromSuperview()
+        }
+
+        // Добавляем Protocol Settings Header (margins 30pt)
+        scrollView.addSubview(protocolSettingsHeader)
+        NSLayoutConstraint.activate([
+            protocolSettingsHeader.topAnchor.constraint(equalTo: connectionStatusBanner.bottomAnchor, constant: 16),
+            protocolSettingsHeader.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
+            protocolSettingsHeader.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -30),
+            protocolSettingsHeader.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60), // -60 = -30*2
+            protocolSettingsHeader.heightAnchor.constraint(equalToConstant: 30)
+        ])
+
+        // Настраиваем форматирование для Note Label
+        setupNoteLabel()
+
+        // Добавляем Note Label (margins 30pt как у StackView)
+        scrollView.addSubview(noteLabel)
+        NSLayoutConstraint.activate([
+            noteLabel.topAnchor.constraint(equalTo: protocolSettingsHeader.bottomAnchor, constant: 8),
+            noteLabel.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
+            noteLabel.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -30),
+            noteLabel.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60) // -60 = -30*2
+        ])
+
+        // Добавляем stackView в scrollView (теперь только 3 элемента протоколов)
+        scrollView.addSubview(stackView)
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Constraints для stackView (без bottomAnchor к scrollView)
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: noteLabel.bottomAnchor, constant: 16), // 8pt spacer + 8pt margin
+            stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
+            stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -30),
+            // Важно: ширина stackView = ширина scrollView для правильного скроллинга
+            stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60) // -60 = -30*2 (margins)
+        ])
+
+        // Добавляем Application Information Header после stackView (margins 30pt)
+        scrollView.addSubview(applicationInfoHeader)
+        NSLayoutConstraint.activate([
+            applicationInfoHeader.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 26), // 16 обычный + 10 дополнительный
+            applicationInfoHeader.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
+            applicationInfoHeader.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -30),
+            applicationInfoHeader.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60), // -60 = -30*2
+            applicationInfoHeader.heightAnchor.constraint(equalToConstant: 30)
+        ])
+
+        // Добавляем Version после Application Information Header
+        if let versionView = versionView {
+            versionView.translatesAutoresizingMaskIntoConstraints = false
+            scrollView.addSubview(versionView)
+
+            NSLayoutConstraint.activate([
+                versionView.topAnchor.constraint(equalTo: applicationInfoHeader.bottomAnchor, constant: 8),
+                versionView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
+                versionView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -30),
+                versionView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60),
+                versionView.heightAnchor.constraint(equalToConstant: 60)
+            ])
+
+            // Добавляем Save Button после Version (margins 30pt)
+            scrollView.addSubview(saveButton)
+            NSLayoutConstraint.activate([
+                saveButton.topAnchor.constraint(equalTo: versionView.bottomAnchor, constant: 16),
+                saveButton.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
+                saveButton.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -30),
+                saveButton.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60),
+                saveButton.heightAnchor.constraint(equalToConstant: 50)
+            ])
+
+            // Добавляем Information Banner после Save Button (margins 30pt)
+            scrollView.addSubview(informationBanner)
+            NSLayoutConstraint.activate([
+                informationBanner.topAnchor.constraint(equalTo: saveButton.bottomAnchor, constant: 16),
+                informationBanner.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
+                informationBanner.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -30),
+                informationBanner.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60),
+                informationBanner.heightAnchor.constraint(equalToConstant: 60),
+                informationBanner.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -24)
+            ])
+        }
+
+        // Подписываемся на изменения подключения
+        setupConnectionStatusObserver()
+
+        print("[SETTINGS] ✅ ScrollView configured successfully")
+    }
+
+    private func setupNoteLabel() {
+        let noteText = "Note: The battery connected directly to the inverter or meter via the communication cable must be set to ID1. All other batteries should be assigned unique IDs (ID2, ID3, etc.)."
+
+        // Создаем attributed string
+        let attributedString = NSMutableAttributedString(string: noteText)
+
+        // Базовые атрибуты (серый цвет, 12pt)
+        let grayColor = UIColor(red: 0x80/255.0, green: 0x80/255.0, blue: 0x80/255.0, alpha: 1.0)
+        let normalFont = UIFont.systemFont(ofSize: 12)
+        let boldFont = UIFont.systemFont(ofSize: 12, weight: .bold)
+
+        attributedString.addAttributes([
+            .font: normalFont,
+            .foregroundColor: grayColor
+        ], range: NSRange(location: 0, length: noteText.count))
+
+        // Делаем "Note:" жирным
+        if let noteRange = noteText.range(of: "Note:") {
+            let nsRange = NSRange(noteRange, in: noteText)
+            attributedString.addAttribute(.font, value: boldFont, range: nsRange)
+        }
+
+        // Делаем "ID1" жирным
+        if let id1Range = noteText.range(of: "ID1") {
+            let nsRange = NSRange(id1Range, in: noteText)
+            attributedString.addAttribute(.font, value: boldFont, range: nsRange)
+        }
+
+        noteLabel.attributedText = attributedString
+    }
+
+    private func setupConnectionStatusObserver() {
+        ZetaraManager.shared.connectedPeripheralSubject
+            .subscribeOn(MainScheduler.instance)
+            .observe(on: MainScheduler.instance)
+            .subscribe { [weak self] (peripheral: ZetaraManager.ConnectedPeripheral?) in
+                let isConnected = peripheral != nil
+                self?.connectionStatusBanner.setConnected(isConnected, animated: true)
+            }
+            .disposed(by: disposeBag)
+
+        // Устанавливаем начальное состояние
+        let initiallyConnected = ZetaraManager.shared.connectedPeripheral() != nil
+        connectionStatusBanner.setConnected(initiallyConnected, animated: false)
+    }
+
     func version() -> String {
         guard let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String else {
             return ""

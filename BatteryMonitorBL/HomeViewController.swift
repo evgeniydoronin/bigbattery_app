@@ -23,26 +23,12 @@ import class BatteryMonitorBL.TimerView
 import class BatteryMonitorBL.BatteryProgressView
 import class BatteryMonitorBL.TabsContainerView
 import class BatteryMonitorBL.BatteryStatusView
-
-// Удаляем импорт BatteryInfoView
+import class BatteryMonitorBL.HeaderLogoView
 
 class HomeViewController: UIViewController {
     
-    // Добавляем шапку с белым фоном
-    private let headerView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .white
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
-    
-    // Добавляем логотип в шапку
-    private let headerLogoImageView: UIImageView = {
-        let imageView = UIImageView(image: R.image.headerLogo())
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
-    }()
+    // Компонент для белой шапки с логотипом BigBattery
+    private let headerLogoView = HeaderLogoView()
     
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -234,12 +220,10 @@ class HomeViewController: UIViewController {
         backgroundImageView.contentMode = .scaleAspectFill
         backgroundImageView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(backgroundImageView)
-        
-        // Добавляем шапку на экран
-        view.addSubview(headerView)
-        
-        // Добавляем логотип в шапку
-        headerView.addSubview(headerLogoImageView)
+
+        // Добавляем шапку с логотипом (новый компонент)
+        view.addSubview(headerLogoView)
+        headerLogoView.setupConstraints(in: view)
         
         // Создаем скроллируемый контейнер для всего контента под шапкой
         let scrollView = UIScrollView()
@@ -368,33 +352,17 @@ class HomeViewController: UIViewController {
         
         // Настраиваем ограничения для фонового изображения
         NSLayoutConstraint.activate([
-            backgroundImageView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+            backgroundImageView.topAnchor.constraint(equalTo: headerLogoView.bottomAnchor),
             backgroundImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             backgroundImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             backgroundImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-        
-        // Настраиваем ограничения для шапки с учетом safeArea
-        NSLayoutConstraint.activate([
-            headerView.topAnchor.constraint(equalTo: view.topAnchor), // Начинаем от верха view
-            headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            // Высота шапки должна включать safeArea сверху плюс дополнительное пространство для контента
-            headerView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 60) // 60 пикселей ниже safeArea
-        ])
-        
-        // Настраиваем ограничения для логотипа - размещаем его в безопасной зоне
-        NSLayoutConstraint.activate([
-            headerLogoImageView.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
-            // Центрируем логотип по вертикали в безопасной зоне
-            headerLogoImageView.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 30),
-            headerLogoImageView.widthAnchor.constraint(equalToConstant: 200), // Ширина логотипа
-            headerLogoImageView.heightAnchor.constraint(equalToConstant: 60) // Высота логотипа
-        ])
-        
+
+        // Constraints для header настраиваются внутри компонента через setupConstraints()
+
         // Настраиваем ограничения для скроллируемого контейнера
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: headerView.bottomAnchor), // Начинаем под шапкой
+            scrollView.topAnchor.constraint(equalTo: headerLogoView.bottomAnchor), // Начинаем под шапкой
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -485,8 +453,12 @@ class HomeViewController: UIViewController {
             make.top.equalToSuperview().offset(8)
             make.leading.equalToSuperview().offset(16)
             make.trailing.equalToSuperview().offset(-16)
-            make.bottom.equalToSuperview().offset(-8)
-            make.height.equalTo(100) // Высота блока с протоколами
+            make.height.equalTo(70) // Высота блока с протоколами (как у BatteryParametersView)
+        }
+        
+        // Настраиваем высоту контейнера протоколов
+        protocolsContainer.snp.makeConstraints { make in
+            make.height.equalTo(86) // 70 (высота view) + 8 (top) + 8 (bottom)
         }
         
         // Удаляем ограничения для logoImageView, так как контейнер удален

@@ -76,24 +76,35 @@ class ProtocolParametersView: UIView {
     
     /// Обновляет значения протоколов из кэша ZetaraManager
     func updateValues() {
+        print("[PROTOCOLS VIEW] Updating values...")
+
         // Module ID
         if let moduleIdData = ZetaraManager.shared.cachedModuleIdData {
-            moduleIdBlock.setValue("\(moduleIdData.number)")
+            let value = moduleIdData.readableId()
+            print("[PROTOCOLS VIEW] Module ID: \(value)")
+            moduleIdBlock.setValue(value)
         } else {
+            print("[PROTOCOLS VIEW] Module ID: no data, showing --")
             moduleIdBlock.setValue("--")
         }
-        
+
         // CAN
         if let canData = ZetaraManager.shared.cachedCANData {
-            moduleIdBlock.setValue("\(canData.number)")
+            let value = canData.readableProtocol()
+            print("[PROTOCOLS VIEW] CAN: \(value)")
+            canBlock.setValue(value)
         } else {
+            print("[PROTOCOLS VIEW] CAN: no data, showing --")
             canBlock.setValue("--")
         }
-        
+
         // RS485
         if let rs485Data = ZetaraManager.shared.cachedRS485Data {
-            rs485Block.setValue("\(rs485Data.number)")
+            let value = rs485Data.readableProtocol()
+            print("[PROTOCOLS VIEW] RS485: \(value)")
+            rs485Block.setValue(value)
         } else {
+            print("[PROTOCOLS VIEW] RS485: no data, showing --")
             rs485Block.setValue("--")
         }
     }
@@ -106,36 +117,35 @@ private class ProtocolBlock: UIView {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .medium)
-        label.textColor = .white.withAlphaComponent(0.7)
+        label.font = .systemFont(ofSize: 10, weight: .regular)
+        label.textColor = .black
         label.textAlignment = .center
+        label.numberOfLines = 2
         return label
     }()
     
     private let valueLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 20, weight: .bold)
-        label.textColor = .white
+        label.textColor = .black
         label.textAlignment = .center
         return label
     }()
     
-    private let iconImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
-        imageView.tintColor = .white.withAlphaComponent(0.5)
-        return imageView
-    }()
-    
     init(title: String, iconName: String) {
         super.init(frame: .zero)
-        
-        titleLabel.text = title
-        if let icon = UIImage(systemName: iconName) {
-            iconImageView.image = icon
+
+        // Формируем текст заголовка в формате "Selected ID", "Selected CAN", "Selected RS485"
+        if title == "Module ID" {
+            titleLabel.text = "Selected ID"
+        } else {
+            titleLabel.text = "Selected \(title)"
         }
-        
+
         setupUI()
+
+        // Устанавливаем начальное значение
+        valueLabel.text = "--"
     }
     
     required init?(coder: NSCoder) {
@@ -143,11 +153,9 @@ private class ProtocolBlock: UIView {
     }
     
     private func setupUI() {
-        // Белый фон с прозрачностью
-        backgroundColor = UIColor.white.withAlphaComponent(0.1)
-        layer.cornerRadius = 12
-        layer.borderWidth = 1
-        layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
+        // Белый фон
+        backgroundColor = .white
+        layer.cornerRadius = 10
         
         // Тень
         layer.shadowColor = UIColor.black.cgColor
@@ -155,20 +163,16 @@ private class ProtocolBlock: UIView {
         layer.shadowOffset = CGSize(width: 0, height: 2)
         layer.shadowRadius = 4
         
-        // Layout
-        let stackView = UIStackView(arrangedSubviews: [iconImageView, valueLabel, titleLabel])
+        // Layout - сначала значение, потом заголовок
+        let stackView = UIStackView(arrangedSubviews: [valueLabel, titleLabel])
         stackView.axis = .vertical
-        stackView.spacing = 4
+        stackView.spacing = 8
         stackView.alignment = .center
         
         addSubview(stackView)
         stackView.snp.makeConstraints { make in
             make.center.equalToSuperview()
             make.left.right.equalToSuperview().inset(8)
-        }
-        
-        iconImageView.snp.makeConstraints { make in
-            make.width.height.equalTo(24)
         }
     }
     

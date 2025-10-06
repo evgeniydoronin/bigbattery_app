@@ -229,11 +229,11 @@ extension ConnectivityViewController: UITableViewDataSource {
         print("[PROTOCOLS] Starting protocol loading after connection...")
         
         // 1. Загружаем Module ID
-        ZetaraManager.shared.queuedRequest("getModuleId") {
-            ZetaraManager.shared.getModuleId()
+        ZetaraManager.shared.queuedRequest("getModuleId") { () -> Maybe<Zetara.Data.ModuleIdControlData> in
+            return ZetaraManager.shared.getModuleId()
         }
-        .subscribe(onSuccess: { moduleIdData in
-            print("[PROTOCOLS] ✅ Module ID loaded: \(moduleIdData.number)")
+        .subscribe(onSuccess: { (moduleIdData: Zetara.Data.ModuleIdControlData) in
+            print("[PROTOCOLS] ✅ Module ID loaded: \(moduleIdData.readableId())")
             
             // Сохраняем в кэш
             ZetaraManager.shared.cachedModuleIdData = moduleIdData
@@ -247,11 +247,11 @@ extension ConnectivityViewController: UITableViewDataSource {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self = self else { return }
             
-            ZetaraManager.shared.queuedRequest("getRS485") {
-                ZetaraManager.shared.getRS485()
+            ZetaraManager.shared.queuedRequest("getRS485") { () -> Maybe<Zetara.Data.RS485ControlData> in
+                return ZetaraManager.shared.getRS485()
             }
-            .subscribe(onSuccess: { rs485Data in
-                print("[PROTOCOLS] ✅ RS485 loaded: \(rs485Data.number)")
+            .subscribe(onSuccess: { (rs485Data: Zetara.Data.RS485ControlData) in
+                print("[PROTOCOLS] ✅ RS485 loaded: \(rs485Data.readableProtocol())")
                 
                 // Сохраняем в кэш
                 ZetaraManager.shared.cachedRS485Data = rs485Data
@@ -266,11 +266,11 @@ extension ConnectivityViewController: UITableViewDataSource {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
             guard let self = self else { return }
             
-            ZetaraManager.shared.queuedRequest("getCAN") {
-                ZetaraManager.shared.getCAN()
+            ZetaraManager.shared.queuedRequest("getCAN") { () -> Maybe<Zetara.Data.CANControlData> in
+                return ZetaraManager.shared.getCAN()
             }
-            .subscribe(onSuccess: { canData in
-                print("[PROTOCOLS] ✅ CAN loaded: \(canData.number)")
+            .subscribe(onSuccess: { (canData: Zetara.Data.CANControlData) in
+                print("[PROTOCOLS] ✅ CAN loaded: \(canData.readableProtocol())")
                 
                 // Сохраняем в кэш
                 ZetaraManager.shared.cachedCANData = canData
