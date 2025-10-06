@@ -72,6 +72,9 @@ public class ZetaraManager: NSObject {
     public var cachedRS485Data: Data.RS485ControlData?
     public var cachedCANData: Data.CANControlData?
 
+    // UUID текущего подключенного устройства (для проверки валидности кэша)
+    private var cachedDeviceUUID: String?
+
     public static let shared = ZetaraManager()
 
     private override init() {
@@ -209,8 +212,13 @@ public class ZetaraManager: NSObject {
                             self?.writeCharacteristic = writeCharacteristic
                             self?.notifyCharacteristic = notifyCharacteristic
                             self?.identifier = identifier
+
+                            // Сохраняем UUID подключенного устройства
+                            self?.cachedDeviceUUID = peripheral.identifier.uuidString
+                            print("[CONNECTION] Saved device UUID: \(peripheral.identifier.uuidString)")
+
                             observer.onNext(peripheral)
-                            
+
                             // Запускаем мониторинг подключения
                             self?.startConnectionMonitor()
                             
@@ -245,21 +253,26 @@ public class ZetaraManager: NSObject {
 
     func cleanConnection() {
         print("[CONNECTION] Cleaning connection state")
-        
+
         // Останавливаем мониторинг подключения
         stopConnectionMonitor()
-        
+
+        // Очищаем Request Queue
+        lastRequestTime = nil
+        print("[QUEUE] Request queue cleared")
+
         connectionDisposable?.dispose()
         timer?.invalidate()
         timer = nil
-        
+
         // Очищаем кэш протоколов
         cachedModuleIdData = nil
         cachedRS485Data = nil
         cachedCANData = nil
-        
+        cachedDeviceUUID = nil
+
         connectedPeripheralSubject.onNext(nil)
-        
+
         print("[CONNECTION] Connection state cleaned")
     }
 
@@ -335,7 +348,7 @@ public class ZetaraManager: NSObject {
     // MARK: - Connection Monitor Methods (Этап 2.2)
     
     /// Запускает периодическую проверку реального состояния подключения
-    private func startConnectionMonitor() {
+    public func startConnectionMonitor() {
         // Останавливаем предыдущий таймер если есть
         stopConnectionMonitor()
         
@@ -353,7 +366,7 @@ public class ZetaraManager: NSObject {
     }
     
     /// Останавливает мониторинг подключения
-    private func stopConnectionMonitor() {
+    public func stopConnectionMonitor() {
         guard connectionMonitorTimer != nil else { return }
         
         connectionMonitorTimer?.invalidate()
@@ -363,7 +376,7 @@ public class ZetaraManager: NSObject {
     }
     
     /// Проверяет реальное состояние периферии через CoreBluetooth
-    private func verifyConnectionState() {
+    public func verifyConnectionState() {
         guard let peripheral = try? connectedPeripheralSubject.value() else {
             // Нет подключенного устройства - это нормально
             return
@@ -383,6 +396,16 @@ public class ZetaraManager: NSObject {
             // Принудительная очистка
             cleanConnection()
         }
+    }
+
+    /// Проверяет, актуален ли кэш для текущего подключенного устройства
+    public func isCacheValidForCurrentDevice() -> Bool {
+        guard let peripheral = try? connectedPeripheralSubject.value() else {
+            return false
+        }
+
+        let currentUUID = peripheral.identifier.uuidString
+        return cachedDeviceUUID == currentUUID
     }
 
     let bmsDataHandler = Data.BMSDataHandler()

@@ -98,7 +98,16 @@ class ConnectivityViewController : UIViewController {
                 self?.state = .unconnected
                 self?.tableView.reloadData()
             }.disposed(by: self.disposeBag)
-        
+
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+
+        print("[CONNECTIVITY] View will disappear - cancelling pending requests")
+
+        // Отменяем все текущие подписки
+        disposeBag = DisposeBag()
     }
 }
 

@@ -327,6 +327,15 @@ class SettingsViewController: UIViewController {
         self.navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+
+        print("[SETTINGS] View will disappear - cancelling pending requests")
+
+        // Отменяем все текущие подписки
+        disposeBag = DisposeBag()
+    }
+
     // MARK: - Setup ScrollView
 
     private func setupScrollView() {
@@ -505,6 +514,14 @@ class SettingsViewController: UIViewController {
     }
 
     private func setupConnectionStatusObserver() {
+        // Защита от дублирования subscriptions
+        guard !hasSetupObservers else {
+            print("[SETTINGS] Observers already set up, skipping")
+            return
+        }
+
+        hasSetupObservers = true
+
         ZetaraManager.shared.connectedPeripheralSubject
             .subscribeOn(MainScheduler.instance)
             .observe(on: MainScheduler.instance)
@@ -688,7 +705,10 @@ class SettingsViewController: UIViewController {
     }
     
     var disposeBag = DisposeBag()
-    
+
+    // Флаг для предотвращения дублирования subscriptions
+    private var hasSetupObservers = false
+
     func toggleRS485AndCAN(_ enabled: Bool) {
         self.rs485ProtocolView?.optionsButton.isEnabled = enabled
         self.canProtocolView?.optionsButton.isEnabled = enabled
