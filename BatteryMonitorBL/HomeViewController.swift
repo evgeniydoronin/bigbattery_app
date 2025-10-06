@@ -479,7 +479,29 @@ class HomeViewController: UIViewController {
             /// Информация о параметрах
             batteryParametersView.updateVoltage("\(data.voltage)V")
             batteryParametersView.updateCurrent("\(data.current)A")
-            batteryParametersView.updateTemperature("\(data.tempEnv.celsiusToFahrenheit())°F/\(data.tempEnv)°C")
+
+            // Вычисляем среднюю температуру от всех датчиков
+            var totalTemp: Int = 0
+            var tempCount = 0
+
+            // Добавляем PCB температуру
+            if data.tempPCB != 0 {
+                totalTemp += Int(data.tempPCB)
+                tempCount += 1
+            }
+
+            // Добавляем все температуры сенсоров
+            for cellTemp in data.cellTemps {
+                if cellTemp != 0 {
+                    totalTemp += Int(cellTemp)
+                    tempCount += 1
+                }
+            }
+
+            // Вычисляем среднее (fallback на tempEnv если нет датчиков)
+            let avgTemp = tempCount > 0 ? Int8(totalTemp / tempCount) : data.tempEnv
+
+            batteryParametersView.updateTemperature("\(avgTemp.celsiusToFahrenheit())°F/\(avgTemp)°C")
             
             // Обновляем протоколы (Этап 3.2)
             protocolParametersView.updateValues()
