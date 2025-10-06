@@ -469,6 +469,26 @@ class HomeViewController: UIViewController {
             make.edges.equalToSuperview()
         }
         
+        // Создаем компонент ProtocolParametersView (Этап 3.2)
+        protocolParametersView = ProtocolParametersView()
+        protocolParametersView.translatesAutoresizingMaskIntoConstraints = false
+        protocolsContainer.addSubview(protocolParametersView)
+        
+        // Настраиваем обработчик tap для навигации в Settings
+        protocolParametersView.onTap = { [weak self] in
+            // Переход на вкладку Settings (индекс 2)
+            self?.tabBarController?.selectedIndex = 2
+        }
+        
+        // Настраиваем ограничения для protocolParametersView
+        protocolParametersView.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(8)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().offset(-16)
+            make.bottom.equalToSuperview().offset(-8)
+            make.height.equalTo(100) // Высота блока с протоколами
+        }
+        
         // Удаляем ограничения для logoImageView, так как контейнер удален
     }
     
@@ -494,6 +514,9 @@ class HomeViewController: UIViewController {
             batteryParametersView.updateVoltage("\(data.voltage)V")
             batteryParametersView.updateCurrent("\(data.current)A")
             batteryParametersView.updateTemperature("\(data.tempEnv.celsiusToFahrenheit())°F/\(data.tempEnv)°C")
+            
+            // Обновляем протоколы (Этап 3.2)
+            protocolParametersView.updateValues()
             
             // Обновляем данные в SummaryTabView
             if let summaryView = self.summaryView {
