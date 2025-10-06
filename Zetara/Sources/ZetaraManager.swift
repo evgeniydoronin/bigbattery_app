@@ -107,29 +107,14 @@ public class ZetaraManager: NSObject {
     }
 
     public static func setup(_ configuration: Configuration) {
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("!!! МЕТОД setup() ВЫЗВАН !!!")
-        print("!!! Конфигурация: \(configuration) !!!")
-        if let mockData = configuration.mockData {
-            print("!!! Мок-данные установлены: \(mockData.toHexString()) !!!")
-            print("!!! Длина мок-данных: \([UInt8](mockData).count) байт !!!")
-        } else {
-            print("!!! Мок-данные НЕ установлены !!!")
-        }
+        ZetaraManager.configuration = configuration
         
         if let mockDeviceName = configuration.mockDeviceName {
-            print("!!! Мок-имя устройства установлено: \(mockDeviceName) !!!")
             shared.mockDeviceName = mockDeviceName
-        } else {
-            print("!!! Мок-имя устройства НЕ установлено !!!")
         }
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        
-        ZetaraManager.configuration = configuration
         
         // Если установлены мок-данные, запускаем обновление данных сразу
         if configuration.mockData != nil {
-            print("!!! Запускаем обновление данных сразу, так как установлены мок-данные !!!")
             shared.startRefreshBMSData()
         }
     }
@@ -404,25 +389,18 @@ public class ZetaraManager: NSObject {
 
     var timer: Timer?
     func startRefreshBMSData() {
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("!!! МЕТОД startRefreshBMSData() ВЫЗВАН !!!")
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        
         self.timer = Timer.scheduledTimer(withTimeInterval: Self.configuration.refreshBMSTimeInterval, repeats: true) { [weak self] _ in
-            print("!!! ТАЙМЕР СРАБОТАЛ, ВЫЗЫВАЕМ getBMSData() !!!")
             self?.getBMSData()
                 .subscribeOn(MainScheduler.instance)
                 .subscribe(onSuccess: { [weak self] _data in
-                    print("!!! ПОЛУЧЕНЫ ДАННЫЕ BMS: \(_data) !!!")
                     self?.bmsDataSubject.asObserver().onNext(_data)
-                }, onError: { error in
-                    print("!!! ОШИБКА ПРИ ПОЛУЧЕНИИ ДАННЫХ BMS: \(error) !!!")
+                }, onError: { _ in
+                    // Ошибка при получении данных BMS
                 }, onCompleted: {
-                    print("!!! ПОЛУЧЕНИЕ ДАННЫХ BMS ЗАВЕРШЕНО !!!")
+                    // Получение данных завершено
                 }).disposed(by: self!.disposeBag)
         }
         self.timer?.fire()
-        print("!!! ТАЙМЕР ЗАПУЩЕН !!!")
     }
 
     public func pauseRefreshBMSData() {
