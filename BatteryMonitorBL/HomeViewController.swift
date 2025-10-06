@@ -92,6 +92,9 @@ class HomeViewController: UIViewController {
     // Свойство для компонента BatteryStatusView
     private var batteryStatusView: BatteryStatusView!
     
+    // Свойство для компонента ProtocolParametersView (Этап 3.2)
+    private var protocolParametersView: ProtocolParametersView!
+    
     // Свойства для табов
     private var tabsContainer: UIView!
     
@@ -272,7 +275,11 @@ class HomeViewController: UIViewController {
         let componentsContainer = UIView()
         componentsContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        // 5. Контейнер для табов (Summary, Cell Voltage, Temperature)
+        // 5. Контейнер для протоколов (Module ID, CAN, RS485) - Этап 3.2
+        let protocolsContainer = UIView()
+        protocolsContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 6. Контейнер для табов (Summary, Cell Voltage, Temperature)
         let tabsContainer = UIView()
         tabsContainer.translatesAutoresizingMaskIntoConstraints = false
         
@@ -288,8 +295,9 @@ class HomeViewController: UIViewController {
         contentStackView.addArrangedSubview(batteryContainer)            // 2. Визуализация уровня заряда батареи
         contentStackView.addArrangedSubview(batteryStatusContainer)      // 3. Индикатор статуса батареи
         contentStackView.addArrangedSubview(componentsContainer)         // 4. Контейнер с параметрами батареи (напряжение, ток, температура)
-        contentStackView.addArrangedSubview(tabsContainer)               // 5. Контейнер с табами
-        contentStackView.addArrangedSubview(timerContainer)              // 6. Контейнер с временем последнего обновления
+        contentStackView.addArrangedSubview(protocolsContainer)          // 5. Контейнер с протоколами (Module ID, CAN, RS485) - Этап 3.2
+        contentStackView.addArrangedSubview(tabsContainer)               // 6. Контейнер с табами
+        contentStackView.addArrangedSubview(timerContainer)              // 7. Контейнер с временем последнего обновления
         
         // Добавляем отступы между контейнерами
         // contentStackView.setCustomSpacing(-1, after: bluetoothConnectionContainer) // Удаляем отрицательный отступ
