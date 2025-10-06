@@ -4,7 +4,11 @@
       "Read(//Users/evgeniydoronin/Downloads/**)",
       "Bash(cat:*)",
       "Bash(python3:*)",
-      "Read(//Users/evgeniydoronin/Library/Developer/Xcode/Products/com.bigbattery.app/Crashes/Points/BGND3L_qyh30PbKDY_eRc0.xccrashpoint/Filters/Filter_BGND3L_qyh30PbKDY_eRc0-6746127282-com.bigbattery.app-com.apple.platform.iphoneos-com.apple.platform.iphoneos-Any-Any/Logs/LocallySymbolicated/**)"
+      "Read(//Users/evgeniydoronin/Library/Developer/Xcode/Products/com.bigbattery.app/Crashes/Points/BGND3L_qyh30PbKDY_eRc0.xccrashpoint/Filters/Filter_BGND3L_qyh30PbKDY_eRc0-6746127282-com.bigbattery.app-com.apple.platform.iphoneos-com.apple.platform.iphoneos-Any-Any/Logs/LocallySymbolicated/**)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $log ===\")",
+      "Bash(jq:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
