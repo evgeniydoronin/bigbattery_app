@@ -132,6 +132,11 @@ extension ConnectivityViewController: UITableViewDelegate {
                         self?.state = .connected
                         self?.tableView.reloadData()
                         
+                        // Загружаем протоколы через 1.5 сек после подключения (Этап 3.1)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            self?.loadProtocolsViaQueue()
+                        }
+                        
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             self?.navigationController?.popViewController(animated: true)
                         }
@@ -215,6 +220,68 @@ extension ConnectivityViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         71
+    }
+    
+    // MARK: - Protocol Loading (Этап 3.1)
+    
+    /// Загружает протоколы последовательно через Request Queue
+    private func loadProtocolsViaQueue() {
+        print("[PROTOCOLS] Starting protocol loading after connection...")
+        
+        // 1. Загружаем Module ID
+        ZetaraManager.shared.queuedRequest("getModuleId") {
+            ZetaraManager.shared.getModuleId()
+        }
+        .subscribe(onSuccess: { moduleIdData in
+            print("[PROTOCOLS] ✅ Module ID loaded: \(moduleIdData.number)")
+            
+            // Сохраняем в кэш
+            ZetaraManager.shared.cachedModuleIdData = moduleIdData
+            
+        }, onError: { error in
+            print("[PROTOCOLS] ❌ Failed to load Module ID: \(error)")
+        })
+        .disposed(by: disposeBag)
+        
+        // 2. Загружаем RS485 (через 600ms после Module ID)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            guard let self = self else { return }
+            
+            ZetaraManager.shared.queuedRequest("getRS485") {
+                ZetaraManager.shared.getRS485()
+            }
+            .subscribe(onSuccess: { rs485Data in
+                print("[PROTOCOLS] ✅ RS485 loaded: \(rs485Data.number)")
+                
+                // Сохраняем в кэш
+                ZetaraManager.shared.cachedRS485Data = rs485Data
+                
+            }, onError: { error in
+                print("[PROTOCOLS] ❌ Failed to load RS485: \(error)")
+            })
+            .disposed(by: self.disposeBag)
+        }
+        
+        // 3. Загружаем CAN (через 1200ms после Module ID)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            guard let self = self else { return }
+            
+            ZetaraManager.shared.queuedRequest("getCAN") {
+                ZetaraManager.shared.getCAN()
+            }
+            .subscribe(onSuccess: { canData in
+                print("[PROTOCOLS] ✅ CAN loaded: \(canData.number)")
+                
+                // Сохраняем в кэш
+                ZetaraManager.shared.cachedCANData = canData
+                
+                print("[PROTOCOLS] 🎉 All protocols loaded successfully!")
+                
+            }, onError: { error in
+                print("[PROTOCOLS] ❌ Failed to load CAN: \(error)")
+            })
+            .disposed(by: self.disposeBag)
+        }
     }
 }
 
