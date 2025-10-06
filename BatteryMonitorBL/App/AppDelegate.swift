@@ -36,7 +36,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         #endif
         
         let config = Configuration(identifiers: [.v1, .v2],
-                                   refreshBMSTimeInterval: 2,
+                                   refreshBMSTimeInterval: 5,
                                    mockData: mockDataForConfig,
                                    mockDeviceName: mockDeviceNameForConfig)
         ZetaraManager.setup(config)
