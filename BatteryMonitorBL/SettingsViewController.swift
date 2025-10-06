@@ -215,18 +215,32 @@ class SettingsViewController: UIViewController {
             }.disposed(by: disposeBag)
     }
     
+    // MARK: - Protocol Methods (Этап 3.3 - обновлено для использования queuedRequest)
+    
     func getModuleId() -> Maybe<Zetara.Data.ModuleIdControlData> {
-        print("get control data: module id")
-        return ZetaraManager.shared.getModuleId().timeout(.seconds(3), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
+        print("[SETTINGS] Getting Module ID via queue")
+        return ZetaraManager.shared.queuedRequest("getModuleId") {
+            ZetaraManager.shared.getModuleId()
+        }
+        .timeout(.seconds(3), scheduler: MainScheduler.instance)
+        .subscribeOn(MainScheduler.instance)
     }
     
     func getRS485() -> Maybe<Zetara.Data.RS485ControlData> {
-        print("get control data: rs485")
-        return ZetaraManager.shared.getRS485().timeout(.seconds(3), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
+        print("[SETTINGS] Getting RS485 via queue")
+        return ZetaraManager.shared.queuedRequest("getRS485") {
+            ZetaraManager.shared.getRS485()
+        }
+        .timeout(.seconds(3), scheduler: MainScheduler.instance)
+        .subscribeOn(MainScheduler.instance)
     }
     
     func getCAN() -> Maybe<Zetara.Data.CANControlData> {
-        print("get control data: can")
-        return ZetaraManager.shared.getCAN().timeout(.seconds(3), scheduler: MainScheduler.instance).subscribeOn(MainScheduler.instance)
+        print("[SETTINGS] Getting CAN via queue")
+        return ZetaraManager.shared.queuedRequest("getCAN") {
+            ZetaraManager.shared.getCAN()
+        }
+        .timeout(.seconds(3), scheduler: MainScheduler.instance)
+        .subscribeOn(MainScheduler.instance)
     }
 }
