@@ -225,6 +225,10 @@ public class ZetaraManager: NSObject {
                             self?.notifyCharacteristic = notifyCharacteristic
                             self?.identifier = identifier
                             observer.onNext(peripheral)
+                            
+                            // Запускаем мониторинг подключения
+                            self?.startConnectionMonitor()
+                            
                             self?.startRefreshBMSData()
                         } else {
                             // 一般不会走到这里
@@ -255,14 +259,37 @@ public class ZetaraManager: NSObject {
     }
 
     func cleanConnection() {
+        print("[CONNECTION] Cleaning connection state")
+        
+        // Останавливаем мониторинг подключения
+        stopConnectionMonitor()
+        
         connectionDisposable?.dispose()
         timer?.invalidate()
         timer = nil
+        
+        // Очищаем кэш протоколов
+        cachedModuleIdData = nil
+        cachedRS485Data = nil
+        cachedCANData = nil
+        
         connectedPeripheralSubject.onNext(nil)
+        
+        print("[CONNECTION] Connection state cleaned")
     }
 
     public func observeDisconect() -> Observable<Peripheral> {
         return manager.observeDisconnect()
+            .do(onNext: { [weak self] (peripheral, error) in
+                let peripheralName = peripheral.name ?? "Unknown"
+                print("[CONNECTION] 🔌 Device disconnected: \(peripheralName)")
+                if let error = error {
+                    print("[CONNECTION] Disconnect reason: \(error)")
+                }
+                
+                // Автоматическая очистка при отключении
+                self?.cleanConnection()
+            })
             .flatMap { (peripheral, _) in Observable.of(peripheral) }
             .observeOn(MainScheduler.instance)
     }
@@ -317,6 +344,59 @@ public class ZetaraManager: NSObject {
             }
             
             return Disposables.create()
+        }
+    }
+    
+    // MARK: - Connection Monitor Methods (Этап 2.2)
+    
+    /// Запускает периодическую проверку реального состояния подключения
+    private func startConnectionMonitor() {
+        // Останавливаем предыдущий таймер если есть
+        stopConnectionMonitor()
+        
+        print("[CONNECTION] 🔍 Starting connection monitor (check every \(connectionCheckInterval)s)")
+        
+        connectionMonitorTimer = Timer.scheduledTimer(
+            withTimeInterval: connectionCheckInterval,
+            repeats: true
+        ) { [weak self] _ in
+            self?.verifyConnectionState()
+        }
+        
+        // Первая проверка сразу
+        verifyConnectionState()
+    }
+    
+    /// Останавливает мониторинг подключения
+    private func stopConnectionMonitor() {
+        guard connectionMonitorTimer != nil else { return }
+        
+        connectionMonitorTimer?.invalidate()
+        connectionMonitorTimer = nil
+        
+        print("[CONNECTION] Connection monitor stopped")
+    }
+    
+    /// Проверяет реальное состояние периферии через CoreBluetooth
+    private func verifyConnectionState() {
+        guard let peripheral = try? connectedPeripheralSubject.value() else {
+            // Нет подключенного устройства - это нормально
+            return
+        }
+        
+        let peripheralName = peripheral.name ?? "Unknown"
+        let currentState = peripheral.state
+        
+        // Проверяем РЕАЛЬНОЕ состояние через CoreBluetooth
+        if currentState != .connected {
+            print("[CONNECTION] ⚠️ Phantom connection detected!")
+            print("[CONNECTION] Device: \(peripheralName)")
+            print("[CONNECTION] Expected state: connected")
+            print("[CONNECTION] Actual state: \(currentState)")
+            print("[CONNECTION] Action: Cleaning connection automatically")
+            
+            // Принудительная очистка
+            cleanConnection()
         }
     }
 
