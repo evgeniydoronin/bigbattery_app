@@ -26,16 +26,12 @@ class ProtocolParametersView: UIView {
     private let moduleIdBlock = ProtocolBlock(title: "Module ID", iconName: "gear")
     private let canBlock = ProtocolBlock(title: "CAN", iconName: "antenna.radiowaves.left.and.right")
     private let rs485Block = ProtocolBlock(title: "RS485", iconName: "cable.connector")
-    
-    // Callback для навигации в Settings
-    var onTap: (() -> Void)?
-    
+
     // MARK: - Initialization
     
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
-        setupGestures()
     }
     
     required init?(coder: NSCoder) {
@@ -49,29 +45,13 @@ class ProtocolParametersView: UIView {
         stackView.addArrangedSubview(moduleIdBlock)
         stackView.addArrangedSubview(canBlock)
         stackView.addArrangedSubview(rs485Block)
-        
+
         addSubview(stackView)
         stackView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
     }
-    
-    private func setupGestures() {
-        // Добавляем tap gesture для каждого блока
-        let moduleIdTap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
-        moduleIdBlock.addGestureRecognizer(moduleIdTap)
-        
-        let canTap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
-        canBlock.addGestureRecognizer(canTap)
-        
-        let rs485Tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
-        rs485Block.addGestureRecognizer(rs485Tap)
-    }
-    
-    @objc private func handleTap() {
-        onTap?()
-    }
-    
+
     // MARK: - Public Methods
     
     /// Обновляет значения протоколов из кэша ZetaraManager

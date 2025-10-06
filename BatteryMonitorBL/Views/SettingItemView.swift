@@ -153,14 +153,26 @@ class SettingItemView: UIView {
             make.trailing.equalTo(optionsButton.snp.leading).offset(-12)
             make.leading.greaterThanOrEqualTo(textStackView.snp.trailing).offset(8)
         }
+
+        // Добавляем tap gesture на всю карточку для открытия меню
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(cardTapped))
+        addGestureRecognizer(tapGesture)
     }
     
+    @objc private func cardTapped() {
+        // Открываем меню только если optionsButton включен и видим
+        guard optionsButton.isEnabled && !optionsButton.isHidden else {
+            return
+        }
+        expandOptionsMenu()
+    }
+
     fileprivate func expandOptionsMenu() {
-        
+
         guard self.optionsButton.isEnabled else {
             return
         }
-        
+
         let touchDownGestureRecognizer = optionsButton.gestureRecognizers?.first{
             let dd = String(describing: type(of: $0))
             return dd.hasSuffix("TouchDownGestureRecognizer")

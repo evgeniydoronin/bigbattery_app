@@ -441,13 +441,7 @@ class HomeViewController: UIViewController {
         protocolParametersView = ProtocolParametersView()
         protocolParametersView.translatesAutoresizingMaskIntoConstraints = false
         protocolsContainer.addSubview(protocolParametersView)
-        
-        // Настраиваем обработчик tap для навигации в Settings
-        protocolParametersView.onTap = { [weak self] in
-            // Переход на вкладку Settings (индекс 2)
-            self?.tabBarController?.selectedIndex = 2
-        }
-        
+
         // Настраиваем ограничения для protocolParametersView
         protocolParametersView.snp.makeConstraints { make in
             make.top.equalToSuperview().offset(8)

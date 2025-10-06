@@ -109,14 +109,63 @@ class SettingsViewController: UIViewController {
     // StackView с настройками (находится программно из Storyboard)
     private var settingsStackView: UIStackView?
 
+    // Status Indicators (серый текст под каждым setting card)
+    private let moduleIdStatusLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = UIColor(red: 0x80/255.0, green: 0x80/255.0, blue: 0x80/255.0, alpha: 1.0)
+        label.textAlignment = .left
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true // Изначально скрыт через isHidden
+        label.alpha = 0
+        return label
+    }()
+
+    private let canStatusLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = UIColor(red: 0x80/255.0, green: 0x80/255.0, blue: 0x80/255.0, alpha: 1.0)
+        label.textAlignment = .left
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true // Изначально скрыт через isHidden
+        label.alpha = 0
+        return label
+    }()
+
+    private let rs485StatusLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = UIColor(red: 0x80/255.0, green: 0x80/255.0, blue: 0x80/255.0, alpha: 1.0)
+        label.textAlignment = .left
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true // Изначально скрыт через isHidden
+        label.alpha = 0
+        return label
+    }()
+
     @IBOutlet weak var versionItemView: SettingItemView?
     @IBOutlet weak var moduleIdSettingItemView: SettingItemView?
     @IBOutlet weak var canProtocolView: SettingItemView?
     @IBOutlet weak var rs485ProtocolView: SettingItemView?
-    
+
     private var moduleIdData: Zetara.Data.ModuleIdControlData?
     private var rs485Data: Zetara.Data.RS485ControlData?
     private var canData: Zetara.Data.CANControlData?
+
+    // Tracking pending changes (nil = no change)
+    private var pendingModuleIdIndex: Int?
+    private var pendingCANIndex: Int?
+    private var pendingRS485Index: Int?
+
+    // Flag to prevent showing status indicators during data loading
+    private var isLoadingData = false
+
+    // Restart popup properties
+    private var restartPopupOverlay: UIView?
+    private var restartPopupTimer: Timer?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -156,7 +205,20 @@ class SettingsViewController: UIViewController {
         moduleIdSettingItemView?.selectedOptionIndex
             .skip(1)
             .subscribe {[weak self] index in
-                self?.setModuleId(at:index)
+                guard let self = self else { return }
+                // Skip if we're just loading data from battery
+                guard !self.isLoadingData else { return }
+                // Track pending change
+                self.pendingModuleIdIndex = index
+                // Get selected value name
+                let selectedValue = self.moduleIdData?.readableId(at: index) ?? "ID\(index + 1)"
+                // Update card label
+                self.moduleIdSettingItemView?.label = selectedValue
+                // Update and show status indicator
+                self.moduleIdStatusLabel.text = "Selected: \(selectedValue) - Click 'Save' below, then restart the battery and reconnect to the app to verify changes."
+                self.showStatusLabel(self.moduleIdStatusLabel)
+                // Activate Save button
+                self.activateSaveButton()
         }.disposed(by: disposeBag)
 
         // CAN Protocol Setting (зеленый)
@@ -168,7 +230,20 @@ class SettingsViewController: UIViewController {
         canProtocolView?.selectedOptionIndex
             .skip(1)
             .subscribe { [weak self] index in
-                self?.setCAN(at: index)
+                guard let self = self else { return }
+                // Skip if we're just loading data from battery
+                guard !self.isLoadingData else { return }
+                // Track pending change
+                self.pendingCANIndex = index
+                // Get selected value name
+                let selectedValue = self.canData?.readableProtocol(at: index) ?? "Protocol \(index)"
+                // Update card label
+                self.canProtocolView?.label = selectedValue
+                // Update and show status indicator
+                self.canStatusLabel.text = "Selected: \(selectedValue) - Click 'Save' below, then restart the battery and reconnect to the app to verify changes."
+                self.showStatusLabel(self.canStatusLabel)
+                // Activate Save button
+                self.activateSaveButton()
             }.disposed(by: disposeBag)
 
         // RS485 Protocol Setting (красный)
@@ -180,7 +255,20 @@ class SettingsViewController: UIViewController {
         rs485ProtocolView?.selectedOptionIndex
             .skip(1)
             .subscribe { [weak self] index in
-                self?.setRS485(at: index)
+                guard let self = self else { return }
+                // Skip if we're just loading data from battery
+                guard !self.isLoadingData else { return }
+                // Track pending change
+                self.pendingRS485Index = index
+                // Get selected value name
+                let selectedValue = self.rs485Data?.readableProtocol(at: index) ?? "Protocol \(index)"
+                // Update card label
+                self.rs485ProtocolView?.label = selectedValue
+                // Update and show status indicator
+                self.rs485StatusLabel.text = "Selected: \(selectedValue) - Click 'Save' below, then restart the battery and reconnect to the app to verify changes."
+                self.showStatusLabel(self.rs485StatusLabel)
+                // Activate Save button
+                self.activateSaveButton()
         }.disposed(by: disposeBag)
 
         // Version Setting (синий bluetooth icon)
@@ -319,6 +407,20 @@ class SettingsViewController: UIViewController {
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -60) // -60 = -30*2 (margins)
         ])
 
+        // Добавляем Status Indicators в stackView как arrangedSubviews
+        // Они будут автоматически двигать остальные элементы при показе/скрытии
+        // arrangedSubviews[0] = moduleIdSettingItemView
+        // arrangedSubviews[1] = canProtocolView
+        // arrangedSubviews[2] = rs485ProtocolView
+
+        // Добавляем status labels после соответствующих карточек
+        if stackView.arrangedSubviews.count >= 3 {
+            // Вставляем в обратном порядке, чтобы индексы не сбивались
+            stackView.insertArrangedSubview(rs485StatusLabel, at: 3) // После rs485ProtocolView
+            stackView.insertArrangedSubview(canStatusLabel, at: 2)   // После canProtocolView
+            stackView.insertArrangedSubview(moduleIdStatusLabel, at: 1) // После moduleIdSettingItemView
+        }
+
         // Добавляем Application Information Header после stackView (margins 30pt)
         scrollView.addSubview(applicationInfoHeader)
         NSLayoutConstraint.activate([
@@ -344,6 +446,7 @@ class SettingsViewController: UIViewController {
 
             // Добавляем Save Button после Version (margins 30pt)
             scrollView.addSubview(saveButton)
+            saveButton.addTarget(self, action: #selector(saveButtonTapped), for: .touchUpInside)
             NSLayoutConstraint.activate([
                 saveButton.topAnchor.constraint(equalTo: versionView.bottomAnchor, constant: 16),
                 saveButton.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 30),
@@ -416,6 +519,162 @@ class SettingsViewController: UIViewController {
         connectionStatusBanner.setConnected(initiallyConnected, animated: false)
     }
 
+    // MARK: - Status Label and Save Button Helpers
+
+    private func showStatusLabel(_ label: UILabel) {
+        label.isHidden = false
+        UIView.animate(withDuration: 0.3) {
+            label.alpha = 1.0
+        }
+    }
+
+    private func hideStatusLabel(_ label: UILabel) {
+        UIView.animate(withDuration: 0.3, animations: {
+            label.alpha = 0.0
+        }, completion: { _ in
+            label.isHidden = true
+        })
+    }
+
+    private func showRestartPopup() {
+        // Overlay (темный полупрозрачный фон)
+        let overlay = UIView()
+        overlay.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        overlay.alpha = 0
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+
+        // Popup card (белая карточка)
+        let popupCard = UIView()
+        popupCard.backgroundColor = .white
+        popupCard.layer.cornerRadius = 12
+        popupCard.translatesAutoresizingMaskIntoConstraints = false
+
+        // Text label
+        let label = UILabel()
+        label.text = "You must restart the battery using the power button after saving, then reconnect to the app to verify changes."
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.font = .systemFont(ofSize: 16, weight: .medium)
+        label.textColor = .black
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        // Layout
+        view.addSubview(overlay)
+        NSLayoutConstraint.activate([
+            overlay.topAnchor.constraint(equalTo: view.topAnchor),
+            overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+
+        overlay.addSubview(popupCard)
+        NSLayoutConstraint.activate([
+            popupCard.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+            popupCard.centerYAnchor.constraint(equalTo: overlay.centerYAnchor),
+            popupCard.widthAnchor.constraint(equalToConstant: 300)
+        ])
+
+        popupCard.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: popupCard.topAnchor, constant: 24),
+            label.leadingAnchor.constraint(equalTo: popupCard.leadingAnchor, constant: 24),
+            label.trailingAnchor.constraint(equalTo: popupCard.trailingAnchor, constant: -24),
+            label.bottomAnchor.constraint(equalTo: popupCard.bottomAnchor, constant: -24)
+        ])
+
+        // Tap gesture на overlay для закрытия
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(hideRestartPopup))
+        overlay.addGestureRecognizer(tapGesture)
+
+        // Fade in анимация
+        UIView.animate(withDuration: 0.3) {
+            overlay.alpha = 1
+        }
+
+        // Таймер на 3 секунды
+        restartPopupTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+            self?.hideRestartPopup()
+        }
+
+        restartPopupOverlay = overlay
+    }
+
+    @objc private func hideRestartPopup() {
+        restartPopupTimer?.invalidate()
+        restartPopupTimer = nil
+
+        UIView.animate(withDuration: 0.3, animations: {
+            self.restartPopupOverlay?.alpha = 0
+        }, completion: { _ in
+            self.restartPopupOverlay?.removeFromSuperview()
+            self.restartPopupOverlay = nil
+        })
+    }
+
+    private func activateSaveButton() {
+        saveButton.isEnabled = true
+        UIView.animate(withDuration: 0.3) {
+            self.saveButton.backgroundColor = .systemBlue
+        }
+    }
+
+    private func deactivateSaveButton() {
+        saveButton.isEnabled = false
+        UIView.animate(withDuration: 0.3) {
+            self.saveButton.backgroundColor = UIColor.lightGray.withAlphaComponent(0.3)
+        }
+    }
+
+    @objc private func saveButtonTapped() {
+        // Hide all status indicators
+        hideStatusLabel(moduleIdStatusLabel)
+        hideStatusLabel(canStatusLabel)
+        hideStatusLabel(rs485StatusLabel)
+
+        // Show loading alert
+        Alert.show("Saving settings...", timeout: 10)
+
+        // Track how many operations completed
+        var completedOperations = 0
+        let totalOperations = [pendingModuleIdIndex, pendingCANIndex, pendingRS485Index].compactMap { $0 }.count
+
+        let checkCompletion = { [weak self] in
+            completedOperations += 1
+            if completedOperations == totalOperations {
+                Alert.hide()
+                // Show custom restart popup
+                self?.showRestartPopup()
+                // Clear pending changes
+                self?.pendingModuleIdIndex = nil
+                self?.pendingCANIndex = nil
+                self?.pendingRS485Index = nil
+                // Deactivate Save button
+                self?.deactivateSaveButton()
+            }
+        }
+
+        // Apply Module ID change if pending
+        if let index = pendingModuleIdIndex {
+            setModuleId(at: index, completion: checkCompletion)
+        }
+
+        // Apply CAN change if pending
+        if let index = pendingCANIndex {
+            setCAN(at: index, completion: checkCompletion)
+        }
+
+        // Apply RS485 change if pending
+        if let index = pendingRS485Index {
+            setRS485(at: index, completion: checkCompletion)
+        }
+
+        // If no pending changes (shouldn't happen), just hide alert
+        if totalOperations == 0 {
+            Alert.hide()
+            deactivateSaveButton()
+        }
+    }
+
     func version() -> String {
         guard let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String else {
             return ""
@@ -437,94 +696,119 @@ class SettingsViewController: UIViewController {
     
     func getAllSettings() {
         Alert.show("Loading...", timeout: 3)
-        
+
+        // Устанавливаем флаг загрузки данных
+        isLoadingData = true
+
         // 一个一个来
         self.getModuleId().subscribe { [weak self] idData in
             Alert.hide()
             self?.moduleIdData = idData
             self?.moduleIdSettingItemView?.label = idData.readableId()
+
+            // Синхронизируем selectedOptionIndex с загруженным значением
+            let currentId = idData.readableId()
+            if let index = Zetara.Data.ModuleIdControlData.readableIds().firstIndex(of: currentId) {
+                self?.moduleIdSettingItemView?.selectedOptionIndex.onNext(index)
+            }
+
             self?.toggleRS485AndCAN(idData.otherProtocolsEnabled())
             self?.getRS485().subscribe(onSuccess: { [weak self] rs485 in
                 Alert.hide()
                 self?.rs485Data = rs485
                 self?.rs485ProtocolView?.options = rs485.readableProtocols()
                 self?.rs485ProtocolView?.label = rs485.readableProtocol()
+
+                // Синхронизируем selectedOptionIndex с загруженным значением
+                let current = rs485.readableProtocol()
+                if let index = rs485.readableProtocols().firstIndex(of: current) {
+                    self?.rs485ProtocolView?.selectedOptionIndex.onNext(index)
+                }
+
                 self?.getCAN().subscribe(onSuccess: { can in
                     Alert.hide()
                     self?.canData = can
                     self?.canProtocolView?.options = can.readableProtocols()
                     self?.canProtocolView?.label = can.readableProtocol()
+
+                    // Синхронизируем selectedOptionIndex с загруженным значением
+                    let current = can.readableProtocol()
+                    if let index = can.readableProtocols().firstIndex(of: current) {
+                        self?.canProtocolView?.selectedOptionIndex.onNext(index)
+                    }
+
+                    // Сбрасываем флаг загрузки после успешной загрузки всех данных
+                    self?.isLoadingData = false
                 }, onError: { error in
                     Alert.hide()
+                    // Сбрасываем флаг загрузки при ошибке
+                    self?.isLoadingData = false
 //                    Alert.show("Invalid Response")
                 })
             }, onError: { error in
                 Alert.hide()
+                // Сбрасываем флаг загрузки при ошибке RS485
+                self?.isLoadingData = false
 //                Alert.show("Invalid Response")
             })
         } onError: { error in
             Alert.hide()
+            // Сбрасываем флаг загрузки при ошибке ModuleId
+            self.isLoadingData = false
 //            Alert.show("Invalid Response")
         }.disposed(by: self.disposeBag)
     }
     
-    func setModuleId(at index: Int) {
-        Alert.show("Setting, please wait patiently", timeout: 3)
+    func setModuleId(at index: Int, completion: (() -> Void)? = nil) {
         // module id 从 1 开始的
         ZetaraManager.shared.setModuleId(index + 1)
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
             .subscribe { [weak self] (success: Bool) in
-                Alert.hide()
                 if success, let idData = self?.moduleIdData {
                     self?.moduleIdSettingItemView?.label = idData.readableId(at: index)
                     self?.toggleRS485AndCAN(index == 0) // 这里是 0 ，因为这里的 id 从 0 开始
                 } else {
-                    Alert.show("Set module id failed")
+                    print("[SETTINGS] ⚠️ Set module id failed")
                 }
+                completion?()
             } onError: { _ in
-                Alert.hide()
-                Alert.show("Set module id error")
-                
-//                self?.moduleIdSettingItemView.set(label: "ID\(id + 1)")
-//                self?.toggleRS485AndCAN(id == 0) // 这里是 0 ，因为这里的 id 从 0 开始
-                
+                print("[SETTINGS] ❌ Set module id error")
+                completion?()
             }.disposed(by: disposeBag)
     }
     
-    func setRS485(at index: Int) {
-        Alert.show("Setting, please wait patiently", timeout: 3)
+    func setRS485(at index: Int, completion: (() -> Void)? = nil) {
         ZetaraManager.shared.setRS485(index)
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
             .subscribe { [weak self] success in
-                Alert.hide()
                 if success, let rs485 = self?.rs485Data {
                     self?.rs485ProtocolView?.label = rs485.readableProtocol(at: index)
                 } else {
-                    self?.rs485ProtocolView?.label = "fail"
+                    print("[SETTINGS] ⚠️ Set RS485 failed")
                 }
-            } onError: { [weak self] _ in
-                Alert.hide()
-                self?.rs485ProtocolView?.label = "error"
+                completion?()
+            } onError: { _ in
+                print("[SETTINGS] ❌ Set RS485 error")
+                completion?()
             }.disposed(by: disposeBag)
     }
     
-    func setCAN(at index: Int) {
-        Alert.show("Setting, please wait patiently", timeout: 3)
+    func setCAN(at index: Int, completion: (() -> Void)? = nil) {
         ZetaraManager.shared.setCAN(index)
             .subscribeOn(MainScheduler.instance)
             .timeout(.seconds(3), scheduler: MainScheduler.instance)
             .subscribe { [weak self] success in
-                Alert.hide()
                 if success, let can = self?.canData {
                     self?.canProtocolView?.label = can.readableProtocol(at: index)
                 } else {
-                    self?.canProtocolView?.label = "fail"
+                    print("[SETTINGS] ⚠️ Set CAN failed")
                 }
-            } onError: { [weak self] _ in
-                Alert.hide()
-                self?.canProtocolView?.label = "error"
+                completion?()
+            } onError: { _ in
+                print("[SETTINGS] ❌ Set CAN error")
+                completion?()
             }.disposed(by: disposeBag)
     }
     
