@@ -449,7 +449,10 @@ class HomeViewController: UIViewController {
             make.trailing.equalToSuperview().offset(-16)
             make.height.equalTo(70) // Высота блока с протоколами (как у BatteryParametersView)
         }
-        
+
+        // Привязываем protocolParametersView к ProtocolDataManager для реактивного обновления
+        protocolParametersView.bind(to: ZetaraManager.shared.protocolDataManager)
+
         // Настраиваем высоту контейнера протоколов
         protocolsContainer.snp.makeConstraints { make in
             make.height.equalTo(86) // 70 (высота view) + 8 (top) + 8 (bottom)
@@ -502,10 +505,7 @@ class HomeViewController: UIViewController {
             let avgTemp = tempCount > 0 ? Int8(totalTemp / tempCount) : data.tempEnv
 
             batteryParametersView.updateTemperature("\(avgTemp.celsiusToFahrenheit())°F/\(avgTemp)°C")
-            
-            // Обновляем протоколы (Этап 3.2)
-            protocolParametersView.updateValues()
-            
+
             // Обновляем данные в SummaryTabView
             if let summaryView = self.summaryView {
                 // Вычисляем параметры для SummaryTabView

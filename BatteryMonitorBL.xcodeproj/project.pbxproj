@@ -26,6 +26,7 @@
 		324213D62A1A37B800DC7FFC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 32049E88260774F000058371 /* LaunchScreen.storyboard */; };
 		324213D72A1A37B800DC7FFC /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 32049E83260774EF00058371 /* Main.storyboard */; };
 		4ADCF3E5870DF851190206F7 /* Pods_BatteryMonitorBL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F9A2BDB4DCDEB49487D3DCF0 /* Pods_BatteryMonitorBL.framework */; };
+		6A0F514F2E95216C0082CEFD /* ProtocolParametersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F514E2E95216C0082CEFD /* ProtocolParametersView.swift */; };
 		6A5045C82E93DBE500456B5C /* ProtocolParametersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5045C72E93DBE500456B5C /* ProtocolParametersView.swift */; };
 		6A5045CA2E93ECBD00456B5C /* HeaderLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5045C92E93ECBD00456B5C /* HeaderLogoView.swift */; };
 		6A5045CC2E93FF6F00456B5C /* ConnectionStatusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5045CB2E93FF6F00456B5C /* ConnectionStatusBanner.swift */; };
@@ -63,6 +64,7 @@
 		324213BB2A1A359300DC7FFC /* UIView+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIView+Extensions.swift"; sourceTree = "<group>"; };
 		324213C22A1A359300DC7FFC /* SettingsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		4DD148754BC3E68BD751DD64 /* Pods-BatteryMonitorBL.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BatteryMonitorBL.debug.xcconfig"; path = "Target Support Files/Pods-BatteryMonitorBL/Pods-BatteryMonitorBL.debug.xcconfig"; sourceTree = "<group>"; };
+		6A0F514E2E95216C0082CEFD /* ProtocolParametersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolParametersView.swift; sourceTree = "<group>"; };
 		6A5045C72E93DBE500456B5C /* ProtocolParametersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolParametersView.swift; sourceTree = "<group>"; };
 		6A5045C92E93ECBD00456B5C /* HeaderLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderLogoView.swift; sourceTree = "<group>"; };
 		6A5045CB2E93FF6F00456B5C /* ConnectionStatusBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStatusBanner.swift; sourceTree = "<group>"; };
@@ -151,6 +153,7 @@
 		324213B02A1A359300DC7FFC /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				6A0F514E2E95216C0082CEFD /* ProtocolParametersView.swift */,
 				6A5045CB2E93FF6F00456B5C /* ConnectionStatusBanner.swift */,
 				6A5045C92E93ECBD00456B5C /* HeaderLogoView.swift */,
 				6A5045C72E93DBE500456B5C /* ProtocolParametersView.swift */,
@@ -357,6 +360,7 @@
 				6A64C0572DD5E6D100097A22 /* TemperatureTabView.swift in Sources */,
 				324213C42A1A359300DC7FFC /* SceneDelegate.swift in Sources */,
 				6A5BA67F2DD361CA006C1EB8 /* BluetoothConnectionView.swift in Sources */,
+				6A0F514F2E95216C0082CEFD /* ProtocolParametersView.swift in Sources */,
 				6A64C05B2DD6093900097A22 /* DiagnosticsViewController.swift in Sources */,
 				324213C52A1A359300DC7FFC /* DetailsViewController.swift in Sources */,
 				324213D02A1A359300DC7FFC /* UIView+Extensions.swift in Sources */,

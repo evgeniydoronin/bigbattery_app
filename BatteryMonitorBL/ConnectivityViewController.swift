@@ -233,64 +233,13 @@ extension ConnectivityViewController: UITableViewDataSource {
     
     // MARK: - Protocol Loading (Этап 3.1)
     
-    /// Загружает протоколы последовательно через Request Queue
+    /// Загружает протоколы через ProtocolDataManager
     private func loadProtocolsViaQueue() {
         print("[PROTOCOLS] Starting protocol loading after connection...")
-        
-        // 1. Загружаем Module ID
-        ZetaraManager.shared.queuedRequest("getModuleId") { () -> Maybe<Zetara.Data.ModuleIdControlData> in
-            return ZetaraManager.shared.getModuleId()
-        }
-        .subscribe(onSuccess: { (moduleIdData: Zetara.Data.ModuleIdControlData) in
-            print("[PROTOCOLS] ✅ Module ID loaded: \(moduleIdData.readableId())")
-            
-            // Сохраняем в кэш
-            ZetaraManager.shared.cachedModuleIdData = moduleIdData
-            
-        }, onError: { error in
-            print("[PROTOCOLS] ❌ Failed to load Module ID: \(error)")
-        })
-        .disposed(by: disposeBag)
-        
-        // 2. Загружаем RS485 (через 600ms после Module ID)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-            guard let self = self else { return }
-            
-            ZetaraManager.shared.queuedRequest("getRS485") { () -> Maybe<Zetara.Data.RS485ControlData> in
-                return ZetaraManager.shared.getRS485()
-            }
-            .subscribe(onSuccess: { (rs485Data: Zetara.Data.RS485ControlData) in
-                print("[PROTOCOLS] ✅ RS485 loaded: \(rs485Data.readableProtocol())")
-                
-                // Сохраняем в кэш
-                ZetaraManager.shared.cachedRS485Data = rs485Data
-                
-            }, onError: { error in
-                print("[PROTOCOLS] ❌ Failed to load RS485: \(error)")
-            })
-            .disposed(by: self.disposeBag)
-        }
-        
-        // 3. Загружаем CAN (через 1200ms после Module ID)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
-            guard let self = self else { return }
-            
-            ZetaraManager.shared.queuedRequest("getCAN") { () -> Maybe<Zetara.Data.CANControlData> in
-                return ZetaraManager.shared.getCAN()
-            }
-            .subscribe(onSuccess: { (canData: Zetara.Data.CANControlData) in
-                print("[PROTOCOLS] ✅ CAN loaded: \(canData.readableProtocol())")
-                
-                // Сохраняем в кэш
-                ZetaraManager.shared.cachedCANData = canData
-                
-                print("[PROTOCOLS] 🎉 All protocols loaded successfully!")
-                
-            }, onError: { error in
-                print("[PROTOCOLS] ❌ Failed to load CAN: \(error)")
-            })
-            .disposed(by: self.disposeBag)
-        }
+
+        // Загружаем все протоколы через ProtocolDataManager
+        // Request Queue автоматически обеспечит минимальные интервалы между запросами
+        ZetaraManager.shared.protocolDataManager.loadAllProtocols(afterDelay: 1.5)
     }
 }
 

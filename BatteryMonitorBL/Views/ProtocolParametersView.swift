@@ -9,12 +9,17 @@
 import UIKit
 import SnapKit
 import Zetara
+import RxSwift
 
 /// Компонент для отображения параметров протоколов (Module ID, CAN, RS485)
 class ProtocolParametersView: UIView {
-    
+
+    // MARK: - Properties
+
+    private let disposeBag = DisposeBag()
+
     // MARK: - UI Components
-    
+
     private let stackView: UIStackView = {
         let stack = UIStackView()
         stack.axis = .horizontal
@@ -53,40 +58,60 @@ class ProtocolParametersView: UIView {
     }
 
     // MARK: - Public Methods
-    
-    /// Обновляет значения протоколов из кэша ZetaraManager
-    func updateValues() {
-        print("[PROTOCOLS VIEW] Updating values...")
 
-        // Module ID
-        if let moduleIdData = ZetaraManager.shared.cachedModuleIdData {
-            let value = moduleIdData.readableId()
-            print("[PROTOCOLS VIEW] Module ID: \(value)")
-            moduleIdBlock.setValue(value)
-        } else {
-            print("[PROTOCOLS VIEW] Module ID: no data, showing --")
-            moduleIdBlock.setValue("--")
-        }
+    /// Привязывает компонент к ProtocolDataManager для реактивного обновления
+    func bind(to protocolDataManager: ProtocolDataManager) {
+        print("[PROTOCOLS VIEW] Binding to ProtocolDataManager...")
 
-        // CAN
-        if let canData = ZetaraManager.shared.cachedCANData {
-            let value = canData.readableProtocol()
-            print("[PROTOCOLS VIEW] CAN: \(value)")
-            canBlock.setValue(value)
-        } else {
-            print("[PROTOCOLS VIEW] CAN: no data, showing --")
-            canBlock.setValue("--")
-        }
+        // Подписываемся на Module ID
+        protocolDataManager.moduleIdSubject
+            .observeOn(MainScheduler.instance)
+            .subscribe(onNext: { [weak self] moduleIdData in
+                guard let self = self else { return }
+                if let data = moduleIdData {
+                    let value = data.readableId()
+                    print("[PROTOCOLS VIEW] Module ID updated: \(value)")
+                    self.moduleIdBlock.setValue(value)
+                } else {
+                    print("[PROTOCOLS VIEW] Module ID cleared, showing --")
+                    self.moduleIdBlock.setValue("--")
+                }
+            })
+            .disposed(by: disposeBag)
 
-        // RS485
-        if let rs485Data = ZetaraManager.shared.cachedRS485Data {
-            let value = rs485Data.readableProtocol()
-            print("[PROTOCOLS VIEW] RS485: \(value)")
-            rs485Block.setValue(value)
-        } else {
-            print("[PROTOCOLS VIEW] RS485: no data, showing --")
-            rs485Block.setValue("--")
-        }
+        // Подписываемся на CAN
+        protocolDataManager.canSubject
+            .observeOn(MainScheduler.instance)
+            .subscribe(onNext: { [weak self] canData in
+                guard let self = self else { return }
+                if let data = canData {
+                    let value = data.readableProtocol()
+                    print("[PROTOCOLS VIEW] CAN updated: \(value)")
+                    self.canBlock.setValue(value)
+                } else {
+                    print("[PROTOCOLS VIEW] CAN cleared, showing --")
+                    self.canBlock.setValue("--")
+                }
+            })
+            .disposed(by: disposeBag)
+
+        // Подписываемся на RS485
+        protocolDataManager.rs485Subject
+            .observeOn(MainScheduler.instance)
+            .subscribe(onNext: { [weak self] rs485Data in
+                guard let self = self else { return }
+                if let data = rs485Data {
+                    let value = data.readableProtocol()
+                    print("[PROTOCOLS VIEW] RS485 updated: \(value)")
+                    self.rs485Block.setValue(value)
+                } else {
+                    print("[PROTOCOLS VIEW] RS485 cleared, showing --")
+                    self.rs485Block.setValue("--")
+                }
+            })
+            .disposed(by: disposeBag)
+
+        print("[PROTOCOLS VIEW] Successfully bound to ProtocolDataManager")
     }
 }
 

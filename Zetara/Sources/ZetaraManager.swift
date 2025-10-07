@@ -66,19 +66,21 @@ public class ZetaraManager: NSObject {
     
     // Интервал проверки подключения (2 секунды)
     private let connectionCheckInterval: TimeInterval = 2.0
-    
-    // MARK: - Cache для протоколов (для Home экрана)
-    public var cachedModuleIdData: Data.ModuleIdControlData?
-    public var cachedRS485Data: Data.RS485ControlData?
-    public var cachedCANData: Data.CANControlData?
 
-    // UUID текущего подключенного устройства (для проверки валидности кэша)
+    // MARK: - Protocol Data Manager
+    /// Менеджер для управления протокольными данными (Module ID, CAN, RS485)
+    public let protocolDataManager = ProtocolDataManager()
+
+    // UUID текущего подключенного устройства (для проверки валидности)
     private var cachedDeviceUUID: String?
 
     public static let shared = ZetaraManager()
 
     private override init() {
         super.init()
+
+        // Устанавливаем ссылку на себя в protocolDataManager
+        protocolDataManager.setZetaraManager(self)
 
         manager.observeState()
             .observeOn(MainScheduler.instance)
@@ -265,11 +267,8 @@ public class ZetaraManager: NSObject {
         timer?.invalidate()
         timer = nil
 
-        // Очищаем кэш протоколов
-        cachedModuleIdData = nil
-        cachedRS485Data = nil
-        cachedCANData = nil
-        cachedDeviceUUID = nil
+        // Очищаем протокольные данные через ProtocolDataManager
+        protocolDataManager.clearProtocols()
 
         connectedPeripheralSubject.onNext(nil)
 
