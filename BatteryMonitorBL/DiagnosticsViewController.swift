@@ -309,7 +309,51 @@ class DiagnosticsViewController: UIViewController {
         // Показываем контроллер для отправки email
         present(mailComposer, animated: true)
     }
-    
+
+    /// Создает информацию о протоколах для логов
+    private func createProtocolInfo() -> [String: Any] {
+        // Получаем текущие значения протоколов из BehaviorSubjects
+        var moduleId = "--"
+        var canProtocol = "--"
+        var rs485Protocol = "--"
+
+        if let moduleIdData = try? ZetaraManager.shared.protocolDataManager.moduleIdSubject.value() {
+            moduleId = moduleIdData.readableId()
+        }
+
+        if let canData = try? ZetaraManager.shared.protocolDataManager.canSubject.value() {
+            canProtocol = canData.readableProtocol()
+        }
+
+        if let rs485Data = try? ZetaraManager.shared.protocolDataManager.rs485Subject.value() {
+            rs485Protocol = rs485Data.readableProtocol()
+        }
+
+        // Получаем логи из ProtocolDataManager
+        let protocolLogs = ZetaraManager.shared.protocolDataManager.getProtocolLogs()
+
+        // Фильтруем логи по типам
+        let errorLogs = protocolLogs.filter { $0.contains("❌") }
+        let successLogs = protocolLogs.filter { $0.contains("✅") }
+        let warningLogs = protocolLogs.filter { $0.contains("⚠️") }
+
+        return [
+            "currentValues": [
+                "moduleId": moduleId,
+                "canProtocol": canProtocol,
+                "rs485Protocol": rs485Protocol
+            ],
+            "recentLogs": protocolLogs,
+            "statistics": [
+                "totalLogs": protocolLogs.count,
+                "errors": errorLogs.count,
+                "successes": successLogs.count,
+                "warnings": warningLogs.count
+            ],
+            "lastUpdateTime": dateFormatter.string(from: Date())
+        ]
+    }
+
     /// Создает словарь с данными для отправки
     private func createLogsData() -> [String: Any] {
         // Информация об устройстве
@@ -542,13 +586,17 @@ class DiagnosticsViewController: UIViewController {
                 "message": event.message
             ]
         }
-        
+
+        // Информация о протоколах
+        let protocolInfo = createProtocolInfo()
+
         // Собираем все данные
         return [
             "deviceInfo": deviceInfo,
             "appInfo": appInfo,
             "batteryInfo": batteryInfo,
             "extendedBatteryInfo": extendedBatteryInfo,
+            "protocolInfo": protocolInfo,
             "bluetoothInfo": bluetoothInfo,
             "connectionProcessInfo": connectionProcessInfo,
             "rawDataInfo": rawDataInfo,

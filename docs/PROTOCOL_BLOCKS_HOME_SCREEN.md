@@ -67,7 +67,7 @@
 7. [Очистка при отключении](#очистка-при-отключении)
 8. [Таймлайн событий](#таймлайн-событий)
 9. [Request Queue механизм](#request-queue-механизм)
-10. [Логирование](#логирование)
+10. [📝 Логирование v3.0](#-логирование-v30)
 11. [Важные детали](#важные-детали)
 12. [Связанные файлы](#связанные-файлы)
 
@@ -1507,6 +1507,202 @@ T = 5.0s  → Первое отображение
 | ├─ protocolParametersView | 82 | Ссылка на компонент протоколов |
 | ├─ setupHeaderView | 202-459 | Создание UI, включая protocolParametersView |
 | └─ updateUI | 461-590 | **ОБНОВЛЕНИЕ UI** - вызов updateValues() (строка 507) |
+
+---
+
+## 📝 ЛОГИРОВАНИЕ v3.0
+
+**Дата добавления:** 07.10.2025
+**Причина:** Обеспечить удаленную диагностику протоколов без подключения через Xcode
+
+### Проблема
+
+После рефакторинга v2.0 была удалена избыточная система логирования (AppLogger, ZetaraLogger), которая генерировала 109KB логов за 2 минуты (231 событие).
+
+**НО:** Разработчик не имеет физического доступа к батарее и не может подключиться через Xcode для просмотра print() логов в console.
+
+**Требуется:** Минимальное целевое логирование для удаленной диагностики через email (JSON файл из DiagnosticsViewController).
+
+### Решение: Легковесное логирование
+
+#### 1. Массив логов в ProtocolDataManager
+
+**Файл:** `Zetara/Sources/ProtocolDataManager.swift`
+
+```swift
+// Хранение последних 30 событий
+private var protocolLogs: [String] = []
+private let maxLogs = 30
+
+public func logProtocolEvent(_ message: String) {
+    let timestamp = dateFormatter.string(from: Date())
+    let logEntry = "[\(timestamp)] \(message)"
+
+    protocolLogs.insert(logEntry, at: 0) // Новые сверху
+    if protocolLogs.count > maxLogs {
+        protocolLogs.removeLast()
+    }
+
+    print(logEntry) // Также в Xcode console
+}
+
+public func getProtocolLogs() -> [String] {
+    return protocolLogs
+}
+```
+
+#### 2. Что логируется
+
+**В ProtocolDataManager:**
+- ✅ Успешная загрузка: `[PROTOCOL MANAGER] ✅ Module ID loaded: ID 1`
+- ❌ Ошибка: `[PROTOCOL MANAGER] ❌ Failed to load Module ID after retry: timeout`
+- 🎉 Завершение: `[PROTOCOL MANAGER] 🎉 All protocols loaded successfully!`
+- 🧹 Очистка: `[PROTOCOL MANAGER] Clearing all protocols`
+
+**В ZetaraManager (Request Queue):**
+- 📥 Запрос добавлен: `[QUEUE] 📥 Request queued: getModuleId`
+- ⏳ Ожидание: `[QUEUE] ⏳ Waiting 200ms before getModuleId`
+- 🚀 Выполнение: `[QUEUE] 🚀 Executing getModuleId`
+- ✅ Успех: `[QUEUE] ✅ getModuleId completed in 234ms`
+- ❌ Ошибка: `[QUEUE] ❌ getModuleId failed in 5000ms: timeout`
+
+**В ZetaraManager (Connection Monitor):**
+- ⚠️ Phantom: `[CONNECTION] ⚠️ Phantom connection detected! Device: BB-..., State: disconnected`
+
+#### 3. Интеграция в DiagnosticsViewController
+
+**Файл:** `BatteryMonitorBL/DiagnosticsViewController.swift`
+
+```swift
+private func createProtocolInfo() -> [String: Any] {
+    // Получаем текущие значения
+    var moduleId = "--"
+    var canProtocol = "--"
+    var rs485Protocol = "--"
+
+    if let moduleIdData = try? ZetaraManager.shared.protocolDataManager.moduleIdSubject.value() {
+        moduleId = moduleIdData.readableId()
+    }
+    // ... аналогично для CAN и RS485
+
+    // Получаем логи
+    let protocolLogs = ZetaraManager.shared.protocolDataManager.getProtocolLogs()
+
+    // Статистика
+    let errorLogs = protocolLogs.filter { $0.contains("❌") }
+    let successLogs = protocolLogs.filter { $0.contains("✅") }
+    let warningLogs = protocolLogs.filter { $0.contains("⚠️") }
+
+    return [
+        "currentValues": [
+            "moduleId": moduleId,
+            "canProtocol": canProtocol,
+            "rs485Protocol": rs485Protocol
+        ],
+        "recentLogs": protocolLogs,
+        "statistics": [
+            "totalLogs": protocolLogs.count,
+            "errors": errorLogs.count,
+            "successes": successLogs.count,
+            "warnings": warningLogs.count
+        ],
+        "lastUpdateTime": dateFormatter.string(from: Date())
+    ]
+}
+```
+
+#### 4. Структура JSON секции protocolInfo
+
+```json
+{
+  "protocolInfo": {
+    "currentValues": {
+      "moduleId": "ID 1",
+      "canProtocol": "PYLON",
+      "rs485Protocol": "Modbus"
+    },
+    "recentLogs": [
+      "[11:19:32] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[11:19:32] [PROTOCOL MANAGER] ✅ CAN loaded: PYLON",
+      "[11:19:31] [QUEUE] ✅ getCAN completed in 234ms",
+      "[11:19:31] [QUEUE] 🚀 Executing getCAN",
+      "[11:19:31] [QUEUE] ⏳ Waiting 200ms before getCAN",
+      "[11:19:31] [PROTOCOL MANAGER] ✅ RS485 loaded: Modbus",
+      "[11:19:30] [QUEUE] ✅ getRS485 completed in 187ms",
+      "[11:19:30] [QUEUE] 🚀 Executing getRS485",
+      "[11:19:30] [PROTOCOL MANAGER] ✅ Module ID loaded: ID 1",
+      "[11:19:29] [QUEUE] ✅ getModuleId completed in 156ms",
+      "[11:19:29] [QUEUE] 🚀 Executing getModuleId",
+      "[11:19:29] [QUEUE] 📥 Request queued: getCAN",
+      "[11:19:29] [QUEUE] 📥 Request queued: getRS485",
+      "[11:19:29] [QUEUE] 📥 Request queued: getModuleId",
+      "[11:19:27] [PROTOCOL MANAGER] Starting protocol loading after 1.5s delay..."
+    ],
+    "statistics": {
+      "totalLogs": 15,
+      "errors": 0,
+      "successes": 4,
+      "warnings": 0
+    },
+    "lastUpdateTime": "11:19:32 07.10.2025"
+  }
+}
+```
+
+### Преимущества нового логирования
+
+| Критерий | Старое (AppLogger) | Новое (v3.0) |
+|----------|-------------------|--------------|
+| **Размер** | 109KB (231 событие) | ~2-3KB (30 событий) |
+| **Избыточность** | 90% дублирования | 0% дублирования |
+| **Фокус** | Все события всех экранов | Только протоколы |
+| **Удаленная диагностика** | ✅ Да (через JSON) | ✅ Да (через JSON) |
+| **Xcode console** | ❌ Нет | ✅ Да (print остались) |
+| **Память** | Все в памяти | Только последние 30 |
+| **Сложность кода** | Высокая (AppLogger + ZetaraLogger) | Низкая (один массив) |
+
+### Что видит разработчик удаленно
+
+**В JSON файле (email attachment):**
+1. ✅ Текущие значения протоколов (Module ID, CAN, RS485)
+2. ✅ Последние 30 событий с timestamp
+3. ✅ Статистику (errors/successes/warnings)
+4. ✅ Timing каждого запроса (completed in Xms)
+5. ✅ Phantom connection события
+6. ✅ Retry attempts
+
+**Этого достаточно для:**
+- Диагностики timeout проблем
+- Проверки что Request Queue работает
+- Обнаружения phantom connections
+- Понимания какой протокол не загружается
+
+### Пример реального лога (с ошибками)
+
+```json
+{
+  "recentLogs": [
+    "[11:18:09] [PROTOCOL MANAGER] ❌ Failed to load CAN after retry: timeout",
+    "[11:18:09] [QUEUE] ❌ getCAN failed in 10000ms: timeout",
+    "[11:17:59] [PROTOCOL MANAGER] ❌ Failed to load RS485 after retry: timeout",
+    "[11:17:59] [QUEUE] ❌ getRS485 failed in 10000ms: timeout",
+    "[11:17:49] [PROTOCOL MANAGER] ❌ Failed to load Module ID after retry: timeout",
+    "[11:17:49] [QUEUE] ❌ getModuleId failed in 10000ms: timeout",
+    "[11:17:39] [QUEUE] 🚀 Executing getCAN",
+    "[11:17:39] [QUEUE] 🚀 Executing getRS485",
+    "[11:17:39] [QUEUE] 🚀 Executing getModuleId",
+    "[11:17:39] [PROTOCOL MANAGER] Starting protocol loading after 1.5s delay..."
+  ],
+  "statistics": {
+    "totalLogs": 10,
+    "errors": 6,
+    "successes": 0,
+    "warnings": 0
+  }
+}
+```
+
+**Диагноз:** Все 3 протокола timeout после 10 секунд → проблема с Bluetooth соединением или батарея не отвечает.
 
 ---
 

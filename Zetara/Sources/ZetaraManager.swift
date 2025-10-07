@@ -298,48 +298,53 @@ public class ZetaraManager: NSObject {
     ///   - requestName: Имя запроса для логирования
     ///   - request: Замыкание, возвращающее Maybe с результатом
     /// - Returns: Maybe с результатом запроса
-    public func queuedRequest<T>(_ requestName: String, 
+    public func queuedRequest<T>(_ requestName: String,
                                  _ request: @escaping () -> Maybe<T>) -> Maybe<T> {
         return Maybe.create { observer in
             let startTime = Date()
-            
+
             print("[QUEUE] 📥 Request queued: \(requestName)")
-            
+            self.protocolDataManager.logProtocolEvent("[QUEUE] 📥 Request queued: \(requestName)")
+
             self.requestQueue.async {
                 // Ждем если прошло < 500ms с последнего запроса
                 if let lastTime = self.lastRequestTime {
                     let elapsed = Date().timeIntervalSince(lastTime)
                     if elapsed < self.minimumRequestInterval {
                         let waitTime = self.minimumRequestInterval - elapsed
-                        
+
                         print("[QUEUE] ⏳ Waiting \(Int(waitTime * 1000))ms before \(requestName)")
-                        
+                        self.protocolDataManager.logProtocolEvent("[QUEUE] ⏳ Waiting \(Int(waitTime * 1000))ms before \(requestName)")
+
                         Thread.sleep(forTimeInterval: waitTime)
                     }
                 }
-                
+
                 // Обновляем время последнего запроса
                 self.lastRequestTime = Date()
-                
+
                 print("[QUEUE] 🚀 Executing \(requestName)")
-                
+                self.protocolDataManager.logProtocolEvent("[QUEUE] 🚀 Executing \(requestName)")
+
                 // Выполняем запрос
                 request()
                     .subscribe(onSuccess: { value in
                         let duration = Date().timeIntervalSince(startTime) * 1000
                         print("[QUEUE] ✅ \(requestName) completed in \(Int(duration))ms")
-                        
+                        self.protocolDataManager.logProtocolEvent("[QUEUE] ✅ \(requestName) completed in \(Int(duration))ms")
+
                         observer(.success(value))
-                        
+
                     }, onError: { error in
                         let duration = Date().timeIntervalSince(startTime) * 1000
                         print("[QUEUE] ❌ \(requestName) failed in \(Int(duration))ms: \(error)")
-                        
+                        self.protocolDataManager.logProtocolEvent("[QUEUE] ❌ \(requestName) failed in \(Int(duration))ms: \(error)")
+
                         observer(.error(error))
                     })
                     .disposed(by: DisposeBag())
             }
-            
+
             return Disposables.create()
         }
     }
@@ -380,10 +385,10 @@ public class ZetaraManager: NSObject {
             // Нет подключенного устройства - это нормально
             return
         }
-        
+
         let peripheralName = peripheral.name ?? "Unknown"
         let currentState = peripheral.state
-        
+
         // Проверяем РЕАЛЬНОЕ состояние через CoreBluetooth
         if currentState != .connected {
             print("[CONNECTION] ⚠️ Phantom connection detected!")
@@ -391,7 +396,9 @@ public class ZetaraManager: NSObject {
             print("[CONNECTION] Expected state: connected")
             print("[CONNECTION] Actual state: \(currentState)")
             print("[CONNECTION] Action: Cleaning connection automatically")
-            
+
+            protocolDataManager.logProtocolEvent("[CONNECTION] ⚠️ Phantom connection detected! Device: \(peripheralName), State: \(currentState)")
+
             // Принудительная очистка
             cleanConnection()
         }
