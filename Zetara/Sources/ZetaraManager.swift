@@ -70,6 +70,9 @@ public class ZetaraManager: NSObject {
     // Флаг для предотвращения множественных вызовов cleanConnection
     private var isCleaningConnection = false
 
+    // Serial queue для атомарного доступа к isCleaningConnection
+    private let cleanConnectionQueue = DispatchQueue(label: "com.zetara.cleanConnection")
+
     // MARK: - Protocol Data Manager
     /// Менеджер для управления протокольными данными (Module ID, CAN, RS485)
     public let protocolDataManager = ProtocolDataManager()
@@ -257,17 +260,26 @@ public class ZetaraManager: NSObject {
     }
 
     func cleanConnection() {
-        // Предотвращаем множественные вызовы
-        guard !isCleaningConnection else {
+        // Атомарная проверка и установка флага через serial queue
+        let shouldProceed = cleanConnectionQueue.sync { () -> Bool in
+            guard !isCleaningConnection else {
+                return false
+            }
+            isCleaningConnection = true
+            return true
+        }
+
+        guard shouldProceed else {
             protocolDataManager.logProtocolEvent("[CONNECTION] ⚠️ Skipping duplicate cleanConnection call")
-            print("[CONNECTION] ⚠️ Skipping duplicate cleanConnection call")
             return
         }
 
-        isCleaningConnection = true
-        defer { isCleaningConnection = false }
+        defer {
+            cleanConnectionQueue.sync {
+                isCleaningConnection = false
+            }
+        }
 
-        print("[CONNECTION] Cleaning connection state")
         protocolDataManager.logProtocolEvent("[CONNECTION] Cleaning connection state")
 
         // Останавливаем мониторинг подключения
@@ -275,7 +287,7 @@ public class ZetaraManager: NSObject {
 
         // Очищаем Request Queue
         lastRequestTime = nil
-        print("[QUEUE] Request queue cleared")
+        protocolDataManager.logProtocolEvent("[QUEUE] Request queue cleared")
 
         connectionDisposable?.dispose()
         timer?.invalidate()
@@ -286,7 +298,7 @@ public class ZetaraManager: NSObject {
 
         connectedPeripheralSubject.onNext(nil)
 
-        print("[CONNECTION] Connection state cleaned")
+        protocolDataManager.logProtocolEvent("[CONNECTION] Connection state cleaned")
     }
 
     public func observeDisconect() -> Observable<Peripheral> {
@@ -637,12 +649,16 @@ public class ZetaraManager: NSObject {
                 .map { [UInt8]($0) }
                 .filter { Data.isControlData($0) }
                 .do { print("receive control data: \($0.toHexString())") }
+                .take(1) // Берем только первый ответ
+                .timeout(.seconds(10), scheduler: MainScheduler.instance) // КРИТИЧНО: timeout ВНУТРИ!
                 .observeOn(MainScheduler.instance)
                 .subscribeOn(MainScheduler.instance)
                 .subscribe { event in
                     switch event {
                         case .next(let _data):
                             observer(.success(_data))
+                        case .error(let error):
+                            return observer(.error(error)) // Пробрасываем timeout error
                         default:
                             return observer(.error(ZetaraManager.Error.writeControlDataError))
                     }
