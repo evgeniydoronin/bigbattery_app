@@ -116,6 +116,7 @@ public class ProtocolDataManager {
         manager.queuedRequest("getModuleId") {
             return manager.getModuleId()
         }
+        .timeout(.seconds(10), scheduler: MainScheduler.instance)
         .retry(1) // Одна попытка повтора при ошибке
         .subscribe(
             onSuccess: { [weak self] moduleIdData in
@@ -123,7 +124,12 @@ public class ProtocolDataManager {
                 self?.moduleIdSubject.onNext(moduleIdData)
             },
             onError: { [weak self] error in
-                self?.logProtocolEvent("[PROTOCOL MANAGER] ❌ Failed to load Module ID after retry: \(error)")
+                // Различаем timeout от других ошибок
+                if case RxError.timeout = error {
+                    self?.logProtocolEvent("[PROTOCOL MANAGER] ⏱️ Module ID timeout after 10s")
+                } else {
+                    self?.logProtocolEvent("[PROTOCOL MANAGER] ❌ Failed to load Module ID after retry: \(error)")
+                }
                 self?.moduleIdSubject.onNext(nil)
             }
         )
@@ -135,6 +141,7 @@ public class ProtocolDataManager {
         manager.queuedRequest("getRS485") {
             return manager.getRS485()
         }
+        .timeout(.seconds(10), scheduler: MainScheduler.instance)
         .retry(1) // Одна попытка повтора при ошибке
         .subscribe(
             onSuccess: { [weak self] rs485Data in
@@ -142,7 +149,12 @@ public class ProtocolDataManager {
                 self?.rs485Subject.onNext(rs485Data)
             },
             onError: { [weak self] error in
-                self?.logProtocolEvent("[PROTOCOL MANAGER] ❌ Failed to load RS485 after retry: \(error)")
+                // Различаем timeout от других ошибок
+                if case RxError.timeout = error {
+                    self?.logProtocolEvent("[PROTOCOL MANAGER] ⏱️ RS485 timeout after 10s")
+                } else {
+                    self?.logProtocolEvent("[PROTOCOL MANAGER] ❌ Failed to load RS485 after retry: \(error)")
+                }
                 self?.rs485Subject.onNext(nil)
             }
         )
@@ -154,6 +166,7 @@ public class ProtocolDataManager {
         manager.queuedRequest("getCAN") {
             return manager.getCAN()
         }
+        .timeout(.seconds(10), scheduler: MainScheduler.instance)
         .retry(1) // Одна попытка повтора при ошибке
         .subscribe(
             onSuccess: { [weak self] canData in
@@ -162,7 +175,12 @@ public class ProtocolDataManager {
                 self?.logProtocolEvent("[PROTOCOL MANAGER] 🎉 All protocols loaded successfully!")
             },
             onError: { [weak self] error in
-                self?.logProtocolEvent("[PROTOCOL MANAGER] ❌ Failed to load CAN after retry: \(error)")
+                // Различаем timeout от других ошибок
+                if case RxError.timeout = error {
+                    self?.logProtocolEvent("[PROTOCOL MANAGER] ⏱️ CAN timeout after 10s")
+                } else {
+                    self?.logProtocolEvent("[PROTOCOL MANAGER] ❌ Failed to load CAN after retry: \(error)")
+                }
                 self?.canSubject.onNext(nil)
             }
         )

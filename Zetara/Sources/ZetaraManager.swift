@@ -63,9 +63,12 @@ public class ZetaraManager: NSObject {
     // MARK: - Connection Monitor (Этап 2.2)
     // Таймер для периодической проверки подключения
     private var connectionMonitorTimer: Timer?
-    
+
     // Интервал проверки подключения (2 секунды)
     private let connectionCheckInterval: TimeInterval = 2.0
+
+    // Флаг для предотвращения множественных вызовов cleanConnection
+    private var isCleaningConnection = false
 
     // MARK: - Protocol Data Manager
     /// Менеджер для управления протокольными данными (Module ID, CAN, RS485)
@@ -254,7 +257,18 @@ public class ZetaraManager: NSObject {
     }
 
     func cleanConnection() {
+        // Предотвращаем множественные вызовы
+        guard !isCleaningConnection else {
+            protocolDataManager.logProtocolEvent("[CONNECTION] ⚠️ Skipping duplicate cleanConnection call")
+            print("[CONNECTION] ⚠️ Skipping duplicate cleanConnection call")
+            return
+        }
+
+        isCleaningConnection = true
+        defer { isCleaningConnection = false }
+
         print("[CONNECTION] Cleaning connection state")
+        protocolDataManager.logProtocolEvent("[CONNECTION] Cleaning connection state")
 
         // Останавливаем мониторинг подключения
         stopConnectionMonitor()
@@ -381,8 +395,22 @@ public class ZetaraManager: NSObject {
     
     /// Проверяет реальное состояние периферии через CoreBluetooth
     public func verifyConnectionState() {
-        guard let peripheral = try? connectedPeripheralSubject.value() else {
-            // Нет подключенного устройства - это нормально
+        let peripheral = try? connectedPeripheralSubject.value()
+        let bmsTimerActive = (timer != nil)
+
+        // КРИТИЧЕСКАЯ ПРОВЕРКА: Phantom connection если нет peripheral НО BMS timer активен
+        if peripheral == nil && bmsTimerActive {
+            print("[CONNECTION] ⚠️ PHANTOM CONNECTION: No peripheral but BMS timer is running!")
+            protocolDataManager.logProtocolEvent("[CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!")
+
+            // Принудительная очистка
+            cleanConnection()
+            return
+        }
+
+        // Обычная проверка если peripheral существует
+        guard let peripheral = peripheral else {
+            // Нет подключенного устройства и нет BMS timer - это нормально
             return
         }
 

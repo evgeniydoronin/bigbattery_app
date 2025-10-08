@@ -126,6 +126,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Перезапускаем Connection Monitor если устройство подключено
         if ZetaraManager.shared.connectedPeripheral() != nil {
             ZetaraManager.shared.startConnectionMonitor()
+
+            // Перезагружаем протоколы после возврата в приложение
+            ZetaraManager.shared.protocolDataManager.logProtocolEvent("[APP] Reloading protocols after app became active")
+            ZetaraManager.shared.protocolDataManager.loadAllProtocols(afterDelay: 1.5)
         }
 
         // Принудительная проверка состояния подключения
