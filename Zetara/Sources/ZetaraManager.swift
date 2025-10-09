@@ -73,6 +73,9 @@ public class ZetaraManager: NSObject {
     // Serial queue для атомарного доступа к isCleaningConnection
     private let cleanConnectionQueue = DispatchQueue(label: "com.zetara.cleanConnection")
 
+    // Shared DisposeBag для queuedRequest
+    private let requestQueueDisposeBag = DisposeBag()
+
     // MARK: - Protocol Data Manager
     /// Менеджер для управления протокольными данными (Module ID, CAN, RS485)
     public let protocolDataManager = ProtocolDataManager()
@@ -221,9 +224,15 @@ public class ZetaraManager: NSObject {
                             self?.notifyCharacteristic = notifyCharacteristic
                             self?.identifier = identifier
 
+                            // Логируем успешное установление characteristics
+                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] ✅ Characteristics configured")
+                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] Write UUID: \(writeCharacteristic.uuid.uuidString)")
+                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] Notify UUID: \(notifyCharacteristic.uuid.uuidString)")
+
                             // Сохраняем UUID подключенного устройства
                             self?.cachedDeviceUUID = peripheral.identifier.uuidString
                             print("[CONNECTION] Saved device UUID: \(peripheral.identifier.uuidString)")
+                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] Device UUID: \(peripheral.identifier.uuidString)")
 
                             observer.onNext(peripheral)
 
@@ -368,7 +377,7 @@ public class ZetaraManager: NSObject {
 
                         observer(.error(error))
                     })
-                    .disposed(by: DisposeBag())
+                    .disposed(by: self.requestQueueDisposeBag)
             }
 
             return Disposables.create()
@@ -630,39 +639,66 @@ public class ZetaraManager: NSObject {
               let writeCharacteristic = writeCharacteristic,
               let notifyCharacteristic = notifyCharacteristic else {
             print("send data error. no connected peripheral")
+            protocolDataManager.logProtocolEvent("[BLUETOOTH] ❌ No peripheral for writeControlData")
             cleanConnection()
             return Maybe.error(Error.writeControlDataError)
         }
 
-        moduleIdDisposeBag = nil
         moduleIdDisposeBag = DisposeBag()
 
+        protocolDataManager.logProtocolEvent("[BLUETOOTH] 📤 Writing control data: \(data.toHexString())")
         print("write control data: \(data.toHexString())")
 
         peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
             .subscribe()
             .disposed(by: moduleIdDisposeBag!)
 
-        return Maybe.create { observer in
+        return Maybe.create { [weak self] observer in
+            guard let self = self, let bag = self.moduleIdDisposeBag else {
+                observer(.error(Error.writeControlDataError))
+                return Disposables.create()
+            }
+
+            self.protocolDataManager.logProtocolEvent("[BLUETOOTH] 📡 Started observing notifications...")
+
             peripheral.observeValueUpdateAndSetNotification(for: notifyCharacteristic)
+                .do(onNext: { characteristic in
+                    // Логируем ВСЕ приходящие данные
+                    if let value = characteristic.value {
+                        let hexString = [UInt8](value).toHexString()
+                        self.protocolDataManager.logProtocolEvent("[BLUETOOTH] 📥 Received notification: \(hexString)")
+                    }
+                })
                 .compactMap { $0.value }
                 .map { [UInt8]($0) }
+                .do(onNext: { bytes in
+                    let isControl = Data.isControlData(bytes)
+                    self.protocolDataManager.logProtocolEvent("[BLUETOOTH] Is control data: \(isControl)")
+                })
                 .filter { Data.isControlData($0) }
                 .do { print("receive control data: \($0.toHexString())") }
-                .take(1) // Берем только первый ответ
-                .timeout(.seconds(10), scheduler: MainScheduler.instance) // КРИТИЧНО: timeout ВНУТРИ!
+                .take(1)
+                .timeout(.seconds(10), scheduler: MainScheduler.instance)
                 .observeOn(MainScheduler.instance)
                 .subscribeOn(MainScheduler.instance)
                 .subscribe { event in
                     switch event {
                         case .next(let _data):
+                            self.protocolDataManager.logProtocolEvent("[BLUETOOTH] ✅ Got control data response")
                             observer(.success(_data))
                         case .error(let error):
-                            return observer(.error(error)) // Пробрасываем timeout error
+                            if case RxError.timeout = error {
+                                self.protocolDataManager.logProtocolEvent("[BLUETOOTH] ⏱️ Timeout waiting for response")
+                            } else {
+                                self.protocolDataManager.logProtocolEvent("[BLUETOOTH] ❌ Error: \(error)")
+                            }
+                            observer(.error(error))
                         default:
-                            return observer(.error(ZetaraManager.Error.writeControlDataError))
+                            self.protocolDataManager.logProtocolEvent("[BLUETOOTH] ❌ Unexpected completion")
+                            observer(.error(ZetaraManager.Error.writeControlDataError))
                     }
                 }
+                .disposed(by: bag)
 
             return Disposables.create { [weak self] in
                 self?.moduleIdDisposeBag = nil
