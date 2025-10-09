@@ -1,0 +1,222 @@
+{
+  "rawDataInfo" : {
+    "packetHistory" : [
+      {
+        "data" : "B81E55420000000050000000000000006400000000000000560E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F55401B2F55401B2F5540B81E55401B2F5540B81E55401B2F5540191919191919",
+        "parseResult" : "success",
+        "timestamp" : "11:08:43 09.10.2025"
+      }
+    ],
+    "lastReceivedPacket" : "B81E55420000000050000000000000006400000000000000560E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F55401B2F55401B2F5540B81E55401B2F5540B81E55401B2F5540191919191919",
+    "parseErrors" : [
+
+    ]
+  },
+  "systemInfo" : {
+    "isLowPowerMode" : false,
+    "cpuUsage" : 0,
+    "availableMemory" : 5910085632,
+    "batteryLevel" : 90
+  },
+  "deviceInfo" : {
+    "systemName" : "iOS",
+    "name" : "iPhone",
+    "model" : "iPhone",
+    "systemVersion" : "26.0"
+  },
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "20"
+  },
+  "batteryInfo" : {
+    "cellTemps" : [
+      25,
+      25,
+      25,
+      25
+    ],
+    "timestamp" : "11:08:43 09.10.2025",
+    "current" : 0,
+    "cellVoltages" : [
+      3.3289999961853027,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3310000896453857,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857
+    ],
+    "status" : "Standby",
+    "voltage" : 53.279998779296875,
+    "soc" : 80,
+    "tempEnv" : 25,
+    "tempPCB" : 25,
+    "cellCount" : 16,
+    "soh" : 100
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "status" : "success",
+        "step" : "connection",
+        "timestamp" : "11:08:42 09.10.2025",
+        "message" : "No device connected"
+      },
+      {
+        "timestamp" : "11:08:08 09.10.2025",
+        "status" : "success",
+        "step" : "connection",
+        "message" : "Logs sent successfully"
+      },
+      {
+        "step" : "connection",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "timestamp" : "11:08:05 09.10.2025",
+        "status" : "success"
+      },
+      {
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "11:07:49 09.10.2025",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      },
+      {
+        "message" : "Diagnostics screen launched",
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "11:07:49 09.10.2025"
+      },
+      {
+        "timestamp" : "11:07:49 09.10.2025",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "step" : "connection",
+        "status" : "success"
+      }
+    ]
+  },
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "timeouts" : 0,
+    "packetLoss" : 0,
+    "retries" : 0
+  },
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "events" : [
+    {
+      "timestamp" : "11:08:42 09.10.2025",
+      "message" : "No device connected",
+      "type" : "Connection"
+    },
+    {
+      "message" : "Logs sent successfully",
+      "type" : "Connection",
+      "timestamp" : "11:08:08 09.10.2025"
+    },
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "11:08:05 09.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "11:07:49 09.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "timestamp" : "11:07:49 09.10.2025",
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "11:07:49 09.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "11:07:49 09.10.2025",
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "11:07:49 09.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    }
+  ],
+  "timestamp" : "11:08:43 09.10.2025",
+  "protocolInfo" : {
+    "recentLogs" : [
+      "[11:08:41] [CONNECTION] Connection state cleaned",
+      "[11:08:41] [PROTOCOL MANAGER] Clearing all protocols",
+      "[11:08:41] [QUEUE] Request queue cleared",
+      "[11:08:41] [CONNECTION] Cleaning connection state",
+      "[11:08:41] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[11:08:41] [CONNECTION] Notify UUID: 1007",
+      "[11:08:41] [CONNECTION] Write UUID: 1008",
+      "[11:08:41] [CONNECTION] ✅ Characteristics configured",
+      "[11:08:40] [CONNECTION] Connection state cleaned",
+      "[11:08:40] [PROTOCOL MANAGER] Clearing all protocols",
+      "[11:08:40] [QUEUE] Request queue cleared",
+      "[11:08:40] [CONNECTION] Cleaning connection state",
+      "[11:08:40] [CONNECTION] Connection state cleaned",
+      "[11:08:40] [PROTOCOL MANAGER] Clearing all protocols",
+      "[11:08:40] [QUEUE] Request queue cleared",
+      "[11:08:40] [CONNECTION] Cleaning connection state",
+      "[11:08:40] [CONNECTION] Connection state cleaned",
+      "[11:08:40] [PROTOCOL MANAGER] Clearing all protocols",
+      "[11:08:40] [QUEUE] Request queue cleared",
+      "[11:08:40] [CONNECTION] Cleaning connection state",
+      "[11:08:40] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[11:08:40] [CONNECTION] Notify UUID: 1007",
+      "[11:08:40] [CONNECTION] Write UUID: 1008",
+      "[11:08:40] [CONNECTION] ✅ Characteristics configured",
+      "[11:08:39] [CONNECTION] Connection state cleaned",
+      "[11:08:39] [PROTOCOL MANAGER] Clearing all protocols",
+      "[11:08:39] [QUEUE] Request queue cleared",
+      "[11:08:39] [CONNECTION] Cleaning connection state",
+      "[11:08:23] [CONNECTION] Connection state cleaned",
+      "[11:08:23] [PROTOCOL MANAGER] Clearing all protocols"
+    ],
+    "statistics" : {
+      "totalLogs" : 30,
+      "warnings" : 0,
+      "errors" : 0,
+      "successes" : 2
+    },
+    "currentValues" : {
+      "rs485Protocol" : "--",
+      "moduleId" : "--",
+      "canProtocol" : "--"
+    },
+    "lastUpdateTime" : "11:08:43 09.10.2025"
+  },
+  "extendedBatteryInfo" : {
+    "cellVoltageAverage" : 3.330500602722168,
+    "cellVoltageMax" : 3.3310000896453857,
+    "protectionStatus" : {
+      "overtemperature" : false,
+      "overcurrent" : false,
+      "shortCircuit" : false,
+      "overvoltage" : false,
+      "undervoltage" : false
+    },
+    "tempMin" : 25,
+    "cellVoltageMin" : 3.3289999961853027,
+    "tempDelta" : 0,
+    "cellVoltageStdDev" : 0.0006124378294840257,
+    "tempMax" : 25,
+    "cellVoltageDelta" : 0.0020000934600830078
+  }
+}

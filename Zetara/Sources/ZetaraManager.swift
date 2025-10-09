@@ -302,6 +302,10 @@ public class ZetaraManager: NSObject {
         timer?.invalidate()
         timer = nil
 
+        // Очищаем BMS данные
+        cleanData()
+        protocolDataManager.logProtocolEvent("[CONNECTION] BMS data cleared")
+
         // Очищаем протокольные данные через ProtocolDataManager
         protocolDataManager.clearProtocols()
 

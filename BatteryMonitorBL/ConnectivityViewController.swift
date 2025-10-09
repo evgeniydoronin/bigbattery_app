@@ -143,6 +143,7 @@ extension ConnectivityViewController: UITableViewDelegate {
                         
                         // Загружаем протоколы через 1.5 сек после подключения (Этап 3.1)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Triggering protocol loading after connection")
                             self?.loadProtocolsViaQueue()
                         }
                         
@@ -235,7 +236,7 @@ extension ConnectivityViewController: UITableViewDataSource {
     
     /// Загружает протоколы через ProtocolDataManager
     private func loadProtocolsViaQueue() {
-        print("[PROTOCOLS] Starting protocol loading after connection...")
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Starting protocol loading sequence")
 
         // Загружаем все протоколы через ProtocolDataManager
         // Request Queue автоматически обеспечит минимальные интервалы между запросами

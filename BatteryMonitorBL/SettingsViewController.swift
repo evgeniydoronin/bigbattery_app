@@ -279,18 +279,24 @@ class SettingsViewController: UIViewController {
         versionItemView?.label = version()
         versionItemView?.options = [] // Явно устанавливаем пустой массив опций, чтобы скрыть стрелочку
         
+        // Настраиваем подписки на ProtocolDataManager один раз
+        getAllSettings()
+
         // 进入设置页，就暂停 bms data 刷新，离开恢复
         self.rx.isVisible.subscribe { [weak self] (visible: Bool) in
             print("visible change")
             if visible {
                 ZetaraManager.shared.pauseRefreshBMSData()
-                
+
+                // Загружаем протоколы если подключено и данные пустые
                 let deviceConnected = (try? ZetaraManager.shared.connectedPeripheralSubject.value()) != nil
-                let protocolDataIsEmpty = (self?.canData == nil || self?.rs485Data == nil)
+                let protocolDataIsEmpty = (self?.canData == nil || self?.rs485Data == nil || self?.moduleIdData == nil)
                 if deviceConnected && protocolDataIsEmpty {
-                    self?.getAllSettings()
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] Loading protocols via ProtocolDataManager")
+                    self?.isLoadingData = true
+                    ZetaraManager.shared.protocolDataManager.loadAllProtocols(afterDelay: 0.5)
                 }
-                
+
             } else {
                 ZetaraManager.shared.resumeRefreshBMSData()
             }
@@ -325,6 +331,16 @@ class SettingsViewController: UIViewController {
 
         // Скрываем navigation bar при возвращении на экран
         self.navigationController?.setNavigationBarHidden(true, animated: animated)
+
+        // Загружаем протоколы если подключено и данные пустые
+        if ZetaraManager.shared.connectedPeripheral() != nil {
+            let protocolDataIsEmpty = (canData == nil || rs485Data == nil || moduleIdData == nil)
+            if protocolDataIsEmpty {
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] Loading protocols via ProtocolDataManager in viewWillAppear")
+                isLoadingData = true
+                ZetaraManager.shared.protocolDataManager.loadAllProtocols(afterDelay: 0.5)
+            }
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -715,68 +731,85 @@ class SettingsViewController: UIViewController {
     }
     
     func getAllSettings() {
-        Alert.show("Loading...", timeout: 3)
+        // Настраиваем подписки на ProtocolDataManager subjects
+        // Теперь Settings просто слушает изменения, а не запрашивает данные напрямую
+        let protocolManager = ZetaraManager.shared.protocolDataManager
 
-        // Устанавливаем флаг загрузки данных
-        isLoadingData = true
+        // Подписываемся на Module ID updates
+        protocolManager.moduleIdSubject
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] moduleIdData in
+                guard let self = self else { return }
 
-        // 一个一个来
-        self.getModuleId().subscribe { [weak self] idData in
-            Alert.hide()
-            self?.moduleIdData = idData
-            self?.moduleIdSettingItemView?.label = idData.readableId()
+                if let data = moduleIdData {
+                    self.moduleIdData = data
+                    self.moduleIdSettingItemView?.label = data.readableId()
 
-            // Синхронизируем selectedOptionIndex с загруженным значением
-            let currentId = idData.readableId()
-            if let index = Zetara.Data.ModuleIdControlData.readableIds().firstIndex(of: currentId) {
-                self?.moduleIdSettingItemView?.selectedOptionIndex.onNext(index)
-            }
+                    // Синхронизируем selectedOptionIndex с загруженным значением (только если не загружаем)
+                    if !self.isLoadingData {
+                        let currentId = data.readableId()
+                        if let index = Zetara.Data.ModuleIdControlData.readableIds().firstIndex(of: currentId) {
+                            self.moduleIdSettingItemView?.selectedOptionIndex.onNext(index)
+                        }
+                    }
 
-            self?.toggleRS485AndCAN(idData.otherProtocolsEnabled())
-            self?.getRS485().subscribe(onSuccess: { [weak self] rs485 in
-                Alert.hide()
-                self?.rs485Data = rs485
-                self?.rs485ProtocolView?.options = rs485.readableProtocols()
-                self?.rs485ProtocolView?.label = rs485.readableProtocol()
-
-                // Синхронизируем selectedOptionIndex с загруженным значением
-                let current = rs485.readableProtocol()
-                if let index = rs485.readableProtocols().firstIndex(of: current) {
-                    self?.rs485ProtocolView?.selectedOptionIndex.onNext(index)
+                    self.toggleRS485AndCAN(data.otherProtocolsEnabled())
+                } else {
+                    self.moduleIdSettingItemView?.label = "--"
                 }
+            })
+            .disposed(by: disposeBag)
 
-                self?.getCAN().subscribe(onSuccess: { can in
-                    Alert.hide()
-                    self?.canData = can
-                    self?.canProtocolView?.options = can.readableProtocols()
-                    self?.canProtocolView?.label = can.readableProtocol()
+        // Подписываемся на RS485 updates
+        protocolManager.rs485Subject
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] rs485Data in
+                guard let self = self else { return }
 
-                    // Синхронизируем selectedOptionIndex с загруженным значением
-                    let current = can.readableProtocol()
-                    if let index = can.readableProtocols().firstIndex(of: current) {
-                        self?.canProtocolView?.selectedOptionIndex.onNext(index)
+                if let data = rs485Data {
+                    self.rs485Data = data
+                    self.rs485ProtocolView?.options = data.readableProtocols()
+                    self.rs485ProtocolView?.label = data.readableProtocol()
+
+                    // Синхронизируем selectedOptionIndex с загруженным значением (только если не загружаем)
+                    if !self.isLoadingData {
+                        let current = data.readableProtocol()
+                        if let index = data.readableProtocols().firstIndex(of: current) {
+                            self.rs485ProtocolView?.selectedOptionIndex.onNext(index)
+                        }
+                    }
+                } else {
+                    self.rs485ProtocolView?.label = "--"
+                }
+            })
+            .disposed(by: disposeBag)
+
+        // Подписываемся на CAN updates
+        protocolManager.canSubject
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] canData in
+                guard let self = self else { return }
+
+                if let data = canData {
+                    self.canData = data
+                    self.canProtocolView?.options = data.readableProtocols()
+                    self.canProtocolView?.label = data.readableProtocol()
+
+                    // Синхронизируем selectedOptionIndex с загруженным значением (только если не загружаем)
+                    if !self.isLoadingData {
+                        let current = data.readableProtocol()
+                        if let index = data.readableProtocols().firstIndex(of: current) {
+                            self.canProtocolView?.selectedOptionIndex.onNext(index)
+                        }
                     }
 
                     // Сбрасываем флаг загрузки после успешной загрузки всех данных
-                    self?.isLoadingData = false
-                }, onError: { error in
-                    Alert.hide()
-                    // Сбрасываем флаг загрузки при ошибке
-                    self?.isLoadingData = false
-//                    Alert.show("Invalid Response")
-                })
-            }, onError: { error in
-                Alert.hide()
-                // Сбрасываем флаг загрузки при ошибке RS485
-                self?.isLoadingData = false
-//                Alert.show("Invalid Response")
+                    self.isLoadingData = false
+                } else {
+                    self.canProtocolView?.label = "--"
+                }
             })
-        } onError: { error in
-            Alert.hide()
-            // Сбрасываем флаг загрузки при ошибке ModuleId
-            self.isLoadingData = false
-//            Alert.show("Invalid Response")
-        }.disposed(by: self.disposeBag)
+            .disposed(by: disposeBag)
     }
     
     func setModuleId(at index: Int, completion: (() -> Void)? = nil) {
@@ -832,32 +865,4 @@ class SettingsViewController: UIViewController {
             }.disposed(by: disposeBag)
     }
     
-    // MARK: - Protocol Methods (Этап 3.3 - обновлено для использования queuedRequest)
-    
-    func getModuleId() -> Maybe<Zetara.Data.ModuleIdControlData> {
-        print("[SETTINGS] Getting Module ID via queue")
-        return ZetaraManager.shared.queuedRequest("getModuleId") {
-            ZetaraManager.shared.getModuleId()
-        }
-        .timeout(.seconds(3), scheduler: MainScheduler.instance)
-        .subscribeOn(MainScheduler.instance)
-    }
-    
-    func getRS485() -> Maybe<Zetara.Data.RS485ControlData> {
-        print("[SETTINGS] Getting RS485 via queue")
-        return ZetaraManager.shared.queuedRequest("getRS485") {
-            ZetaraManager.shared.getRS485()
-        }
-        .timeout(.seconds(3), scheduler: MainScheduler.instance)
-        .subscribeOn(MainScheduler.instance)
-    }
-    
-    func getCAN() -> Maybe<Zetara.Data.CANControlData> {
-        print("[SETTINGS] Getting CAN via queue")
-        return ZetaraManager.shared.queuedRequest("getCAN") {
-            ZetaraManager.shared.getCAN()
-        }
-        .timeout(.seconds(3), scheduler: MainScheduler.instance)
-        .subscribeOn(MainScheduler.instance)
-    }
 }
