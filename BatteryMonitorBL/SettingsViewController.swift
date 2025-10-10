@@ -711,18 +711,48 @@ class SettingsViewController: UIViewController {
         }
 
         // Apply Module ID change if pending (this will trigger battery restart)
-        if let index = pendingModuleIdIndex {
-            setModuleId(at: index, completion: checkCompletion)
+        if let pendingIndex = pendingModuleIdIndex {
+            // Check if value is already set (moduleIdData.moduleId is 1-based, index is 0-based)
+            if let currentModuleId = moduleIdData?.moduleId, (currentModuleId - 1) == pendingIndex {
+                // Skip - already set to this value
+                let idNumber = pendingIndex + 1
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent(
+                    "[SETTINGS] ⏭️ Skipping Module ID - already set to ID \(idNumber)"
+                )
+                checkCompletion()
+            } else {
+                setModuleId(at: pendingIndex, completion: checkCompletion)
+            }
         }
 
         // Apply CAN change if pending
-        if let index = pendingCANIndex {
-            setCAN(at: index, completion: checkCompletion)
+        if let pendingIndex = pendingCANIndex {
+            // Check if value is already set
+            if let currentIndex = canData?.selectedIndex, currentIndex == pendingIndex {
+                // Skip - already set to this value
+                let protocolName = canData?.readableProtocol(at: pendingIndex) ?? "Protocol \(pendingIndex)"
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent(
+                    "[SETTINGS] ⏭️ Skipping CAN Protocol - already set to \(protocolName)"
+                )
+                checkCompletion()
+            } else {
+                setCAN(at: pendingIndex, completion: checkCompletion)
+            }
         }
 
         // Apply RS485 change if pending
-        if let index = pendingRS485Index {
-            setRS485(at: index, completion: checkCompletion)
+        if let pendingIndex = pendingRS485Index {
+            // Check if value is already set
+            if let currentIndex = rs485Data?.selectedIndex, currentIndex == pendingIndex {
+                // Skip - already set to this value
+                let protocolName = rs485Data?.readableProtocol(at: pendingIndex) ?? "Protocol \(pendingIndex)"
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent(
+                    "[SETTINGS] ⏭️ Skipping RS485 Protocol - already set to \(protocolName)"
+                )
+                checkCompletion()
+            } else {
+                setRS485(at: pendingIndex, completion: checkCompletion)
+            }
         }
 
         // If no pending changes (shouldn't happen), just hide alert
@@ -870,11 +900,19 @@ class SettingsViewController: UIViewController {
     
     func setModuleId(at index: Int, completion: (() -> Void)? = nil) {
         let moduleNumber = index + 1
-        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] Setting Module ID to \(moduleNumber)")
+        let currentId = moduleIdData?.moduleId ?? 0
+        let currentIdStr = currentId > 0 ? "ID \(currentId)" : "Unknown"
+        let newIdStr = "ID \(moduleNumber)"
+
+        // Log current vs new value
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent(
+            "[SETTINGS] Setting Module ID: '\(currentIdStr)' → '\(newIdStr)'"
+        )
 
         ZetaraManager.shared.queuedRequest("setModuleId") {
             ZetaraManager.shared.setModuleId(moduleNumber)
         }
+        .observe(on: MainScheduler.instance)
         .subscribe(
             onSuccess: { [weak self] success in
                 if success {
@@ -897,12 +935,18 @@ class SettingsViewController: UIViewController {
     }
     
     func setRS485(at index: Int, completion: (() -> Void)? = nil) {
-        let protocolName = rs485Data?.readableProtocol(at: index) ?? "Protocol \(index)"
-        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] Setting RS485 Protocol to \(protocolName)")
+        let currentProtocol = rs485Data?.readableProtocol() ?? "Unknown"
+        let newProtocol = rs485Data?.readableProtocol(at: index) ?? "Protocol \(index)"
+
+        // Log current vs new value
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent(
+            "[SETTINGS] Setting RS485 Protocol: '\(currentProtocol)' → '\(newProtocol)'"
+        )
 
         ZetaraManager.shared.queuedRequest("setRS485") {
             ZetaraManager.shared.setRS485(index)
         }
+        .observe(on: MainScheduler.instance)
         .subscribe(
             onSuccess: { [weak self] success in
                 if success {
@@ -924,12 +968,18 @@ class SettingsViewController: UIViewController {
     }
     
     func setCAN(at index: Int, completion: (() -> Void)? = nil) {
-        let protocolName = canData?.readableProtocol(at: index) ?? "Protocol \(index)"
-        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] Setting CAN Protocol to \(protocolName)")
+        let currentProtocol = canData?.readableProtocol() ?? "Unknown"
+        let newProtocol = canData?.readableProtocol(at: index) ?? "Protocol \(index)"
+
+        // Log current vs new value
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent(
+            "[SETTINGS] Setting CAN Protocol: '\(currentProtocol)' → '\(newProtocol)'"
+        )
 
         ZetaraManager.shared.queuedRequest("setCAN") {
             ZetaraManager.shared.setCAN(index)
         }
+        .observe(on: MainScheduler.instance)
         .subscribe(
             onSuccess: { [weak self] success in
                 if success {

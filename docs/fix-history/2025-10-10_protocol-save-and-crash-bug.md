@@ -823,3 +823,129 @@ Client Logs Analyzed:
 - bigbattery_logs_20251010_090138.json through 090840.json (8 logs)
 - Critical discovery in 090446.json: simultaneous requests at same timestamp
 ```
+
+---
+
+## ADDITIONAL FIX: Threading Error on Save (October 10, 2025)
+
+**Date:** October 10, 2025 (later same day)
+**Severity:** CRITICAL
+**Status:** Fixed
+
+### Problem
+
+After implementing the fixes above and testing, discovered a **NEW runtime crash** when clicking Save:
+
+```
+Thread 6: "Modifications to the layout engine must not be performed from a background thread after it has been accessed from the main thread."
+```
+
+**Error occurs when:**
+- User clicks "Save" button
+- setModuleId/setRS485/setCAN completion callbacks execute
+- Callbacks update UI (labels) and call `Alert.hide()` from background thread
+
+### Root Cause
+
+**RxSwift callbacks executing on background thread:**
+
+The three set methods (`setModuleId()`, `setRS485()`, `setCAN()`) were missing `.observe(on: MainScheduler.instance)`, causing their `.subscribe()` callbacks to execute on **background threads**.
+
+**BatteryMonitorBL/SettingsViewController.swift (lines 913-934) - BEFORE:**
+
+```swift
+ZetaraManager.shared.queuedRequest("setModuleId") {
+    ZetaraManager.shared.setModuleId(moduleNumber)
+}
+.subscribe(  // ❌ No .observe(on:) - callback runs on background thread!
+    onSuccess: { [weak self] success in
+        if success {
+            // ❌ UI update on background thread!
+            self?.moduleIdSettingItemView?.label = idData.readableId(at: index)
+        }
+        // ❌ Calls checkCompletion() → Alert.hide() on background thread!
+        completion?()
+    }
+)
+```
+
+**Why this crashes:**
+1. `queuedRequest()` returns Maybe on background thread
+2. `.subscribe()` callbacks execute on same thread as observable
+3. Callbacks update UI (`label =` , `Alert.hide()`)
+4. iOS forbids UI updates from background threads → **CRASH**
+
+**Identical problem in setRS485() and setCAN().**
+
+### Solution
+
+Add `.observe(on: MainScheduler.instance)` **before** `.subscribe()` in all three set methods.
+
+**BatteryMonitorBL/SettingsViewController.swift (lines 913-935) - AFTER:**
+
+```swift
+ZetaraManager.shared.queuedRequest("setModuleId") {
+    ZetaraManager.shared.setModuleId(moduleNumber)
+}
+.observe(on: MainScheduler.instance)  // ✅ Force callbacks to main thread
+.subscribe(
+    onSuccess: { [weak self] success in
+        // ✅ Now executes on main thread - safe for UI updates
+        if success {
+            self?.moduleIdSettingItemView?.label = idData.readableId(at: index)
+        }
+        completion?()  // ✅ Alert.hide() now on main thread
+    }
+)
+```
+
+**Applied to all three methods:**
+- `setModuleId()` - line 915
+- `setRS485()` - line 949
+- `setCAN()` - line 982
+
+### Why This Works
+
+**RxSwift Scheduler Behavior:**
+- `.observe(on: MainScheduler.instance)` forces all downstream operators to execute on main thread
+- Ensures `onSuccess` and `onError` callbacks run on main thread
+- Makes UI updates (labels, Alert) thread-safe
+
+**Reference from Previous Fix:**
+
+This same pattern was already used in `setupDisconnectHandler()` (lines 764-778):
+
+```swift
+disconnectHandlerDisposable = ZetaraManager.shared.connectedPeripheralSubject
+    .subscribeOn(MainScheduler.instance)
+    .observe(on: MainScheduler.instance)  // ← Already fixed here!
+    .subscribe(onNext: { [weak self] _ in
+        Alert.hide()  // Safe - runs on main thread
+    })
+```
+
+We applied the same fix to the three set methods.
+
+### Files Modified
+
+**BatteryMonitorBL/SettingsViewController.swift:**
+- Line 915: Added `.observe(on: MainScheduler.instance)` in `setModuleId()`
+- Line 949: Added `.observe(on: MainScheduler.instance)` in `setRS485()`
+- Line 982: Added `.observe(on: MainScheduler.instance)` in `setCAN()`
+
+### Lesson Learned
+
+**Threading Rule for RxSwift + UI:**
+
+ANY RxSwift subscription that:
+1. Updates UI (labels, buttons, alerts, etc.)
+2. Calls completion handlers that might update UI
+
+MUST use `.observe(on: MainScheduler.instance)` before `.subscribe()`.
+
+**Prevention Checklist:**
+- [ ] Search codebase for all `.subscribe(` calls
+- [ ] Verify each has `.observe(on: MainScheduler.instance)` if touching UI
+- [ ] Test on device (threading crashes often don't appear in Simulator)
+
+---

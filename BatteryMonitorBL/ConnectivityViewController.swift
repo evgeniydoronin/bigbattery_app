@@ -153,7 +153,21 @@ extension ConnectivityViewController: UITableViewDelegate {
                         
                     }, onError: { [weak self] error in
                         self?.state = .unconnected
-                        Alert.show("Invalid device")
+
+                        // Provide specific error messages based on error type
+                        let errorMessage: String
+                        if case ZetaraManager.Error.notZetaraPeripheralError = error {
+                            errorMessage = "Invalid BigBattery device"
+                        } else if case ZetaraManager.Error.connectionError = error {
+                            errorMessage = "Connection failed - please try again"
+                        } else {
+                            errorMessage = "Connection error: \(error.localizedDescription)"
+                        }
+
+                        ZetaraManager.shared.protocolDataManager.logProtocolEvent(
+                            "[CONNECTIVITY] Connection failed: \(errorMessage)"
+                        )
+                        Alert.show(errorMessage)
                     }).disposed(by: disposeBag)
         }
     }

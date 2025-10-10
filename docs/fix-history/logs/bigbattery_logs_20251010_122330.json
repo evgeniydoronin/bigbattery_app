@@ -1,0 +1,173 @@
+{
+  "systemInfo" : {
+    "availableMemory" : 5910085632,
+    "batteryLevel" : 85,
+    "cpuUsage" : 0,
+    "isLowPowerMode" : false
+  },
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "appInfo" : {
+    "build" : "22",
+    "version" : "1.4.1"
+  },
+  "deviceInfo" : {
+    "systemName" : "iOS",
+    "systemVersion" : "26.0",
+    "name" : "iPhone",
+    "model" : "iPhone"
+  },
+  "events" : [
+    {
+      "message" : "No device connected",
+      "timestamp" : "12:23:29 10.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Data Update",
+      "message" : "New battery data received",
+      "timestamp" : "12:23:27 10.10.2025"
+    },
+    {
+      "timestamp" : "12:23:27 10.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "type" : "Data Update",
+      "timestamp" : "12:23:26 10.10.2025",
+      "message" : "New battery data received"
+    },
+    {
+      "message" : "No device connected",
+      "timestamp" : "12:23:08 10.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "12:23:08 10.10.2025",
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched"
+    },
+    {
+      "timestamp" : "12:23:08 10.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    }
+  ],
+  "timestamp" : "12:23:30 10.10.2025",
+  "batteryInfo" : {
+    "timestamp" : "12:23:30 10.10.2025",
+    "cellTemps" : [
+
+    ],
+    "tempPCB" : 0,
+    "tempEnv" : 0,
+    "current" : 0,
+    "cellCount" : 0,
+    "voltage" : 0,
+    "status" : "Standby",
+    "soc" : 0,
+    "soh" : 0,
+    "cellVoltages" : [
+
+    ]
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overcurrent" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false,
+      "overvoltage" : false,
+      "undervoltage" : false
+    }
+  },
+  "protocolInfo" : {
+    "recentLogs" : [
+      "[12:23:27] [CONNECTION] Connection state cleaned",
+      "[12:23:27] [PROTOCOL MANAGER] Clearing all protocols",
+      "[12:23:27] [CONNECTION] BMS data cleared",
+      "[12:23:27] [QUEUE] Request queue cleared",
+      "[12:23:27] [CONNECTION] Cleaning connection state",
+      "[12:23:27] [CONNECTION] Connection state cleaned",
+      "[12:23:27] [PROTOCOL MANAGER] Clearing all protocols",
+      "[12:23:27] [CONNECTION] BMS data cleared",
+      "[12:23:27] [QUEUE] Request queue cleared",
+      "[12:23:27] [CONNECTION] Cleaning connection state",
+      "[12:23:27] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[12:23:27] [CONNECTION] Notify UUID: 1007",
+      "[12:23:27] [CONNECTION] Write UUID: 1008",
+      "[12:23:27] [CONNECTION] ✅ Characteristics configured",
+      "[12:23:26] [CONNECTION] Connection state cleaned",
+      "[12:23:26] [PROTOCOL MANAGER] Clearing all protocols",
+      "[12:23:26] [CONNECTION] BMS data cleared",
+      "[12:23:26] [QUEUE] Request queue cleared",
+      "[12:23:26] [CONNECTION] Cleaning connection state",
+      "[12:22:59] [CONNECTION] Connection state cleaned",
+      "[12:22:59] [PROTOCOL MANAGER] Clearing all protocols",
+      "[12:22:59] [CONNECTION] BMS data cleared",
+      "[12:22:59] [QUEUE] Request queue cleared",
+      "[12:22:59] [CONNECTION] Cleaning connection state",
+      "[12:22:59] [CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!",
+      "[12:22:42] [SETTINGS] ✅ RS485 Protocol set successfully",
+      "[12:22:42] [QUEUE] ✅ setRS485 completed in 1163ms",
+      "[12:22:42] [BLUETOOTH] ✅ Got control data response",
+      "[12:22:42] [BLUETOOTH] Is control data: true",
+      "[12:22:42] [BLUETOOTH] 📥 Received notification: 100501001575"
+    ],
+    "statistics" : {
+      "warnings" : 1,
+      "errors" : 0,
+      "totalLogs" : 30,
+      "successes" : 4
+    },
+    "currentValues" : {
+      "moduleId" : "--",
+      "rs485Protocol" : "--",
+      "canProtocol" : "--"
+    },
+    "lastUpdateTime" : "12:23:30 10.10.2025"
+  },
+  "rawDataInfo" : {
+    "packetHistory" : [
+      {
+        "parseResult" : "success",
+        "timestamp" : "12:23:30 10.10.2025",
+        "data" : "0000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000"
+  },
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "timeouts" : 0,
+    "packetLoss" : 0,
+    "retries" : 0
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "12:23:29 10.10.2025",
+        "step" : "connection",
+        "message" : "No device connected",
+        "status" : "success"
+      },
+      {
+        "message" : "No device connected",
+        "timestamp" : "12:23:08 10.10.2025",
+        "step" : "connection",
+        "status" : "success"
+      },
+      {
+        "message" : "Diagnostics screen launched",
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "12:23:08 10.10.2025"
+      }
+    ]
+  }
+}

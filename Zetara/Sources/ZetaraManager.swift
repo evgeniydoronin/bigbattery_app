@@ -195,6 +195,12 @@ public class ZetaraManager: NSObject {
 
         print("try to connect peripheral: \(peripheral.name ?? "") identifier: \(peripheral.identifier.uuidString)")
 
+        // Детальное логирование процесса подключения
+        protocolDataManager.logProtocolEvent("[CONNECT] Attempting connection")
+        protocolDataManager.logProtocolEvent("[CONNECT] Device name: \(peripheral.name ?? "Unknown")")
+        protocolDataManager.logProtocolEvent("[CONNECT] Device UUID: \(peripheral.identifier.uuidString)")
+        protocolDataManager.logProtocolEvent("[CONNECT] Cached UUID: \(cachedDeviceUUID ?? "none")")
+
         // 先释放之前的
         cleanConnection()
 
@@ -308,6 +314,14 @@ public class ZetaraManager: NSObject {
 
         // Очищаем протокольные данные через ProtocolDataManager
         protocolDataManager.clearProtocols()
+
+        // Сбрасываем ВСЕ Bluetooth состояния для чистого переподключения
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
+        identifier = nil
+        cachedDeviceUUID = nil
+        protocolDataManager.logProtocolEvent("[CONNECTION] All Bluetooth characteristics cleared")
+        protocolDataManager.logProtocolEvent("[CONNECTION] Cached device UUID cleared")
 
         connectedPeripheralSubject.onNext(nil)
 

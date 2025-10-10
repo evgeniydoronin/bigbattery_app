@@ -52,16 +52,36 @@ extension Zetara.Data {
     
     public struct ResponseData: ControlData {
         var success: Bool
-        
+        var errorCode: UInt8?
+
         public init?(_ bytes: [UInt8]) {
-            guard bytes.count >= 3 else {
+            guard bytes.count >= 4 else {
                 return nil
             }
-            
+
             if bytes[3] == 0 {
                 self.success = true
+                self.errorCode = nil
             } else {
                 self.success = false
+                self.errorCode = bytes[3]
+            }
+        }
+
+        /// Returns human-readable error message for the error code
+        /// Note: Error code meanings are based on observations and need manufacturer confirmation
+        public func errorMessage() -> String? {
+            guard let code = errorCode else { return nil }
+
+            switch code {
+            case 0x01:
+                return "Duplicate value or invalid parameter"
+            case 0x02:
+                return "Device busy"
+            case 0x03:
+                return "Invalid state"
+            default:
+                return "Unknown error code: 0x\(String(code, radix: 16, uppercase: true))"
             }
         }
     }

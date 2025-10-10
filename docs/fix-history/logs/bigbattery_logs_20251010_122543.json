@@ -1,0 +1,186 @@
+{
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "timestamp" : "12:25:43 10.10.2025",
+        "status" : "success",
+        "step" : "connection"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "12:25:43 10.10.2025",
+        "step" : "connection",
+        "message" : "Diagnostics screen launched"
+      },
+      {
+        "timestamp" : "12:25:43 10.10.2025",
+        "status" : "success",
+        "step" : "connection",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      }
+    ]
+  },
+  "rawDataInfo" : {
+    "parseErrors" : [
+
+    ],
+    "packetHistory" : [
+      {
+        "parseResult" : "success",
+        "data" : "B81E55420000000050000000000000006400000000000000560E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E5540B81E5540191919191919",
+        "timestamp" : "12:25:43 10.10.2025"
+      }
+    ],
+    "lastReceivedPacket" : "B81E55420000000050000000000000006400000000000000560E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E5540B81E5540191919191919"
+  },
+  "batteryInfo" : {
+    "cellVoltages" : [
+      3.3289999961853027,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3299999237060547
+    ],
+    "current" : 0,
+    "cellTemps" : [
+      25,
+      25,
+      25,
+      25
+    ],
+    "status" : "Standby",
+    "soc" : 80,
+    "timestamp" : "12:25:43 10.10.2025",
+    "cellCount" : 16,
+    "tempPCB" : 25,
+    "tempEnv" : 25,
+    "voltage" : 53.279998779296875,
+    "soh" : 100
+  },
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "peripheralName" : "BB-51.2V100Ah-0855",
+    "state" : "poweredOn",
+    "peripheralIdentifier" : "1997B63E-02F2-BB1F-C0DE-63B68D347427"
+  },
+  "deviceInfo" : {
+    "model" : "iPhone",
+    "systemVersion" : "26.0",
+    "name" : "iPhone",
+    "systemName" : "iOS"
+  },
+  "events" : [
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "type" : "Connection",
+      "timestamp" : "12:25:43 10.10.2025"
+    },
+    {
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "12:25:43 10.10.2025"
+    },
+    {
+      "timestamp" : "12:25:43 10.10.2025",
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "12:25:43 10.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    }
+  ],
+  "systemInfo" : {
+    "batteryLevel" : 85,
+    "isLowPowerMode" : false,
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0
+  },
+  "protocolInfo" : {
+    "currentValues" : {
+      "rs485Protocol" : "P02-LUX",
+      "moduleId" : "ID 2",
+      "canProtocol" : "P06-LUX"
+    },
+    "lastUpdateTime" : "12:25:43 10.10.2025",
+    "recentLogs" : [
+      "[12:25:40] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[12:25:40] [PROTOCOL MANAGER] ✅ CAN loaded: P06-LUX",
+      "[12:25:40] [QUEUE] ✅ getCAN completed in 2024ms",
+      "[12:25:40] [BLUETOOTH] ✅ Got control data response",
+      "[12:25:40] [BLUETOOTH] Is control data: true",
+      "[12:25:40] [BLUETOOTH] 📥 Received notification: 100470050b5030312d4752570000005030322d534c4b0000005030332d4459000000005030342d4d47520000005030352d5643540000005030362d4c55580000005030372d534d410000005030382d494e480000005030392d534f4c0000005031302d41464f0000005031312d5354550000002907",
+      "[12:25:40] [BLUETOOTH] 📡 Started observing notifications...",
+      "[12:25:40] [BLUETOOTH] 📤 Writing control data: 10040072c5",
+      "[12:25:40] [QUEUE] 🚀 Executing getCAN",
+      "[12:25:40] [PROTOCOL MANAGER] ✅ RS485 loaded: P02-LUX",
+      "[12:25:40] [QUEUE] ✅ getRS485 completed in 1497ms",
+      "[12:25:40] [BLUETOOTH] ✅ Got control data response",
+      "[12:25:40] [BLUETOOTH] Is control data: true",
+      "[12:25:40] [BLUETOOTH] 📥 Received notification: 10033401055030312d4752570000005030322d4c55580000005030332d5343480000005030342d494e480000005030352d564f4c0000003041",
+      "[12:25:39] [QUEUE] ⏳ Waiting 497ms before getCAN",
+      "[12:25:39] [BLUETOOTH] 📡 Started observing notifications...",
+      "[12:25:39] [BLUETOOTH] 📤 Writing control data: 10030070f5",
+      "[12:25:39] [QUEUE] 🚀 Executing getRS485",
+      "[12:25:39] [PROTOCOL MANAGER] ✅ Module ID loaded: ID 2",
+      "[12:25:39] [QUEUE] ✅ getModuleId completed in 972ms",
+      "[12:25:39] [BLUETOOTH] ✅ Got control data response",
+      "[12:25:39] [BLUETOOTH] Is control data: true",
+      "[12:25:39] [BLUETOOTH] 📥 Received notification: 100201022575",
+      "[12:25:39] [QUEUE] ⏳ Waiting 497ms before getRS485",
+      "[12:25:39] [BLUETOOTH] 📡 Started observing notifications...",
+      "[12:25:39] [BLUETOOTH] 📤 Writing control data: 1002007165",
+      "[12:25:39] [QUEUE] 🚀 Executing getModuleId",
+      "[12:25:39] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[12:25:39] [PROTOCOL MANAGER] ✅ CAN loaded: P06-LUX",
+      "[12:25:39] [QUEUE] ✅ getCAN completed in 1274ms"
+    ],
+    "statistics" : {
+      "warnings" : 0,
+      "totalLogs" : 30,
+      "successes" : 11,
+      "errors" : 0
+    }
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "undervoltage" : false,
+      "overcurrent" : false,
+      "shortCircuit" : false,
+      "overtemperature" : false,
+      "overvoltage" : false
+    },
+    "tempMin" : 25,
+    "cellVoltageDelta" : 0.0020000934600830078,
+    "cellVoltageMax" : 3.3310000896453857,
+    "cellVoltageStdDev" : 0.00059954461616106003,
+    "cellVoltageAverage" : 3.3303756713867188,
+    "tempDelta" : 0,
+    "cellVoltageMin" : 3.3289999961853027,
+    "tempMax" : 25
+  },
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "packetLoss" : 0,
+    "timeouts" : 0,
+    "retries" : 0
+  },
+  "timestamp" : "12:25:43 10.10.2025",
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "22"
+  }
+}
