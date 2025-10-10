@@ -208,6 +208,13 @@ public class ZetaraManager: NSObject {
 
         self.connectionDisposable = peripheral.establishConnection()
             .flatMap { $0.discoverServices(serviceUUIDs) }
+            .do(onNext: { [weak self] services in
+                // Логируем найденные services
+                self?.protocolDataManager.logProtocolEvent("[CONNECT] Services discovered: \(services.count)")
+                services.forEach { service in
+                    self?.protocolDataManager.logProtocolEvent("[CONNECT] Service UUID: \(service.uuid.uuidString)")
+                }
+            })
             .flatMap { Observable.from($0) }
             .flatMap { Identifier.asSingle(service: $0) }
             .flatMap {
@@ -220,6 +227,12 @@ public class ZetaraManager: NSObject {
                 let observer = self!.connectedPeripheralSubject.asObserver()
                 switch event {
                     case .error(let error):
+                        // Детальное логирование ошибки подключения
+                        if case ZetaraManager.Error.notZetaraPeripheralError = error {
+                            self?.protocolDataManager.logProtocolEvent("[CONNECT] ❌ Service UUID not recognized (not a valid BigBattery device)")
+                        } else {
+                            self?.protocolDataManager.logProtocolEvent("[CONNECT] ❌ Connection error: \(error.localizedDescription)")
+                        }
                         observer.onError(error)
                     case .next(let characteristics):
                         if let identifier = Identifier.identifier(of: characteristics.first!),
@@ -247,7 +260,8 @@ public class ZetaraManager: NSObject {
                             
                             self?.startRefreshBMSData()
                         } else {
-                            // 一般不会走到这里
+                            // Identifier or characteristics not found
+                            self?.protocolDataManager.logProtocolEvent("[CONNECT] ❌ Failed to configure characteristics (identifier not recognized)")
                             observer.onError(ZetaraManager.Error.notZetaraPeripheralError)
                         }
                     case .completed:
@@ -314,6 +328,10 @@ public class ZetaraManager: NSObject {
 
         // Очищаем протокольные данные через ProtocolDataManager
         protocolDataManager.clearProtocols()
+
+        // Очищаем список сканированных устройств (stale peripherals)
+        cleanScanning()
+        protocolDataManager.logProtocolEvent("[CONNECTION] Scanned peripherals cleared")
 
         // Сбрасываем ВСЕ Bluetooth состояния для чистого переподключения
         writeCharacteristic = nil

@@ -397,6 +397,136 @@ func cleanConnection() {
 
 ---
 
+###  Проблема 3: Stale Peripheral References After Battery Restart
+
+**Симптомы:**
+- "Invalid BigBattery device" при reconnect после battery restart
+- PHANTOM error в логах: `[CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!`
+- После cleanConnection() и попытки переподключения → "INVALID DEVICE"
+- В логах diagnostics отсутствуют peripheralName и peripheralIdentifier
+
+**Root Cause:**
+
+**Stale peripheral objects in scannedPeripherals:**
+
+```swift
+// ❌ НЕПРАВИЛЬНО - не очищаем scannedPeripherals
+func cleanConnection() {
+    // Clean BMS data ✅
+    cleanData()
+
+    // Clean protocol data ✅
+    protocolDataManager.clearProtocols()
+
+    // Reset Bluetooth states ✅
+    writeCharacteristic = nil
+    notifyCharacteristic = nil
+    cachedDeviceUUID = nil
+
+    // ❌ scannedPeripherals НЕ очищается!
+    // Старые peripheral объекты остаются в списке
+}
+```
+
+**Что происходит:**
+1. Батарея перезагружается (после сохранения настроек или power cycle)
+2. PHANTOM monitor обнаруживает проблему → `cleanConnection()` вызывается
+3. Bluetooth state очищен НО `scannedPeripherals` содержит СТАРЫЕ peripheral объекты
+4. Пользователь пытается переподключиться, кликая на батарею в списке
+5. Приложение пытается подключиться к СТАРОМУ peripheral объекту
+6. iOS BLE stack: старый peripheral больше не валиден (батарея перезагрузилась)
+7. Service discovery fails → не находит services → `notZetaraPeripheralError` → "Invalid BigBattery device"
+
+**Доказательства из логов:**
+```json
+// До restart - успешное подключение
+"bluetoothInfo": {
+  "peripheralName": "BB-51.2V100Ah-0855",
+  "peripheralIdentifier": "1997B63E-02F2-BB1F-C0DE-63B68D347427"
+}
+
+// После restart - подключение failed
+"bluetoothInfo": {
+  "state": "poweredOn"
+  // peripheralName отсутствует
+  // peripheralIdentifier отсутствует
+}
+```
+
+### ✅ Решение: Clear scannedPeripherals in cleanConnection()
+
+```swift
+// ✅ ПРАВИЛЬНО - очищаем scannedPeripherals
+func cleanConnection() {
+    // ...existing cleanup...
+
+    // Очищаем протокольные данные
+    protocolDataManager.clearProtocols()
+
+    // ✅ Очищаем список сканированных устройств (stale peripherals)
+    cleanScanning()
+    protocolDataManager.logProtocolEvent("[CONNECTION] Scanned peripherals cleared")
+
+    // Reset Bluetooth states
+    writeCharacteristic = nil
+    notifyCharacteristic = nil
+    identifier = nil
+    cachedDeviceUUID = nil
+
+    connectedPeripheralSubject.onNext(nil)
+}
+```
+
+**Почему это работает:**
+- `cleanScanning()` очищает `scannedPeripheralsSubject` и dispose scan
+- Старые peripheral объекты удалены из списка
+- При открытии Connectivity screen запускается НОВОЕ сканирование
+- Батарея найдена заново с НОВЫМ peripheral объектом
+- Новый peripheral объект валиден для service discovery
+- Подключение успешно ✅
+
+### 📋 Checklist для проверки:
+
+- [ ] `cleanConnection()` вызывает `cleanScanning()`?
+- [ ] Логи показывают "Scanned peripherals cleared"?
+- [ ] После PHANTOM cleanup можно переподключиться?
+- [ ] "INVALID DEVICE" НЕ появляется после battery restart?
+
+### 📚 Где применять:
+
+**Файл:** `Zetara/Sources/ZetaraManager.swift`
+
+**Метод:** `cleanConnection()` - lines 277-333
+
+**Изменения:**
+```swift
+// Line 318-320: Added cleanScanning() call
+cleanScanning()
+protocolDataManager.logProtocolEvent("[CONNECTION] Scanned peripherals cleared")
+```
+
+**Также добавлено детальное логирование в `connect()`:**
+```swift
+// Lines 211-217: Log discovered services
+.do(onNext: { [weak self] services in
+    self?.protocolDataManager.logProtocolEvent("[CONNECT] Services discovered: \(services.count)")
+    services.forEach { service in
+        self?.protocolDataManager.logProtocolEvent("[CONNECT] Service UUID: \(service.uuid.uuidString)")
+    }
+})
+
+// Lines 231-235: Log connection errors
+if case ZetaraManager.Error.notZetaraPeripheralError = error {
+    self?.protocolDataManager.logProtocolEvent("[CONNECT] ❌ Service UUID not recognized (not a valid BigBattery device)")
+}
+```
+
+### 🔗 Related Fixes:
+
+- `docs/fix-history/2025-10-10_reconnection-after-restart-bug.md` - полная документация
+
+---
+
 ## 5. Protocol Save Issues
 
 ### 🔴 Симптомы:
