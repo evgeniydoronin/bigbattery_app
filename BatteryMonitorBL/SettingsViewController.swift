@@ -85,7 +85,7 @@ class SettingsViewController: UIViewController {
 
         // Message Label
         let messageLabel = UILabel()
-        messageLabel.text = "You must restart the battery using the power button after saving, then reconnect to the app to verify changes."
+        messageLabel.text = "The battery will restart automatically when you save settings. Wait a moment, then reconnect to the app to verify changes."
         messageLabel.textAlignment = .center
         messageLabel.numberOfLines = 0
         messageLabel.font = .systemFont(ofSize: 10, weight: .medium)
@@ -166,7 +166,10 @@ class SettingsViewController: UIViewController {
     // Restart popup properties
     private var restartPopupOverlay: UIView?
     private var restartPopupTimer: Timer?
-    
+
+    // Disconnect handler subscription
+    private var disconnectHandlerDisposable: Disposable?
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -347,6 +350,10 @@ class SettingsViewController: UIViewController {
         super.viewWillDisappear(animated)
 
         print("[SETTINGS] View will disappear - cancelling pending requests")
+
+        // Отменяем disconnect handler если есть
+        disconnectHandlerDisposable?.dispose()
+        disconnectHandlerDisposable = nil
 
         // Отменяем все текущие подписки
         disposeBag = DisposeBag()
@@ -659,10 +666,29 @@ class SettingsViewController: UIViewController {
     }
 
     @objc private func saveButtonTapped() {
+        // Show restart warning FIRST
+        let alert = UIAlertController(
+            title: "Battery Will Restart",
+            message: "Saving settings will cause the battery to restart automatically and disconnect the app temporarily. Continue?",
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            self?.performSave()
+        })
+
+        present(alert, animated: true)
+    }
+
+    private func performSave() {
         // Hide all status indicators
         hideStatusLabel(moduleIdStatusLabel)
         hideStatusLabel(canStatusLabel)
         hideStatusLabel(rs485StatusLabel)
+
+        // Setup disconnect handler to show informative message
+        setupDisconnectHandler()
 
         // Show loading alert
         Alert.show("Saving settings...", timeout: 10)
@@ -675,8 +701,6 @@ class SettingsViewController: UIViewController {
             completedOperations += 1
             if completedOperations == totalOperations {
                 Alert.hide()
-                // Show custom restart popup
-                self?.showRestartPopup()
                 // Clear pending changes
                 self?.pendingModuleIdIndex = nil
                 self?.pendingCANIndex = nil
@@ -686,7 +710,7 @@ class SettingsViewController: UIViewController {
             }
         }
 
-        // Apply Module ID change if pending
+        // Apply Module ID change if pending (this will trigger battery restart)
         if let index = pendingModuleIdIndex {
             setModuleId(at: index, completion: checkCompletion)
         }
@@ -706,6 +730,38 @@ class SettingsViewController: UIViewController {
             Alert.hide()
             deactivateSaveButton()
         }
+    }
+
+    private func setupDisconnectHandler() {
+        // Cancel any existing disconnect handler
+        disconnectHandlerDisposable?.dispose()
+
+        // Subscribe to disconnect events
+        disconnectHandlerDisposable = ZetaraManager.shared.connectedPeripheralSubject
+            .subscribeOn(MainScheduler.instance)
+            .observe(on: MainScheduler.instance)
+            .filter { $0 == nil }
+            .take(1) // Only handle the first disconnect after save
+            .subscribe(onNext: { [weak self] _ in
+                // Battery disconnected (restarting)
+                // Explicitly execute UI operations on main thread
+                DispatchQueue.main.async {
+                    Alert.hide()
+                    self?.showBatteryRestartingMessage()
+                }
+            })
+    }
+
+    private func showBatteryRestartingMessage() {
+        let alert = UIAlertController(
+            title: "Battery Restarting",
+            message: "The battery is restarting with new settings. Please wait a moment and reconnect to verify the changes.",
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+
+        present(alert, animated: true)
     }
 
     func version() -> String {
@@ -813,56 +869,85 @@ class SettingsViewController: UIViewController {
     }
     
     func setModuleId(at index: Int, completion: (() -> Void)? = nil) {
-        // module id 从 1 开始的
-        ZetaraManager.shared.setModuleId(index + 1)
-            .subscribeOn(MainScheduler.instance)
-            .timeout(.seconds(3), scheduler: MainScheduler.instance)
-            .subscribe { [weak self] (success: Bool) in
-                if success, let idData = self?.moduleIdData {
-                    self?.moduleIdSettingItemView?.label = idData.readableId(at: index)
-                    self?.toggleRS485AndCAN(index == 0) // 这里是 0 ，因为这里的 id 从 0 开始
+        let moduleNumber = index + 1
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] Setting Module ID to \(moduleNumber)")
+
+        ZetaraManager.shared.queuedRequest("setModuleId") {
+            ZetaraManager.shared.setModuleId(moduleNumber)
+        }
+        .subscribe(
+            onSuccess: { [weak self] success in
+                if success {
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ✅ Module ID set successfully")
+                    if let idData = self?.moduleIdData {
+                        self?.moduleIdSettingItemView?.label = idData.readableId(at: index)
+                        self?.toggleRS485AndCAN(index == 0) // 这里是 0 ，因为这里的 id 从 0 开始
+                    }
                 } else {
-                    print("[SETTINGS] ⚠️ Set module id failed")
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ⚠️ Module ID set failed")
                 }
                 completion?()
-            } onError: { _ in
-                print("[SETTINGS] ❌ Set module id error")
+            },
+            onError: { error in
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ❌ Module ID set error: \(error)")
                 completion?()
-            }.disposed(by: disposeBag)
+            }
+        )
+        .disposed(by: disposeBag)
     }
     
     func setRS485(at index: Int, completion: (() -> Void)? = nil) {
-        ZetaraManager.shared.setRS485(index)
-            .subscribeOn(MainScheduler.instance)
-            .timeout(.seconds(3), scheduler: MainScheduler.instance)
-            .subscribe { [weak self] success in
-                if success, let rs485 = self?.rs485Data {
-                    self?.rs485ProtocolView?.label = rs485.readableProtocol(at: index)
+        let protocolName = rs485Data?.readableProtocol(at: index) ?? "Protocol \(index)"
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] Setting RS485 Protocol to \(protocolName)")
+
+        ZetaraManager.shared.queuedRequest("setRS485") {
+            ZetaraManager.shared.setRS485(index)
+        }
+        .subscribe(
+            onSuccess: { [weak self] success in
+                if success {
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ✅ RS485 Protocol set successfully")
+                    if let rs485 = self?.rs485Data {
+                        self?.rs485ProtocolView?.label = rs485.readableProtocol(at: index)
+                    }
                 } else {
-                    print("[SETTINGS] ⚠️ Set RS485 failed")
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ⚠️ RS485 Protocol set failed")
                 }
                 completion?()
-            } onError: { _ in
-                print("[SETTINGS] ❌ Set RS485 error")
+            },
+            onError: { error in
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ❌ RS485 Protocol set error: \(error)")
                 completion?()
-            }.disposed(by: disposeBag)
+            }
+        )
+        .disposed(by: disposeBag)
     }
     
     func setCAN(at index: Int, completion: (() -> Void)? = nil) {
-        ZetaraManager.shared.setCAN(index)
-            .subscribeOn(MainScheduler.instance)
-            .timeout(.seconds(3), scheduler: MainScheduler.instance)
-            .subscribe { [weak self] success in
-                if success, let can = self?.canData {
-                    self?.canProtocolView?.label = can.readableProtocol(at: index)
+        let protocolName = canData?.readableProtocol(at: index) ?? "Protocol \(index)"
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] Setting CAN Protocol to \(protocolName)")
+
+        ZetaraManager.shared.queuedRequest("setCAN") {
+            ZetaraManager.shared.setCAN(index)
+        }
+        .subscribe(
+            onSuccess: { [weak self] success in
+                if success {
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ✅ CAN Protocol set successfully")
+                    if let can = self?.canData {
+                        self?.canProtocolView?.label = can.readableProtocol(at: index)
+                    }
                 } else {
-                    print("[SETTINGS] ⚠️ Set CAN failed")
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ⚠️ CAN Protocol set failed")
                 }
                 completion?()
-            } onError: { _ in
-                print("[SETTINGS] ❌ Set CAN error")
+            },
+            onError: { error in
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[SETTINGS] ❌ CAN Protocol set error: \(error)")
                 completion?()
-            }.disposed(by: disposeBag)
+            }
+        )
+        .disposed(by: disposeBag)
     }
     
 }
