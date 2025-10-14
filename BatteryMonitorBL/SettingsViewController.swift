@@ -766,6 +766,8 @@ class SettingsViewController: UIViewController {
         // Cancel any existing disconnect handler
         disconnectHandlerDisposable?.dispose()
 
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[DISCONNECT HANDLER] Setting up disconnect handler")
+
         // Subscribe to disconnect events
         disconnectHandlerDisposable = ZetaraManager.shared.connectedPeripheralSubject
             .subscribeOn(MainScheduler.instance)
@@ -774,11 +776,10 @@ class SettingsViewController: UIViewController {
             .take(1) // Only handle the first disconnect after save
             .subscribe(onNext: { [weak self] _ in
                 // Battery disconnected (restarting)
-                // Explicitly execute UI operations on main thread
-                DispatchQueue.main.async {
-                    Alert.hide()
-                    self?.showBatteryRestartingMessage()
-                }
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[DISCONNECT HANDLER] Disconnect detected, showing restart message")
+                // Already on main thread thanks to .observe(on: MainScheduler.instance)
+                Alert.hide()
+                self?.showBatteryRestartingMessage()
             })
     }
 

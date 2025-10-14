@@ -1,0 +1,186 @@
+{
+  "bluetoothInfo" : {
+    "state" : "poweredOn",
+    "peripheralName" : "BB-51.2V100Ah-0855",
+    "connectionAttempts" : 0,
+    "peripheralIdentifier" : "1997B63E-02F2-BB1F-C0DE-63B68D347427"
+  },
+  "events" : [
+    {
+      "timestamp" : "10:02:05 13.10.2025",
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "10:02:05 13.10.2025"
+    },
+    {
+      "timestamp" : "10:02:05 13.10.2025",
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "type" : "Data Update",
+      "timestamp" : "10:02:05 13.10.2025",
+      "message" : "New battery data received"
+    }
+  ],
+  "communicationErrorsInfo" : {
+    "retries" : 0,
+    "crcErrors" : 0,
+    "timeouts" : 0,
+    "packetLoss" : 0
+  },
+  "systemInfo" : {
+    "batteryLevel" : 45,
+    "cpuUsage" : 0,
+    "isLowPowerMode" : false,
+    "availableMemory" : 5910085632
+  },
+  "timestamp" : "10:02:06 13.10.2025",
+  "deviceInfo" : {
+    "systemVersion" : "26.0",
+    "name" : "iPhone",
+    "model" : "iPhone",
+    "systemName" : "iOS"
+  },
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "24"
+  },
+  "batteryInfo" : {
+    "soc" : 80,
+    "tempPCB" : 25,
+    "cellTemps" : [
+      25,
+      25,
+      25,
+      25
+    ],
+    "current" : 0,
+    "status" : "Standby",
+    "voltage" : 53.279998779296875,
+    "timestamp" : "10:02:06 13.10.2025",
+    "cellVoltages" : [
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3299999237060547
+    ],
+    "tempEnv" : 25,
+    "cellCount" : 16,
+    "soh" : 100
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overcurrent" : false,
+      "overvoltage" : false,
+      "undervoltage" : false,
+      "shortCircuit" : false,
+      "overtemperature" : false
+    },
+    "tempDelta" : 0,
+    "cellVoltageAverage" : 3.3304381370544434,
+    "tempMin" : 25,
+    "cellVoltageMin" : 3.3299999237060547,
+    "cellVoltageDelta" : 0.0010001659393310547,
+    "tempMax" : 25,
+    "cellVoltageStdDev" : 0.0004961611034748506,
+    "cellVoltageMax" : 3.3310000896453857
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "10:02:05 13.10.2025",
+        "step" : "connection",
+        "status" : "success",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      },
+      {
+        "step" : "connection",
+        "message" : "Diagnostics screen launched",
+        "status" : "success",
+        "timestamp" : "10:02:05 13.10.2025"
+      },
+      {
+        "status" : "success",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "step" : "connection",
+        "timestamp" : "10:02:05 13.10.2025"
+      }
+    ]
+  },
+  "protocolInfo" : {
+    "recentLogs" : [
+      "[10:02:04] [SETTINGS] ✅ RS485 Protocol set successfully",
+      "[10:02:04] [QUEUE] ✅ setRS485 completed in 613ms",
+      "[10:02:04] [BLUETOOTH] ✅ Got control data response",
+      "[10:02:04] [BLUETOOTH] Is control data: true",
+      "[10:02:04] [BLUETOOTH] 📥 Received notification: 100501001575",
+      "[10:02:04] [BLUETOOTH] 📡 Started observing notifications...",
+      "[10:02:04] [BLUETOOTH] 📤 Writing control data: 100501001575",
+      "[10:02:04] [QUEUE] 🚀 Executing setRS485",
+      "[10:02:03] [SETTINGS] ✅ CAN Protocol set successfully",
+      "[10:02:03] [QUEUE] ✅ setCAN completed in 89ms",
+      "[10:02:03] [BLUETOOTH] ✅ Got control data response",
+      "[10:02:03] [BLUETOOTH] Is control data: true",
+      "[10:02:03] [BLUETOOTH] 📥 Received notification: 10060100e575",
+      "[10:02:03] [QUEUE] ⏳ Waiting 499ms before setRS485",
+      "[10:02:03] [BLUETOOTH] 📡 Started observing notifications...",
+      "[10:02:03] [BLUETOOTH] 📤 Writing control data: 10060100e575",
+      "[10:02:03] [QUEUE] 🚀 Executing setCAN",
+      "[10:02:03] [QUEUE] 📥 Request queued: setRS485",
+      "[10:02:03] [SETTINGS] Setting RS485 Protocol: 'P02-LUX' → 'P01-GRW'",
+      "[10:02:03] [QUEUE] 📥 Request queued: setCAN",
+      "[10:02:03] [SETTINGS] Setting CAN Protocol: 'P06-LUX' → 'P01-GRW'",
+      "[10:02:03] [SETTINGS] ⏭️ Skipping Module ID - already set to ID 1",
+      "[10:01:54] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[10:01:54] [PROTOCOL MANAGER] ✅ CAN loaded: P06-LUX",
+      "[10:01:54] [QUEUE] ✅ getCAN completed in 2029ms",
+      "[10:01:54] [BLUETOOTH] ✅ Got control data response",
+      "[10:01:54] [BLUETOOTH] Is control data: true",
+      "[10:01:54] [BLUETOOTH] 📥 Received notification: 100470050b5030312d4752570000005030322d534c4b0000005030332d4459000000005030342d4d47520000005030352d5643540000005030362d4c55580000005030372d534d410000005030382d494e480000005030392d534f4c0000005031302d41464f0000005031312d5354550000002907",
+      "[10:01:54] [BLUETOOTH] 📡 Started observing notifications...",
+      "[10:01:54] [BLUETOOTH] 📤 Writing control data: 10040072c5"
+    ],
+    "statistics" : {
+      "totalLogs" : 30,
+      "errors" : 0,
+      "successes" : 9,
+      "warnings" : 0
+    },
+    "lastUpdateTime" : "10:02:06 13.10.2025",
+    "currentValues" : {
+      "rs485Protocol" : "P02-LUX",
+      "moduleId" : "ID 1",
+      "canProtocol" : "P06-LUX"
+    }
+  },
+  "rawDataInfo" : {
+    "lastReceivedPacket" : "B81E55420000000050000000000000006400000000000000B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E5540B81E5540191919191919",
+    "packetHistory" : [
+      {
+        "timestamp" : "10:02:06 13.10.2025",
+        "data" : "B81E55420000000050000000000000006400000000000000B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E5540B81E5540191919191919",
+        "parseResult" : "success"
+      }
+    ],
+    "parseErrors" : [
+
+    ]
+  }
+}

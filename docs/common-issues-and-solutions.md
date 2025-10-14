@@ -107,6 +107,177 @@ ZetaraManager.shared.queuedRequest("setModuleId") {
 ### 🔗 Related Fixes:
 
 - `docs/fix-history/2025-10-10_protocol-save-and-crash-bug.md` (ADDITIONAL FIX section)
+- `docs/fix-history/2025-10-13_double-main-thread-dispatch-crash.md` (Double dispatch pattern)
+
+---
+
+### 🔴 Проблема 2: Double Main Thread Dispatch
+
+**Симптомы:**
+- App crashes when handling disconnect/UI events
+- Crash occurs даже если `.observe(on: MainScheduler.instance)` используется
+- Delay между event и UI update
+- No crash logs visible (crash happens before UI can respond)
+
+**Когда возникает:**
+- При disconnect battery после save
+- При любом RxSwift callback с UI operations
+- Когда используется `.observe(on:)` + `DispatchQueue.main.async`
+
+**Crash message:**
+```
+Thread 6: Signal SIGABRT
+или просто app crash без detailed message
+```
+
+### ⚙️ Root Cause:
+
+**Комбинирование `.observe(on: MainScheduler.instance)` с `DispatchQueue.main.async`:**
+
+```swift
+// ❌ НЕПРАВИЛЬНО - двойной dispatch на main thread
+ZetaraManager.shared.connectedPeripheralSubject
+    .observe(on: MainScheduler.instance)  // ← Callback УЖЕ на main thread
+    .subscribe(onNext: {
+        DispatchQueue.main.async {  // ← ВТОРОЙ dispatch на main!
+            Alert.hide()
+            self?.showAlert()
+        }
+    })
+```
+
+**Почему это breaks:**
+1. `.observe(on: MainScheduler.instance)` гарантирует callback на main thread ✅
+2. `DispatchQueue.main.async` добавляет ВТОРОЙ dispatch в main queue ❌
+3. Создается **delay** между event и action
+4. За этот delay app может войти в invalid state
+5. UI operations выполняются в неправильном порядке → CRASH
+
+**Пример из реального кода:**
+
+```swift
+// ❌ BEFORE (BROKEN):
+private func setupDisconnectHandler() {
+    disconnectHandlerDisposable = ZetaraManager.shared.connectedPeripheralSubject
+        .subscribeOn(MainScheduler.instance)
+        .observe(on: MainScheduler.instance)  // Already main thread!
+        .filter { $0 == nil }
+        .take(1)
+        .subscribe(onNext: { [weak self] _ in
+            DispatchQueue.main.async {  // ❌ Double dispatch!
+                Alert.hide()
+                self?.showBatteryRestartingMessage()
+            }
+        })
+}
+```
+
+**What happens:**
+- Battery disconnects → event fired
+- `.observe(on:)` schedules callback on main thread (queue position: A)
+- Inside callback: `DispatchQueue.main.async` schedules UI operations (queue position: B)
+- Between A and B: other main thread operations can execute
+- App may enter invalid state → UI operations fail → CRASH
+
+### ✅ Решение:
+
+**Remove `DispatchQueue.main.async` - оно не нужно!**
+
+```swift
+// ✅ ПРАВИЛЬНО
+private func setupDisconnectHandler() {
+    disconnectHandlerDisposable = ZetaraManager.shared.connectedPeripheralSubject
+        .subscribeOn(MainScheduler.instance)
+        .observe(on: MainScheduler.instance)
+        .filter { $0 == nil }
+        .take(1)
+        .subscribe(onNext: { [weak self] _ in
+            // Already on main thread - no dispatch needed!
+            Alert.hide()
+            self?.showBatteryRestartingMessage()
+        })
+}
+```
+
+**Why this works:**
+- `.observe(on: MainScheduler.instance)` гарантирует main thread
+- NO additional dispatch → NO delay
+- UI operations execute immediately
+- App stays in consistent state → NO CRASH
+
+### 📋 Checklist для проверки:
+
+Перед коммитом проверь ALL RxSwift subscriptions:
+
+- [ ] Есть `.observe(on: MainScheduler.instance)` перед `.subscribe()`?
+- [ ] Если ДА → NEVER use `DispatchQueue.main.async` inside callback!
+- [ ] Если НЕТ `.observe(on:)` → THEN use `DispatchQueue.main.async` for UI
+- [ ] Test disconnect/reconnect scenarios (не только happy path!)
+
+**Rule of thumb:**
+
+```swift
+// Choose ONE, not BOTH:
+
+// Option 1: Use .observe(on:)
+.observe(on: MainScheduler.instance)
+.subscribe(onNext: {
+    Alert.hide()  // ✅ Direct call
+})
+
+// Option 2: Use DispatchQueue (if NO .observe(on:))
+.subscribe(onNext: {
+    DispatchQueue.main.async {
+        Alert.hide()  // ✅ Manual dispatch
+    }
+})
+
+// ❌ NEVER: .observe(on:) + DispatchQueue
+.observe(on: MainScheduler.instance)
+.subscribe(onNext: {
+    DispatchQueue.main.async {  // ❌❌❌
+        Alert.hide()
+    }
+})
+```
+
+### 📚 Где применять:
+
+**Файл:** `BatteryMonitorBL/SettingsViewController.swift`
+
+**Метод исправлен:**
+- `setupDisconnectHandler()` - line 765-784
+
+**Проверь аналогичные паттерны в:**
+- Любые `.subscribe()` с `.observe(on:)` + UI operations
+- Disconnect handlers
+- Connection state observers
+- Alert show/hide operations
+
+### 🔗 Related Fixes:
+
+- `docs/fix-history/2025-10-13_double-main-thread-dispatch-crash.md` - Full documentation
+- `docs/fix-history/2025-10-10_protocol-save-and-crash-bug.md` - Original disconnect handler implementation
+
+### ⚠️ Prevention:
+
+**Code Review Checklist:**
+
+When reviewing RxSwift code with UI operations:
+
+1. Search for `.observe(on: MainScheduler.instance)`
+2. For each occurrence, check inside `.subscribe()` callback
+3. If found `DispatchQueue.main.async` → **RED FLAG!**
+4. Remove redundant `DispatchQueue.main.async`
+5. Add comment: `// Already on main thread thanks to .observe(on:)`
+
+**Testing:**
+
+- [ ] Test disconnect scenarios (not just save/reconnect)
+- [ ] Test manual battery power off
+- [ ] Test connection timeout
+- [ ] Check diagnostic logs show proper event order
+- [ ] Verify NO crashes on disconnect
 
 ---
 
