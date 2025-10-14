@@ -503,6 +503,9 @@ public class ZetaraManager: NSObject {
 
     var timer: Timer?
     func startRefreshBMSData() {
+        protocolDataManager.logProtocolEvent("[BMS] 🚀 Starting BMS data refresh timer (interval: \(Self.configuration.refreshBMSTimeInterval)s)")
+        print("[BMS] 🚀 Starting BMS data refresh timer (interval: \(Self.configuration.refreshBMSTimeInterval)s)")
+
         self.timer = Timer.scheduledTimer(withTimeInterval: Self.configuration.refreshBMSTimeInterval, repeats: true) { [weak self] _ in
             self?.getBMSData()
                 .subscribeOn(MainScheduler.instance)
@@ -534,14 +537,19 @@ public class ZetaraManager: NSObject {
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         print("!!! МЕТОД getBMSData() ВЫЗВАН !!!")
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        
+
+        protocolDataManager.logProtocolEvent("[BMS] 📡 getBMSData() called")
+
         // Проверяем наличие подключенного устройства
         let isDeviceConnected = (try? connectedPeripheralSubject.value()) != nil &&
                                 writeCharacteristic != nil &&
                                 notifyCharacteristic != nil
+
+        protocolDataManager.logProtocolEvent("[BMS] Device connected: \(isDeviceConnected)")
         
         // Используем мок-данные только если нет подключенного устройства
         if !isDeviceConnected, let mockBMSData = Self.configuration.mockData {
+            protocolDataManager.logProtocolEvent("[BMS] 🧪 Using mock data (no device connected)")
             print("!!! Нет подключенного устройства, используем мок-данные: \(mockBMSData.toHexString()) !!!")
             return Maybe.create { [weak self] observer in
                 let bytes = [UInt8](mockBMSData)
@@ -591,18 +599,21 @@ public class ZetaraManager: NSObject {
         guard let peripheral = try? connectedPeripheralSubject.value(),
               let writeCharacteristic = writeCharacteristic,
               let notifyCharacteristic = notifyCharacteristic else {
+            protocolDataManager.logProtocolEvent("[BMS] ❌ No peripheral/characteristics available")
             print("!!! ОШИБКА: Нет подключенного устройства !!!")
             // 清理连接状态
             cleanConnection()
             return Maybe.error(ZetaraManager.Error.connectionError)
         }
-        
+
+        protocolDataManager.logProtocolEvent("[BMS] ✅ Using real device data")
         print("!!! Используем реальные данные от подключенного устройства !!!")
 
         getBMSDataDisposeBag = nil
         getBMSDataDisposeBag = DisposeBag()
 
         let data = Foundation.Data.getBMSData
+        protocolDataManager.logProtocolEvent("[BMS] 📤 Writing BMS request: \(data.toHexString())")
         print("getting bms data write data: \(data.toHexString())")
         peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
             .subscribe()
@@ -611,11 +622,25 @@ public class ZetaraManager: NSObject {
         return Maybe.create { observer in
             peripheral.observeValueUpdateAndSetNotification(for: notifyCharacteristic)
                 .compactMap { $0.value }
-                .do { print("recevie bms data: \($0.toHexString())") }
+                .do { [weak self] data in
+                    self?.protocolDataManager.logProtocolEvent("[BMS] 📥 Received BMS response: \(data.toHexString())")
+                    print("recevie bms data: \(data.toHexString())")
+                }
                 .map { [UInt8]($0) }
-                .filter { $0.crc16Verify() && Data.BMS.isBMSData($0) }
+                .filter { [weak self] bytes in
+                    let crcValid = bytes.crc16Verify()
+                    let isBMS = Data.BMS.isBMSData(bytes)
+                    self?.protocolDataManager.logProtocolEvent("[BMS] Validation - CRC: \(crcValid), isBMSData: \(isBMS)")
+                    return crcValid && isBMS
+                }
                 .compactMap { [weak self] _bytes in
-                    return self?.bmsDataHandler.append(_bytes)
+                    let result = self?.bmsDataHandler.append(_bytes)
+                    if result != nil {
+                        self?.protocolDataManager.logProtocolEvent("[BMS] ✅ BMS data parsed successfully")
+                    } else {
+                        self?.protocolDataManager.logProtocolEvent("[BMS] ⚠️ Failed to parse BMS data")
+                    }
+                    return result
                 }
                 .flatMap { Observable.of($0) }
                 .observeOn(MainScheduler.instance)

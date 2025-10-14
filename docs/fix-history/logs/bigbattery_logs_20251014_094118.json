@@ -1,0 +1,160 @@
+{
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "timeouts" : 0,
+    "packetLoss" : 0,
+    "retries" : 0
+  },
+  "systemInfo" : {
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0,
+    "isLowPowerMode" : false,
+    "batteryLevel" : 60
+  },
+  "deviceInfo" : {
+    "systemName" : "iOS",
+    "systemVersion" : "26.0",
+    "name" : "iPhone",
+    "model" : "iPhone"
+  },
+  "appInfo" : {
+    "build" : "25",
+    "version" : "1.4.1"
+  },
+  "batteryInfo" : {
+    "current" : 0,
+    "timestamp" : "09:41:18 14.10.2025",
+    "tempPCB" : 0,
+    "cellVoltages" : [
+
+    ],
+    "status" : "Standby",
+    "cellTemps" : [
+
+    ],
+    "tempEnv" : 0,
+    "cellCount" : 0,
+    "soh" : 0,
+    "voltage" : 0,
+    "soc" : 0
+  },
+  "protocolInfo" : {
+    "currentValues" : {
+      "moduleId" : "ID 1",
+      "canProtocol" : "P01-GRW",
+      "rs485Protocol" : "P01-GRW"
+    },
+    "recentLogs" : [
+      "[09:40:49] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[09:40:49] [PROTOCOL MANAGER] ✅ CAN loaded: P01-GRW",
+      "[09:40:49] [QUEUE] ✅ getCAN completed in 2052ms",
+      "[09:40:49] [BLUETOOTH] ✅ Got control data response",
+      "[09:40:49] [BLUETOOTH] Is control data: true",
+      "[09:40:49] [BLUETOOTH] 📥 Received notification: 100470000b5030312d4752570000005030322d534c4b0000005030332d4459000000005030342d4d47520000005030352d5643540000005030362d4c55580000005030372d534d410000005030382d494e480000005030392d534f4c0000005031302d41464f0000005031312d53545500000087b8",
+      "[09:40:49] [BLUETOOTH] 📡 Started observing notifications...",
+      "[09:40:49] [BLUETOOTH] 📤 Writing control data: 10040072c5",
+      "[09:40:49] [QUEUE] 🚀 Executing getCAN",
+      "[09:40:48] [PROTOCOL MANAGER] ✅ RS485 loaded: P01-GRW",
+      "[09:40:48] [QUEUE] ✅ getRS485 completed in 1452ms",
+      "[09:40:48] [BLUETOOTH] ✅ Got control data response",
+      "[09:40:48] [BLUETOOTH] Is control data: true",
+      "[09:40:48] [BLUETOOTH] 📥 Received notification: 10033400055030312d4752570000005030322d4c55580000005030332d5343480000005030342d494e480000005030352d564f4c000000bcd8",
+      "[09:40:48] [QUEUE] ⏳ Waiting 497ms before getCAN",
+      "[09:40:48] [BLUETOOTH] 📡 Started observing notifications...",
+      "[09:40:48] [BLUETOOTH] 📤 Writing control data: 10030070f5",
+      "[09:40:48] [QUEUE] 🚀 Executing getRS485",
+      "[09:40:48] [PROTOCOL MANAGER] ✅ Module ID loaded: ID 1",
+      "[09:40:48] [QUEUE] ✅ getModuleId completed in 927ms",
+      "[09:40:48] [BLUETOOTH] ✅ Got control data response",
+      "[09:40:48] [BLUETOOTH] Is control data: true",
+      "[09:40:48] [BLUETOOTH] 📥 Received notification: 100201016574",
+      "[09:40:48] [QUEUE] ⏳ Waiting 497ms before getRS485",
+      "[09:40:48] [BLUETOOTH] 📡 Started observing notifications...",
+      "[09:40:48] [BLUETOOTH] 📤 Writing control data: 1002007165",
+      "[09:40:48] [QUEUE] 🚀 Executing getModuleId",
+      "[09:40:47] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[09:40:47] [PROTOCOL MANAGER] ✅ CAN loaded: P01-GRW",
+      "[09:40:47] [QUEUE] ✅ getCAN completed in 1231ms"
+    ],
+    "statistics" : {
+      "totalLogs" : 30,
+      "successes" : 11,
+      "errors" : 0,
+      "warnings" : 0
+    },
+    "lastUpdateTime" : "09:41:18 14.10.2025"
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "status" : "success",
+        "step" : "connection",
+        "timestamp" : "09:41:18 14.10.2025"
+      },
+      {
+        "step" : "connection",
+        "message" : "Diagnostics screen launched",
+        "timestamp" : "09:41:18 14.10.2025",
+        "status" : "success"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "09:41:18 14.10.2025",
+        "step" : "connection",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      }
+    ]
+  },
+  "bluetoothInfo" : {
+    "peripheralIdentifier" : "1997B63E-02F2-BB1F-C0DE-63B68D347427",
+    "peripheralName" : "BB-51.2V100Ah-0855",
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "rawDataInfo" : {
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "parseResult" : "success",
+        "timestamp" : "09:41:18 14.10.2025"
+      }
+    ],
+    "parseErrors" : [
+
+    ]
+  },
+  "events" : [
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "09:41:18 14.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "09:41:18 14.10.2025",
+      "message" : "Diagnostics screen launched",
+      "type" : "Connection"
+    },
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "09:41:18 14.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Data Update",
+      "timestamp" : "09:41:18 14.10.2025",
+      "message" : "New battery data received"
+    }
+  ],
+  "timestamp" : "09:41:18 14.10.2025",
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overtemperature" : false,
+      "undervoltage" : false,
+      "overcurrent" : false,
+      "overvoltage" : false,
+      "shortCircuit" : false
+    }
+  }
+}

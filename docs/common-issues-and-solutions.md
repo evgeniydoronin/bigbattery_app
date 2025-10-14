@@ -698,6 +698,197 @@ if case ZetaraManager.Error.notZetaraPeripheralError = error {
 
 ---
 
+### Проблема 4: Missing BMS Data After Reconnect (Insufficient Diagnostic Logging)
+
+**Симптомы:**
+- После reconnect батареи протоколы загружаются успешно ✅
+- НО battery data = all zeros (voltage: 0, soc: 0, cellVoltages: [])
+- Connection status показывает "connected"
+- НО нет активного статуса на homepage
+- В diagnostic logs НЕ видно BMS requests/responses
+
+**Когда возникает:**
+- После save protocol settings → disconnect battery → reconnect
+- После battery restart (power cycle)
+- After 20-30 seconds connection established but no BMS data appears
+
+**Логи diagnostics:**
+```json
+{
+  "batteryInfo": {
+    "voltage": 0,
+    "soc": 0,
+    "cellVoltages": [],
+    "status": "Standby"
+  },
+  "rawDataInfo": {
+    "lastReceivedPacket": "0000000000000000000000000000000000000000000000000000"
+  }
+}
+```
+
+### ⚙️ Root Cause:
+
+**Недостаточное diagnostic logging в BMS data flow:**
+
+`getBMSData()` method имеет только `print()` statements, которые видны только в Xcode console. НО:
+- Client не имеет доступа к Xcode console
+- Diagnostic logs экспортируются без console logs
+- Невозможно диагностировать BMS flow remotely
+
+**Почему это проблема:**
+- BMS timer запускается каждые 5 секунд
+- Если timer работает НО данные не приходят - мы не знаем почему:
+  - Timer не запустился?
+  - `getBMSData()` не вызывается?
+  - BMS request не отправляется?
+  - Battery не отвечает?
+  - CRC validation failed?
+  - Parse failed?
+
+**Примеры print() которые НЕ попадают в diagnostics:**
+```swift
+func getBMSData() -> Maybe<Data.BMS> {
+    print("!!! МЕТОД getBMSData() ВЫЗВАН !!!")  // ❌ Only in Xcode console
+    // ...
+    print("getting bms data write data: \(data.toHexString())")  // ❌ Only in Xcode console
+    print("recevie bms data: \($0.toHexString())")  // ❌ Only in Xcode console
+}
+```
+
+### ✅ Решение: Add protocolDataManager.logProtocolEvent() throughout BMS flow
+
+```swift
+func getBMSData() -> Maybe<Data.BMS> {
+    // ✅ Visible in diagnostic logs
+    protocolDataManager.logProtocolEvent("[BMS] 📡 getBMSData() called")
+
+    let isDeviceConnected = ...
+    protocolDataManager.logProtocolEvent("[BMS] Device connected: \(isDeviceConnected)")
+
+    if !isDeviceConnected, let mockBMSData = ... {
+        protocolDataManager.logProtocolEvent("[BMS] 🧪 Using mock data (no device connected)")
+        // ...
+    }
+
+    guard let peripheral = ... else {
+        protocolDataManager.logProtocolEvent("[BMS] ❌ No peripheral/characteristics available")
+        // ...
+    }
+
+    protocolDataManager.logProtocolEvent("[BMS] ✅ Using real device data")
+
+    let data = Foundation.Data.getBMSData
+    protocolDataManager.logProtocolEvent("[BMS] 📤 Writing BMS request: \(data.toHexString())")
+
+    // In Observable chain:
+    .do { [weak self] data in
+        self?.protocolDataManager.logProtocolEvent("[BMS] 📥 Received BMS response: \(data.toHexString())")
+    }
+    .filter { [weak self] bytes in
+        let crcValid = bytes.crc16Verify()
+        let isBMS = Data.BMS.isBMSData(bytes)
+        self?.protocolDataManager.logProtocolEvent("[BMS] Validation - CRC: \(crcValid), isBMSData: \(isBMS)")
+        return crcValid && isBMS
+    }
+    .compactMap { [weak self] _bytes in
+        let result = self?.bmsDataHandler.append(_bytes)
+        if result != nil {
+            self?.protocolDataManager.logProtocolEvent("[BMS] ✅ BMS data parsed successfully")
+        } else {
+            self?.protocolDataManager.logProtocolEvent("[BMS] ⚠️ Failed to parse BMS data")
+        }
+        return result
+    }
+}
+
+func startRefreshBMSData() {
+    protocolDataManager.logProtocolEvent("[BMS] 🚀 Starting BMS data refresh timer (interval: \(Self.configuration.refreshBMSTimeInterval)s)")
+    // ...
+}
+```
+
+**Why this works:**
+- `protocolDataManager.logProtocolEvent()` logs are captured in diagnostic exports
+- Client can send diagnostic logs remotely
+- We can see EXACTLY where BMS flow fails:
+  - Timer started? ✅
+  - getBMSData() called? ✅
+  - Device connected? ✅
+  - BMS request sent? ✅
+  - Response received? ❌ → battery not responding
+  - CRC valid? ❌ → corrupted data
+  - Parse succeeded? ❌ → protocol mismatch
+
+### 📋 Checklist для проверки:
+
+- [ ] `startRefreshBMSData()` logs when BMS timer starts?
+- [ ] `getBMSData()` logs when called?
+- [ ] Device connection status logged?
+- [ ] BMS request hex logged?
+- [ ] BMS response hex logged?
+- [ ] CRC and isBMSData validation logged?
+- [ ] Parse success/failure logged?
+- [ ] ALL key points visible in exported diagnostics?
+
+### 📚 Где применять:
+
+**Файл:** `Zetara/Sources/ZetaraManager.swift`
+
+**Методы исправлены:**
+- `startRefreshBMSData()` - line 506
+- `getBMSData()` - lines 541, 548, 552, 602, 609, 616, 626, 633, 639, 641
+
+**Logging points added:**
+1. BMS timer start
+2. getBMSData() call
+3. Device connection check
+4. Mock data path
+5. No peripheral error
+6. Using real device
+7. Writing BMS request
+8. Receiving BMS response
+9. CRC and isBMSData validation
+10. Parse success/failure
+
+### 🔗 Related Fixes:
+
+- `docs/fix-history/2025-10-14_missing-bms-data-after-reconnect.md` - полная документация
+
+### ⚠️ Prevention:
+
+**Pattern to follow:**
+
+Для ВСЕХ critical Bluetooth operations:
+- Use BOTH `print()` (for console) AND `protocolDataManager.logProtocolEvent()` (for diagnostics)
+- Log entry point
+- Log device/connection state
+- Log data being sent (hex format)
+- Log data received (hex format)
+- Log validation results
+- Log success/failure
+
+**Example:**
+```swift
+func criticalBluetoothOperation() {
+    print("[DEBUG] Operation started")  // ✅ Console
+    protocolDataManager.logProtocolEvent("[OPERATION] Started")  // ✅ Diagnostics
+
+    // ... operation code ...
+
+    print("[DEBUG] Data sent: \(data.toHexString())")  // ✅ Console
+    protocolDataManager.logProtocolEvent("[OPERATION] 📤 Sent: \(data.toHexString())")  // ✅ Diagnostics
+}
+```
+
+**Code Review:**
+- [ ] Check for operations with ONLY `print()` statements
+- [ ] Add `protocolDataManager.logProtocolEvent()` parallel logging
+- [ ] Verify diagnostic exports include the new logs
+- [ ] Test with client to ensure logs are useful
+
+---
+
 ## 5. Protocol Save Issues
 
 ### 🔴 Симптомы:
@@ -897,6 +1088,8 @@ someObservable
 | DisposeBag Leak | SettingsViewController.swift | viewWillDisappear:359 | `disposeBag = DisposeBag()` |
 | Timeout Not Working | ZetaraManager.swift | writeControlData | Internal timeout only |
 | Reconnection Fails | ZetaraManager.swift | cleanConnection | Reset cachedDeviceUUID |
+| Stale Peripherals | ZetaraManager.swift | cleanConnection | Call `cleanScanning()` |
+| Missing BMS Data | ZetaraManager.swift | getBMSData/startRefreshBMSData | Add `logProtocolEvent()` logging |
 | Protocol Save Fails | SettingsViewController.swift | setModuleId/RS485/CAN | Use `queuedRequest()` |
 | Duplicate Value Error | SettingsViewController.swift | performSave:713-757 | Check current value first |
 
@@ -922,4 +1115,4 @@ someObservable
 
 ---
 
-**Последнее обновление:** 2025-10-10
+**Последнее обновление:** 2025-10-14
