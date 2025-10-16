@@ -146,6 +146,13 @@ extension ConnectivityViewController: UITableViewDelegate {
                             ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Triggering protocol loading after connection")
                             self?.loadProtocolsViaQueue()
                         }
+
+                        // Запускаем BMS timer через 5 секунд после подключения
+                        // (это гарантирует что protocol loading завершится ДО первого BMS request)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                            ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Starting BMS timer after protocol loading delay")
+                            ZetaraManager.shared.startRefreshBMSData()
+                        }
                         
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             self?.navigationController?.popViewController(animated: true)

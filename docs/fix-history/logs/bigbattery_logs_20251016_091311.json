@@ -1,0 +1,238 @@
+{
+  "communicationErrorsInfo" : {
+    "retries" : 0,
+    "packetLoss" : 0,
+    "timeouts" : 0,
+    "crcErrors" : 0
+  },
+  "protocolInfo" : {
+    "lastUpdateTime" : "09:13:11 16.10.2025",
+    "currentValues" : {
+      "rs485Protocol" : "--",
+      "canProtocol" : "--",
+      "moduleId" : "--"
+    },
+    "recentLogs" : [
+      "[09:13:06] [CONNECT] Services discovered: 0",
+      "[09:13:05] [CONNECTIVITY] Connection failed: Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[09:13:05] [CONNECTION] Connection state cleaned",
+      "[09:13:05] [CONNECTION] Cached device UUID cleared",
+      "[09:13:05] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:13:05] [CONNECTION] Scanned peripherals cleared",
+      "[09:13:05] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:13:05] [CONNECTION] BMS data cleared",
+      "[09:13:05] [QUEUE] Request queue cleared",
+      "[09:13:05] [CONNECTION] Cleaning connection state",
+      "[09:13:05] [CONNECT] Cached UUID: none",
+      "[09:13:05] [CONNECT] Device UUID: 10148796-3ED3-5C02-43F7-3E55178E1309",
+      "[09:13:05] [CONNECT] Device name: xiaoxiang BMS",
+      "[09:13:05] [CONNECT] Attempting connection",
+      "[09:13:04] [CONNECTION] Connection state cleaned",
+      "[09:13:04] [CONNECTION] Cached device UUID cleared",
+      "[09:13:04] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:13:04] [CONNECTION] Scanned peripherals cleared",
+      "[09:13:04] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:13:04] [CONNECTION] BMS data cleared",
+      "[09:13:04] [QUEUE] Request queue cleared",
+      "[09:13:04] [CONNECTION] Cleaning connection state",
+      "[09:13:04] [CONNECTION] Connection state cleaned",
+      "[09:13:04] [CONNECTION] Cached device UUID cleared",
+      "[09:13:04] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:13:04] [CONNECTION] Scanned peripherals cleared",
+      "[09:13:04] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:13:04] [CONNECTION] BMS data cleared",
+      "[09:13:04] [QUEUE] Request queue cleared",
+      "[09:13:04] [CONNECTION] Cleaning connection state"
+    ],
+    "statistics" : {
+      "errors" : 0,
+      "warnings" : 0,
+      "totalLogs" : 30,
+      "successes" : 0
+    }
+  },
+  "systemInfo" : {
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0,
+    "batteryLevel" : 90,
+    "isLowPowerMode" : false
+  },
+  "appInfo" : {
+    "build" : "26",
+    "version" : "1.4.1"
+  },
+  "events" : [
+    {
+      "message" : "No device connected",
+      "timestamp" : "09:13:10 16.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "09:13:07 16.10.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "timestamp" : "09:13:05 16.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "timestamp" : "09:13:04 16.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "timestamp" : "09:13:04 16.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "timestamp" : "09:13:03 16.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "message" : "New battery data received",
+      "timestamp" : "09:12:53 16.10.2025",
+      "type" : "Data Update"
+    },
+    {
+      "timestamp" : "09:12:40 16.10.2025",
+      "type" : "Connection",
+      "message" : "Logs sent successfully"
+    },
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "09:11:29 16.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Connection",
+      "timestamp" : "09:11:27 16.10.2025",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "type" : "Connection",
+      "timestamp" : "09:11:26 16.10.2025",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "type" : "Connection",
+      "timestamp" : "09:11:26 16.10.2025"
+    },
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "type" : "Connection",
+      "timestamp" : "09:11:26 16.10.2025"
+    },
+    {
+      "timestamp" : "09:11:26 16.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    }
+  ],
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "deviceInfo" : {
+    "systemName" : "iOS",
+    "model" : "iPhone",
+    "systemVersion" : "26.0",
+    "name" : "iPhone"
+  },
+  "batteryInfo" : {
+    "cellVoltages" : [
+
+    ],
+    "cellTemps" : [
+
+    ],
+    "tempPCB" : 0,
+    "tempEnv" : 0,
+    "cellCount" : 0,
+    "status" : "Standby",
+    "voltage" : 0,
+    "timestamp" : "09:13:11 16.10.2025",
+    "current" : 0,
+    "soh" : 0,
+    "soc" : 0
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overvoltage" : false,
+      "undervoltage" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false,
+      "overcurrent" : false
+    }
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "09:13:10 16.10.2025",
+        "message" : "No device connected"
+      },
+      {
+        "message" : "No device connected",
+        "status" : "success",
+        "step" : "connection",
+        "timestamp" : "09:13:07 16.10.2025"
+      },
+      {
+        "step" : "connection",
+        "message" : "Logs sent successfully",
+        "timestamp" : "09:12:40 16.10.2025",
+        "status" : "success"
+      },
+      {
+        "status" : "success",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "timestamp" : "09:11:29 16.10.2025",
+        "step" : "connection"
+      },
+      {
+        "timestamp" : "09:11:27 16.10.2025",
+        "status" : "success",
+        "step" : "connection",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "09:11:26 16.10.2025",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "step" : "connection"
+      },
+      {
+        "timestamp" : "09:11:26 16.10.2025",
+        "message" : "Diagnostics screen launched",
+        "step" : "connection",
+        "status" : "success"
+      },
+      {
+        "step" : "connection",
+        "status" : "success",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "timestamp" : "09:11:26 16.10.2025"
+      }
+    ]
+  },
+  "rawDataInfo" : {
+    "packetHistory" : [
+      {
+        "timestamp" : "09:13:11 16.10.2025",
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "parseResult" : "success"
+      }
+    ],
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000"
+  },
+  "timestamp" : "09:13:11 16.10.2025"
+}

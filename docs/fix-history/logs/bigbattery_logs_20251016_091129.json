@@ -1,0 +1,182 @@
+{
+  "systemInfo" : {
+    "cpuUsage" : 0,
+    "batteryLevel" : 90,
+    "isLowPowerMode" : false,
+    "availableMemory" : 5910085632
+  },
+  "events" : [
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "09:11:29 16.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "09:11:27 16.10.2025",
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "09:11:26 16.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "09:11:26 16.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "09:11:26 16.10.2025"
+    },
+    {
+      "timestamp" : "09:11:26 16.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    }
+  ],
+  "bluetoothInfo" : {
+    "state" : "poweredOn",
+    "peripheralIdentifier" : "1997B63E-02F2-BB1F-C0DE-63B68D347427",
+    "connectionAttempts" : 0,
+    "peripheralName" : "BB-51.2V100Ah-0855"
+  },
+  "rawDataInfo" : {
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "parseErrors" : [
+
+    ],
+    "packetHistory" : [
+      {
+        "parseResult" : "success",
+        "timestamp" : "09:11:29 16.10.2025",
+        "data" : "0000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "batteryInfo" : {
+    "cellVoltages" : [
+
+    ],
+    "cellTemps" : [
+
+    ],
+    "tempPCB" : 0,
+    "tempEnv" : 0,
+    "cellCount" : 0,
+    "timestamp" : "09:11:29 16.10.2025",
+    "voltage" : 0,
+    "status" : "Standby",
+    "current" : 0,
+    "soh" : 0,
+    "soc" : 0
+  },
+  "deviceInfo" : {
+    "name" : "iPhone",
+    "model" : "iPhone",
+    "systemName" : "iOS",
+    "systemVersion" : "26.0"
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "undervoltage" : false,
+      "shortCircuit" : false,
+      "overvoltage" : false,
+      "overtemperature" : false,
+      "overcurrent" : false
+    }
+  },
+  "protocolInfo" : {
+    "lastUpdateTime" : "09:11:29 16.10.2025",
+    "statistics" : {
+      "totalLogs" : 30,
+      "errors" : 0,
+      "successes" : 9,
+      "warnings" : 0
+    },
+    "currentValues" : {
+      "canProtocol" : "P06-LUX",
+      "moduleId" : "ID 2",
+      "rs485Protocol" : "P02-LUX"
+    },
+    "recentLogs" : [
+      "[09:11:18] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[09:11:18] [PROTOCOL MANAGER] ✅ CAN loaded: P06-LUX",
+      "[09:11:18] [QUEUE] ✅ getCAN completed in 2037ms",
+      "[09:11:18] [BLUETOOTH] ✅ Got control data response",
+      "[09:11:18] [BLUETOOTH] Is control data: true",
+      "[09:11:18] [BLUETOOTH] 📥 Received notification: 100470050b5030312d4752570000005030322d534c4b0000005030332d4459000000005030342d4d47520000005030352d5643540000005030362d4c55580000005030372d534d410000005030382d494e480000005030392d534f4c0000005031302d41464f0000005031312d5354550000002907",
+      "[09:11:18] [BMS] Validation - CRC: true, isBMSData: false",
+      "[09:11:18] [BMS] 📥 Received BMS response: 100470050b5030312d4752570000005030322d534c4b0000005030332d4459000000005030342d4d47520000005030352d5643540000005030362d4c55580000005030372d534d410000005030382d494e480000005030392d534f4c0000005031302d41464f0000005031312d5354550000002907",
+      "[09:11:18] [BLUETOOTH] 📡 Started observing notifications...",
+      "[09:11:18] [BLUETOOTH] 📤 Writing control data: 10040072c5",
+      "[09:11:18] [QUEUE] 🚀 Executing getCAN",
+      "[09:11:17] [PROTOCOL MANAGER] ✅ RS485 loaded: P02-LUX",
+      "[09:11:17] [QUEUE] ✅ getRS485 completed in 1434ms",
+      "[09:11:17] [BLUETOOTH] ✅ Got control data response",
+      "[09:11:17] [BLUETOOTH] Is control data: true",
+      "[09:11:17] [BLUETOOTH] 📥 Received notification: 10033401055030312d4752570000005030322d4c55580000005030332d5343480000005030342d494e480000005030352d564f4c0000003041",
+      "[09:11:17] [BMS] Validation - CRC: true, isBMSData: false",
+      "[09:11:17] [BMS] 📥 Received BMS response: 10033401055030312d4752570000005030322d4c55580000005030332d5343480000005030342d494e480000005030352d564f4c0000003041",
+      "[09:11:17] [QUEUE] ⏳ Waiting 498ms before getCAN",
+      "[09:11:17] [BLUETOOTH] 📡 Started observing notifications...",
+      "[09:11:17] [BLUETOOTH] 📤 Writing control data: 10030070f5",
+      "[09:11:17] [QUEUE] 🚀 Executing getRS485",
+      "[09:11:17] [PROTOCOL MANAGER] ✅ Module ID loaded: ID 2",
+      "[09:11:17] [QUEUE] ✅ getModuleId completed in 984ms",
+      "[09:11:17] [BLUETOOTH] ✅ Got control data response",
+      "[09:11:17] [BLUETOOTH] Is control data: true",
+      "[09:11:17] [BLUETOOTH] 📥 Received notification: 100201022575",
+      "[09:11:17] [BMS] Validation - CRC: true, isBMSData: false",
+      "[09:11:17] [BMS] 📥 Received BMS response: 100201022575",
+      "[09:11:17] [QUEUE] ⏳ Waiting 498ms before getRS485"
+    ]
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "09:11:29 16.10.2025",
+        "status" : "success",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "step" : "connection"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "09:11:27 16.10.2025",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "step" : "connection"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "09:11:26 16.10.2025",
+        "step" : "connection",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      },
+      {
+        "timestamp" : "09:11:26 16.10.2025",
+        "message" : "Diagnostics screen launched",
+        "step" : "connection",
+        "status" : "success"
+      },
+      {
+        "timestamp" : "09:11:26 16.10.2025",
+        "step" : "connection",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "status" : "success"
+      }
+    ]
+  },
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "timeouts" : 0,
+    "retries" : 0,
+    "packetLoss" : 0
+  },
+  "timestamp" : "09:11:29 16.10.2025",
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "26"
+  }
+}

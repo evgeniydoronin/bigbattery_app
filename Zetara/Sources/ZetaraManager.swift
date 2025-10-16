@@ -257,8 +257,10 @@ public class ZetaraManager: NSObject {
 
                             // Запускаем мониторинг подключения
                             self?.startConnectionMonitor()
-                            
-                            self?.startRefreshBMSData()
+
+                            // NOTE: startRefreshBMSData() НЕ вызывается здесь!
+                            // BMS timer запускается ПОСЛЕ protocol loading в ConnectivityViewController
+                            // чтобы избежать смешивания BMS requests с protocol queries
                         } else {
                             // Identifier or characteristics not found
                             self?.protocolDataManager.logProtocolEvent("[CONNECT] ❌ Failed to configure characteristics (identifier not recognized)")
@@ -319,8 +321,13 @@ public class ZetaraManager: NSObject {
         protocolDataManager.logProtocolEvent("[QUEUE] Request queue cleared")
 
         connectionDisposable?.dispose()
-        timer?.invalidate()
-        timer = nil
+
+        // Останавливаем BMS timer явно
+        if timer != nil {
+            timer?.invalidate()
+            timer = nil
+            protocolDataManager.logProtocolEvent("[CONNECTION] 🛑 BMS timer stopped")
+        }
 
         // Очищаем BMS данные
         cleanData()
@@ -502,7 +509,7 @@ public class ZetaraManager: NSObject {
     let bmsDataHandler = Data.BMSDataHandler()
 
     var timer: Timer?
-    func startRefreshBMSData() {
+    public func startRefreshBMSData() {
         protocolDataManager.logProtocolEvent("[BMS] 🚀 Starting BMS data refresh timer (interval: \(Self.configuration.refreshBMSTimeInterval)s)")
         print("[BMS] 🚀 Starting BMS data refresh timer (interval: \(Self.configuration.refreshBMSTimeInterval)s)")
 
