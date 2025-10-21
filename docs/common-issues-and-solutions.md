@@ -14,6 +14,7 @@
 4. [Bluetooth Connection Issues](#4-bluetooth-connection-issues)
 5. [Protocol Save Issues](#5-protocol-save-issues)
 6. [Alert/UI Update Issues](#6-alertui-update-issues)
+7. [BMS Timer Timing Issues](#7-bms-timer-timing-issues)
 
 ---
 
@@ -889,6 +890,258 @@ func criticalBluetoothOperation() {
 
 ---
 
+### Проблема 5: "Invalid Device" After Restart (observeDisconect Lifecycle Issue)
+
+**Симптомы:**
+- Protocols saved successfully ✅
+- Battery disconnected and restarted ✅
+- Return to Connectivity screen
+- Battery appears in list (stale peripheral)
+- **Click battery → "BluetoothError error 4" / "Invalid device"**
+- Logs show disconnect NOT detected until connection attempt
+
+**Когда возникает:**
+- User changes protocol settings → Save
+- User on Settings or Home screen (NOT on Connectivity screen)
+- Battery disconnects/restarts
+- User returns to Connectivity screen → clicks battery → error
+
+**Diagnostic Logs Pattern:**
+```
+[09:16:35] ✅ RS485 Protocol set successfully
+[09:16:35] ✅ CAN Protocol set successfully
+    ↓
+[Battery physically disconnected - NOT DETECTED!]
+    ↓
+[09:16:41] ❌ Connection error: BluetoothError error 4
+[09:16:41] ⚠️ PHANTOM: No peripheral but BMS timer running!
+[09:16:41] Cleaning connection state  ← TOO LATE!
+```
+
+**Key indicator:** Disconnect NOT logged WHEN it happened, only cleanup logged AFTER connection attempt failed.
+
+### ⚙️ Root Cause:
+
+**observeDisconect() tied to ViewController lifecycle:**
+
+```swift
+// ❌ НЕПРАВИЛЬНО - ConnectivityViewController.swift
+class ConnectivityViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Subscribe to disconnect events
+        ZetaraManager.shared.observeDisconect()
+            .subscribe { [weak self] event in
+                self?.state = .unconnected
+                self?.tableView.reloadData()
+            }.disposed(by: self.disposeBag)  // ← Tied to ViewController lifecycle!
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        disposeBag = DisposeBag()  // ❌ CANCELS observeDisconect subscription!
+    }
+}
+```
+
+**Timeline of bug:**
+1. User on ConnectivityVC → connects → navigates to SettingsVC
+2. **ConnectivityVC.viewWillDisappear** → **disposeBag reset** → **observeDisconect CANCELLED**
+3. User changes protocols → Save → Battery restarts
+4. **Battery disconnects** → **observeDisconect NOT FIRING** (subscription cancelled!)
+5. **cleanConnection() NOT CALLED** → stale peripherals NOT cleared
+6. User returns to ConnectivityVC → sees stale "BB-51.2V100Ah-0855"
+7. User clicks → connection attempt with STALE CBPeripheral → **BluetoothError error 4**
+
+**Apple CoreBluetooth says:**
+> "You shouldn't reuse the same peripheral instance once disconnected - instead you should ask CBCentralManager to give us a fresh CBPeripheral using its known peripheral UUID."
+
+**Our app violated this:** Tried to connect with stale peripheral instance stored in scannedPeripherals array.
+
+### ✅ Решение: Global Disconnect Handler in ZetaraManager
+
+**Move disconnect handling to app-level (singleton), NOT ViewController-level:**
+
+**Change 1: Add global handler in ZetaraManager.init():**
+
+```swift
+// ✅ ПРАВИЛЬНО - Zetara/Sources/ZetaraManager.swift
+private override init() {
+    super.init()
+
+    // ... existing init code ...
+
+    // ✅ Global disconnect handler (NOT tied to any ViewController lifecycle)
+    // Follows Apple CoreBluetooth best practices for peripheral lifecycle management
+    manager.observeDisconnect()
+        .subscribe(onNext: { [weak self] (peripheral, error) in
+            let peripheralName = peripheral.name ?? "Unknown"
+            self?.protocolDataManager.logProtocolEvent("[DISCONNECT] 🔌 Device disconnected: \(peripheralName)")
+
+            if let error = error {
+                self?.protocolDataManager.logProtocolEvent("[DISCONNECT] Reason: \(error.localizedDescription)")
+            }
+
+            // Автоматическая очистка при отключении
+            self?.cleanConnection()
+        })
+        .disposed(by: disposeBag)  // ← Tied to ZetaraManager lifecycle (singleton, never dies)
+
+    // ... rest of init ...
+}
+```
+
+**Change 2: Remove duplicate subscription from ConnectivityViewController:**
+
+```swift
+// ❌ DELETE these lines (95-100 in ConnectivityViewController.swift)
+ZetaraManager.shared.observeDisconect()
+    .subscribeOn(MainScheduler.instance)
+    .subscribe {[weak self] event in
+        self?.state = .unconnected
+        self?.tableView.reloadData()
+    }.disposed(by: self.disposeBag)
+```
+
+**Change 3: Subscribe to connectedPeripheralSubject for UI updates:**
+
+```swift
+// ✅ ADD in ConnectivityViewController.viewDidLoad (replace removed subscription)
+// Subscribe to connection state changes for UI updates
+// Global disconnect handler in ZetaraManager.init() handles actual disconnection logic
+ZetaraManager.shared.connectedPeripheralSubject
+    .subscribeOn(MainScheduler.instance)
+    .observe(on: MainScheduler.instance)
+    .subscribe(onNext: { [weak self] connectedPeripheral in
+        self?.state = connectedPeripheral == nil ? .unconnected : .connected
+        self?.tableView.reloadData()
+
+        if connectedPeripheral == nil {
+            // Device disconnected, clear stale peripherals
+            self?.scannedPeripherals = []
+            ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] UI updated: disconnected, cleared stale peripherals")
+        } else {
+            ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] UI updated: connected")
+        }
+    })
+    .disposed(by: disposeBag)
+```
+
+**Why this works:**
+- ✅ Global handler in ZetaraManager (singleton) → lives entire app lifetime
+- ✅ Disconnect detected from ANY screen (Connectivity, Settings, Home)
+- ✅ cleanConnection() called IMMEDIATELY when battery disconnects
+- ✅ scannedPeripherals cleared before user returns to Connectivity screen
+- ✅ UI subscription in ViewController safe to cancel (only updates UI, doesn't handle disconnect logic)
+
+**New log sequence (FIXED):**
+```
+[09:16:35] ✅ RS485 Protocol set successfully
+[09:16:35] ✅ CAN Protocol set successfully
+    ↓
+[Battery physically disconnected]
+    ↓
+[09:16:36] [DISCONNECT] 🔌 Device disconnected: BB-51.2V100Ah-0855  ← IMMEDIATE!
+[09:16:36] [CONNECTION] Cleaning connection state
+[09:16:36] [CONNECTION] Scanned peripherals cleared
+    ↓
+[User returns to Connectivity screen]
+    ↓
+[09:16:40] [CONNECTIVITY] UI updated: disconnected, cleared stale peripherals
+[09:16:40] [SCAN] Starting scan for peripherals
+[09:16:42] [SCAN] Found peripheral: BB-51.2V100Ah-0855  ← FRESH peripheral!
+    ↓
+[User clicks battery]
+    ↓
+[09:16:45] [CONNECT] Attempting connection  ← SUCCESS!
+```
+
+### 📋 Checklist для проверки:
+
+- [ ] Global disconnect handler added in ZetaraManager.init()?
+- [ ] Duplicate observeDisconect subscription removed from ConnectivityViewController?
+- [ ] UI subscription to connectedPeripheralSubject added?
+- [ ] Disconnect detected in logs IMMEDIATELY when battery disconnects (not on connection attempt)?
+- [ ] cleanConnection() called BEFORE user returns to Connectivity screen?
+- [ ] Stale peripherals cleared automatically?
+- [ ] No "BluetoothError error 4" when reconnecting after restart?
+
+### 📚 Где применять:
+
+**Files modified:**
+
+1. **Zetara/Sources/ZetaraManager.swift**
+   - Line 108-122: Added global disconnect handler in init()
+
+2. **BatteryMonitorBL/ConnectivityViewController.swift**
+   - Removed lines 95-100: Duplicate observeDisconect subscription
+   - Added lines 95-112: connectedPeripheralSubject subscription for UI
+
+### 🔗 Related Fixes:
+
+- `docs/fix-history/2025-10-20_invalid-device-after-restart-regression.md` - full documentation
+- `docs/fix-history/2025-10-10_reconnection-after-restart-bug.md` - previous stale peripherals fix
+
+### ⚠️ Prevention:
+
+**Pattern to follow for BLE apps:**
+
+```swift
+// ❌ WRONG - ViewController manages peripheral lifecycle
+class MyViewController {
+    override func viewDidLoad() {
+        bleManager.observeDisconnect()
+            .subscribe { ... }
+            .disposed(by: disposeBag)  // ← Gets cancelled in viewWillDisappear
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        disposeBag = DisposeBag()  // ❌ Cancels critical subscriptions!
+    }
+}
+
+// ✅ CORRECT - Singleton manager handles peripheral lifecycle
+class BLEManager {
+    private let disposeBag = DisposeBag()  // ← Lives entire app lifetime
+
+    init() {
+        // Global handlers - never cancelled
+        centralManager.observeDisconnect()
+            .subscribe { [weak self] peripheral, error in
+                self?.handleDisconnect(peripheral, error)
+                // Notify observers via Subject
+                self?.connectionStateSubject.onNext(.disconnected)
+            }
+            .disposed(by: disposeBag)
+    }
+}
+
+class MyViewController {
+    private var disposeBag = DisposeBag()
+
+    override func viewDidLoad() {
+        // Subscribe to state changes ONLY
+        BLEManager.shared.connectionStateSubject
+            .subscribe { [weak self] state in
+                self?.updateUI(state)  // ← Only UI updates
+            }
+            .disposed(by: disposeBag)  // ← Safe to cancel
+    }
+}
+```
+
+**Code Review Checklist:**
+
+When reviewing BLE code:
+- [ ] Are disconnect handlers tied to ViewController lifecycle?
+- [ ] Do ViewControllers reset disposeBag in viewWillDisappear?
+- [ ] Are critical subscriptions (disconnect, state changes) cancelled when navigating away?
+- [ ] Is peripheral lifecycle managed at app level (singleton)?
+- [ ] Does code follow Apple CoreBluetooth best practices?
+
+---
+
 ## 5. Protocol Save Issues
 
 ### 🔴 Симптомы:
@@ -1080,6 +1333,254 @@ someObservable
 
 ---
 
+## 7. BMS Timer Timing Issues
+
+### 🔴 Симптомы:
+
+**Проблема:** Battery data не загружается после reconnection (voltage: 0, SOC: 0, cell voltages: empty)
+
+**Когда возникает:**
+- После save protocol settings → disconnect battery → reconnect
+- После battery restart (power cycle)
+- After 20-30 seconds connection established but no BMS data appears
+- User must restart entire app to see battery data
+
+**Логи diagnostics:**
+```json
+{
+  "batteryInfo": {
+    "voltage": 0,
+    "soc": 0,
+    "cellVoltages": [],
+    "cellCount": 0
+  },
+  "protocolInfo": {
+    "recentLogs": [
+      "[09:04:42] [SETTINGS] ✅ RS485 Protocol set successfully",
+      "[09:04:42] [BLUETOOTH] ✅ Got control data response"
+    ]
+  }
+}
+```
+
+↑ Protocols loaded successfully ✅, but battery data = zeros ❌
+
+### ⚙️ Root Cause:
+
+**BMS timer starts TOO EARLY - before protocol loading completes:**
+
+```swift
+// ❌ НЕПРАВИЛЬНО - ZetaraManager.swift connect() method
+public func connect(_ peripheral: Peripheral) -> Observable<ConnectedPeripheral> {
+    // ... connection logic ...
+
+    observer.onNext(peripheral)
+
+    // Запускаем мониторинг подключения
+    self?.startConnectionMonitor()
+
+    // ❌ BMS timer starts IMMEDIATELY!
+    self?.startRefreshBMSData()
+}
+```
+
+**Timeline of events (BEFORE FIX):**
+```
+T+0.0s: Connection established
+T+0.0s: startRefreshBMSData() called  ← TOO EARLY!
+T+0.0s: First BMS request sent
+T+1.5s: Protocol loading begins (in ConnectivityViewController)
+T+1.5s: getModuleId() sent
+T+2.1s: getRS485() sent
+T+2.7s: getCAN() sent
+T+5.0s: Second BMS request sent
+```
+
+**Что происходит:**
+- BMS requests execute SIMULTANEOUSLY with protocol queries
+- Battery firmware can only process ONE request at a time
+- Battery receives mixed commands: `getBMSData()` + `getModuleId()` + `getRS485()` + `getCAN()`
+- Battery gets confused and sends wrong responses to wrong requests
+- Protocol queries may get BMS responses
+- BMS requests may get protocol responses
+- Observable filtering (`isBMSData: false`) discards protocol responses in BMS stream
+- **Result:** BMS data never reaches UI → voltage/SOC remain zeros
+
+**Evidence from logs:**
+
+Protocols load successfully:
+```
+[09:04:42] [SETTINGS] ✅ RS485 Protocol set successfully
+[09:04:42] [QUEUE] ✅ setRS485 completed in 618ms
+```
+
+But BMS data never appears → indicating timing conflict between BMS requests and protocol queries.
+
+### ✅ Решение: Delay BMS timer start until AFTER protocol loading
+
+**Change 1:** Remove `startRefreshBMSData()` from `ZetaraManager.connect()`:
+
+```swift
+// ✅ ПРАВИЛЬНО - ZetaraManager.swift
+public func connect(_ peripheral: Peripheral) -> Observable<ConnectedPeripheral> {
+    // ... connection logic ...
+
+    observer.onNext(peripheral)
+
+    // Запускаем мониторинг подключения
+    self?.startConnectionMonitor()
+
+    // NOTE: startRefreshBMSData() НЕ вызывается здесь!
+    // BMS timer запускается ПОСЛЕ protocol loading в ConnectivityViewController
+    // чтобы избежать смешивания BMS requests с protocol queries
+}
+```
+
+**Change 2:** Add `startRefreshBMSData()` call in `ConnectivityViewController` with delay:
+
+```swift
+// ✅ ПРАВИЛЬНО - ConnectivityViewController.swift
+.subscribe { [weak self] (connectedPeripheral: ZetaraManager.ConnectedPeripheral) in
+    self?.state = .connected
+    self?.tableView.reloadData()
+
+    // Загружаем протоколы через 1.5 сек после подключения
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Triggering protocol loading after connection")
+        self?.loadProtocolsViaQueue()
+    }
+
+    // ✅ Запускаем BMS timer через 5 секунд после подключения
+    // (это гарантирует что protocol loading завершится ДО первого BMS request)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Starting BMS timer after protocol loading delay")
+        ZetaraManager.shared.startRefreshBMSData()
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        self?.navigationController?.popViewController(animated: true)
+    }
+}
+```
+
+**Change 3:** Make `startRefreshBMSData()` public:
+
+```swift
+// ✅ ПРАВИЛЬНО - ZetaraManager.swift
+public func startRefreshBMSData() {  // ← Changed from internal to public
+    protocolDataManager.logProtocolEvent("[BMS] 🚀 Starting BMS data refresh timer (interval: \(Self.configuration.refreshBMSTimeInterval)s)")
+    // ...
+}
+```
+
+**Timeline of events (AFTER FIX):**
+```
+T+0.0s: Connection established
+T+1.5s: Protocol loading begins
+T+1.5s: getModuleId() sent
+T+2.1s: getRS485() sent  (500ms interval via Request Queue)
+T+2.7s: getCAN() sent    (500ms interval via Request Queue)
+T+3.5s: Protocol loading complete ✅
+T+5.0s: startRefreshBMSData() called ✅
+T+5.0s: First BMS request sent → NO CONFLICTS!
+T+10.0s: Second BMS request sent
+```
+
+**Why this works:**
+- Protocol loading completes BEFORE BMS timer starts
+- NO overlapping requests between protocol queries and BMS requests
+- Battery processes each request cleanly
+- BMS data loads successfully
+- User sees data WITHOUT restarting app
+
+### 📋 Checklist для проверки:
+
+- [ ] `ZetaraManager.connect()` НЕ вызывает `startRefreshBMSData()`?
+- [ ] `ConnectivityViewController` вызывает `startRefreshBMSData()` с delay 5s?
+- [ ] `startRefreshBMSData()` объявлен как `public`?
+- [ ] Protocol loading начинается T+1.5s?
+- [ ] BMS timer начинается T+5.0s (ПОСЛЕ protocol loading)?
+- [ ] Battery data загружается корректно после reconnect?
+- [ ] User НЕ нужно рестартовать app для просмотра данных?
+
+### 📚 Где применять:
+
+**Файлы:**
+- `Zetara/Sources/ZetaraManager.swift`
+  - `connect()` method (line 261-263) - Remove `startRefreshBMSData()` call
+  - `startRefreshBMSData()` (line 512) - Change to `public`
+  - `cleanConnection()` (lines 326-330) - Add explicit BMS timer stop
+
+- `BatteryMonitorBL/ConnectivityViewController.swift`
+  - `didSelectRowAt` method (lines 150-155) - Add `startRefreshBMSData()` with 5s delay
+
+**Why 5 Second Delay?**
+
+- Protocol loading starts at T+1.5s
+- Each protocol query takes ~600ms (Request Queue enforces 500ms minimum interval)
+- 3 protocol queries = ~1.8 seconds total
+- Safety margin: 1.7 seconds
+- Total: 1.5s + 1.8s + 1.7s = 5.0s
+
+### 🔗 Related Fixes:
+
+- `docs/fix-history/2025-10-16_bms-data-not-loading-after-reconnect.md` - полная документация этого fix
+
+### ⚠️ Prevention:
+
+**Pattern to follow:**
+
+Для Bluetooth operations с timing dependencies:
+
+```swift
+// ❌ НЕПРАВИЛЬНО - все operations запускаются одновременно
+func connect() {
+    establishConnection()
+    startDataPolling()      // ← TOO EARLY!
+    loadConfiguration()     // ← Conflict with polling!
+}
+
+// ✅ ПРАВИЛЬНО - sequential with explicit delays
+func connect() {
+    establishConnection()
+
+    // Let caller control timing
+}
+
+// In ViewController:
+manager.connect()
+    .subscribe { connected in
+        // First: Load configuration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            manager.loadConfiguration()
+        }
+
+        // Then: Start polling AFTER config loaded
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+            manager.startDataPolling()
+        }
+    }
+```
+
+**Code Review Checklist:**
+
+When reviewing connection/initialization code:
+
+- [ ] Are Bluetooth operations sequential (not parallel)?
+- [ ] Is there adequate delay between connection and data polling?
+- [ ] Can operations conflict if executed simultaneously?
+- [ ] Are timing dependencies explicit (not hidden in internal methods)?
+- [ ] Does battery firmware support simultaneous requests? (Answer: NO!)
+
+**Testing:**
+
+- [ ] Test reconnection after protocol settings change
+- [ ] Verify battery data appears WITHOUT app restart
+- [ ] Check diagnostic logs show correct timing sequence
+- [ ] Verify NO overlapping BMS requests and protocol queries
+
+---
+
 ## Quick Reference
 
 | Issue | File | Method/Line | Solution |
@@ -1092,6 +1593,8 @@ someObservable
 | Missing BMS Data | ZetaraManager.swift | getBMSData/startRefreshBMSData | Add `logProtocolEvent()` logging |
 | Protocol Save Fails | SettingsViewController.swift | setModuleId/RS485/CAN | Use `queuedRequest()` |
 | Duplicate Value Error | SettingsViewController.swift | performSave:713-757 | Check current value first |
+| BMS Data Not Loading After Reconnect | ZetaraManager.swift, ConnectivityViewController.swift | connect:261, didSelectRowAt:150-155 | Delay BMS timer start 5s after connection |
+| Invalid Device After Restart (Lifecycle) | ZetaraManager.swift, ConnectivityViewController.swift | init:108-122, viewDidLoad:95-112 | Global disconnect handler in ZetaraManager.init() |
 
 ---
 
@@ -1115,4 +1618,4 @@ someObservable
 
 ---
 
-**Последнее обновление:** 2025-10-14
+**Последнее обновление:** 2025-10-20
