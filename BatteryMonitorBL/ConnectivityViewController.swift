@@ -91,13 +91,25 @@ class ConnectivityViewController : UIViewController {
                 self?.scannedPeripherals = scannedPeripherals
                 self?.tableView.reloadData()
             }.disposed(by: self.disposeBag)
-        
-        ZetaraManager.shared.observeDisconect()
+
+        // Subscribe to connection state changes for UI updates
+        // Global disconnect handler in ZetaraManager.init() handles actual disconnection logic
+        ZetaraManager.shared.connectedPeripheralSubject
             .subscribeOn(MainScheduler.instance)
-            .subscribe {[weak self] event in
-                self?.state = .unconnected
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] connectedPeripheral in
+                self?.state = connectedPeripheral == nil ? .unconnected : .connected
                 self?.tableView.reloadData()
-            }.disposed(by: self.disposeBag)
+
+                if connectedPeripheral == nil {
+                    // Device disconnected, clear stale peripherals
+                    self?.scannedPeripherals = []
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] UI updated: disconnected, cleared stale peripherals")
+                } else {
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] UI updated: connected")
+                }
+            })
+            .disposed(by: disposeBag)
 
     }
 

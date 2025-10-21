@@ -105,6 +105,22 @@ public class ZetaraManager: NSObject {
             }
         }.disposed(by: disposeBag)
 
+        // Global disconnect handler (NOT tied to any ViewController lifecycle)
+        // Follows Apple CoreBluetooth best practices for peripheral lifecycle management
+        manager.observeDisconnect()
+            .subscribe(onNext: { [weak self] (peripheral, error) in
+                let peripheralName = peripheral.name ?? "Unknown"
+                self?.protocolDataManager.logProtocolEvent("[DISCONNECT] 🔌 Device disconnected: \(peripheralName)")
+
+                if let error = error {
+                    self?.protocolDataManager.logProtocolEvent("[DISCONNECT] Reason: \(error.localizedDescription)")
+                }
+
+                // Автоматическая очистка при отключении
+                self?.cleanConnection()
+            })
+            .disposed(by: disposeBag)
+
         NotificationCenter.default.rx.notification(UIApplication.didEnterBackgroundNotification)
             .subscribe { [weak self] (noti: Notification) in
                 self?.pauseRefreshBMSData()
