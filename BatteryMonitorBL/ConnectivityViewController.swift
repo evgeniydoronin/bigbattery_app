@@ -113,6 +113,34 @@ class ConnectivityViewController : UIViewController {
 
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // Layer 1: Proactive peripheral state check
+        // iOS CoreBluetooth doesn't generate disconnect events for physical power off,
+        // so we actively check peripheral state every time user returns to this screen
+        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] viewWillAppear - checking peripheral state")
+
+        if let peripheral = try? ZetaraManager.shared.connectedPeripheralSubject.value() {
+            // Check actual peripheral state
+            let peripheralState = peripheral.state
+            ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Peripheral state: \(peripheralState.rawValue)")
+
+            if peripheralState != .connected {
+                // Peripheral is NOT connected (disconnected/disconnecting) - force cleanup
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] ⚠️ Peripheral state is \(peripheralState.rawValue), not connected - forcing cleanup")
+                ZetaraManager.shared.cleanConnection()
+                scannedPeripherals = []
+            } else {
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] ✅ Peripheral state is connected")
+            }
+        } else {
+            // No connected peripheral - ensure scan list is clear
+            ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] No connected peripheral - clearing scanned list")
+            scannedPeripherals = []
+        }
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
