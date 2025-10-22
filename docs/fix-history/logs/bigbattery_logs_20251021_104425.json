@@ -1,0 +1,152 @@
+{
+  "deviceInfo" : {
+    "model" : "iPhone",
+    "name" : "iPhone",
+    "systemName" : "iOS",
+    "systemVersion" : "26.0"
+  },
+  "appInfo" : {
+    "build" : "28",
+    "version" : "1.4.1"
+  },
+  "bluetoothInfo" : {
+    "state" : "poweredOn",
+    "connectionAttempts" : 0
+  },
+  "events" : [
+    {
+      "timestamp" : "10:44:24 21.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "type" : "Connection",
+      "timestamp" : "10:44:15 21.10.2025",
+      "message" : "No device connected"
+    },
+    {
+      "timestamp" : "10:44:15 21.10.2025",
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched"
+    },
+    {
+      "timestamp" : "10:44:15 21.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    }
+  ],
+  "batteryInfo" : {
+    "cellCount" : 0,
+    "cellVoltages" : [
+
+    ],
+    "status" : "Standby",
+    "cellTemps" : [
+
+    ],
+    "tempPCB" : 0,
+    "voltage" : 0,
+    "tempEnv" : 0,
+    "soc" : 0,
+    "timestamp" : "10:44:25 21.10.2025",
+    "current" : 0,
+    "soh" : 0
+  },
+  "timestamp" : "10:44:25 21.10.2025",
+  "systemInfo" : {
+    "batteryLevel" : 85,
+    "cpuUsage" : 0,
+    "isLowPowerMode" : false,
+    "availableMemory" : 5910085632
+  },
+  "communicationErrorsInfo" : {
+    "packetLoss" : 0,
+    "crcErrors" : 0,
+    "timeouts" : 0,
+    "retries" : 0
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "10:44:15 21.10.2025",
+        "status" : "success",
+        "step" : "connection",
+        "message" : "No device connected"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "10:44:15 21.10.2025",
+        "step" : "connection",
+        "message" : "Diagnostics screen launched"
+      }
+    ]
+  },
+  "rawDataInfo" : {
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "timestamp" : "10:44:25 21.10.2025",
+        "parseResult" : "success"
+      }
+    ]
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "undervoltage" : false,
+      "overcurrent" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false,
+      "overvoltage" : false
+    }
+  },
+  "protocolInfo" : {
+    "lastUpdateTime" : "10:44:25 21.10.2025",
+    "statistics" : {
+      "errors" : 1,
+      "warnings" : 0,
+      "successes" : 1,
+      "totalLogs" : 30
+    },
+    "currentValues" : {
+      "rs485Protocol" : "--",
+      "moduleId" : "--",
+      "canProtocol" : "--"
+    },
+    "recentLogs" : [
+      "[10:44:24] [CONNECTION] Connection state cleaned",
+      "[10:44:24] [CONNECTION] Cached device UUID cleared",
+      "[10:44:24] [CONNECTION] All Bluetooth characteristics cleared",
+      "[10:44:24] [CONNECTION] Scanned peripherals cleared",
+      "[10:44:24] [PROTOCOL MANAGER] Clearing all protocols",
+      "[10:44:24] [CONNECTION] BMS data cleared",
+      "[10:44:24] [CONNECTION] 🛑 BMS timer stopped",
+      "[10:44:24] [QUEUE] Request queue cleared",
+      "[10:44:24] [CONNECTION] Cleaning connection state",
+      "[10:44:24] [BMS] ❌ No peripheral\/characteristics available",
+      "[10:44:24] [BMS] Device connected: false",
+      "[10:44:24] [BMS] 📡 getBMSData() called",
+      "[10:44:24] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[10:43:55] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[10:43:55] [CONNECTION] Notify UUID: 1007",
+      "[10:43:55] [CONNECTION] Write UUID: 1008",
+      "[10:43:55] [CONNECTION] ✅ Characteristics configured",
+      "[10:43:55] [CONNECT] Service UUID: 1006",
+      "[10:43:55] [CONNECT] Services discovered: 1",
+      "[10:43:54] [CONNECTIVITY] Connection failed: Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[10:43:54] [CONNECTION] Connection state cleaned",
+      "[10:43:54] [CONNECTION] Cached device UUID cleared",
+      "[10:43:54] [CONNECTION] All Bluetooth characteristics cleared",
+      "[10:43:54] [CONNECTION] Scanned peripherals cleared",
+      "[10:43:54] [PROTOCOL MANAGER] Clearing all protocols",
+      "[10:43:54] [CONNECTION] BMS data cleared",
+      "[10:43:54] [QUEUE] Request queue cleared",
+      "[10:43:54] [CONNECTION] Cleaning connection state",
+      "[10:43:54] [CONNECT] Cached UUID: none",
+      "[10:43:54] [CONNECT] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427"
+    ]
+  }
+}
