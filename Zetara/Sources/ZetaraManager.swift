@@ -16,6 +16,7 @@ public class ZetaraManager: NSObject {
         case connectionError
         case notZetaraPeripheralError
         case writeControlDataError
+        case stalePeripheralError  // iOS returned cached peripheral with invalid state
     }
 
     public typealias ConnectedPeripheral = Peripheral
@@ -134,12 +135,14 @@ public class ZetaraManager: NSObject {
                 // Log periodic health check every 30 seconds (tick % 10 == 0)
                 if tick % 10 == 0 {
                     self.protocolDataManager.logProtocolEvent("[HEALTH] Periodic check (tick \(tick)) - Peripheral state: \(currentState.rawValue)")
+                    print("[HEALTH] Periodic check (tick \(tick)) - Peripheral state: \(currentState.rawValue)")  // Console debug
                 }
 
                 // If peripheral.state != .connected, connection was lost without disconnect event!
                 if currentState != .connected {
                     self.protocolDataManager.logProtocolEvent("[HEALTH] ⚠️ DETECTED: Peripheral state changed to \(currentState.rawValue)")
                     self.protocolDataManager.logProtocolEvent("[HEALTH] Connection lost without disconnect event - forcing cleanup")
+                    print("[HEALTH] ⚠️ DETECTED: Peripheral state changed to \(currentState.rawValue)")  // Console debug
 
                     // Trigger cleanup
                     self.cleanConnection()
@@ -147,7 +150,10 @@ public class ZetaraManager: NSObject {
             })
             .disposed(by: disposeBag)
 
+        // Log that health monitor started
+        // Using both logProtocolEvent (for diagnostics export) and print (for Xcode console debugging)
         protocolDataManager.logProtocolEvent("[INIT] ✅ Connection health monitor started (3s interval)")
+        print("[INIT] ✅ Connection health monitor started (3s interval)")  // Console debug
 
         NotificationCenter.default.rx.notification(UIApplication.didEnterBackgroundNotification)
             .subscribe { [weak self] (noti: Notification) in
@@ -250,10 +256,18 @@ public class ZetaraManager: NSObject {
         let peripheralState = peripheral.state
         protocolDataManager.logProtocolEvent("[CONNECT] Pre-flight check: Peripheral state = \(peripheralState.rawValue)")
 
-        // If peripheral is already disconnected/disconnecting, this is likely a STALE reference
+        // If peripheral is already disconnected/disconnecting, this is likely a STALE cached reference from iOS
+        // iOS CoreBluetooth caches peripheral instances across scans, returning the same object even after fresh scan
+        // Attempting to connect to a cached peripheral with state = .disconnected will ALWAYS fail with error 4
         if peripheralState == .disconnected || peripheralState == .disconnecting {
-            protocolDataManager.logProtocolEvent("[CONNECT] ⚠️ WARNING: Attempting connection with stale peripheral (state: \(peripheralState.rawValue))")
-            protocolDataManager.logProtocolEvent("[CONNECT] This peripheral reference may be invalid - connection likely to fail with error 4")
+            protocolDataManager.logProtocolEvent("[CONNECT] ❌ ABORT: Peripheral has stale state (\(peripheralState.rawValue))")
+            protocolDataManager.logProtocolEvent("[CONNECT] This is a cached iOS peripheral instance from previous connection")
+            protocolDataManager.logProtocolEvent("[CONNECT] Peripheral is already disconnected - cannot connect to stale instance")
+            protocolDataManager.logProtocolEvent("[CONNECT] Please clear the list and scan again to get fresh peripheral instance")
+
+            // ABORT connection attempt - return error immediately
+            // User must scan again to potentially get a fresh peripheral instance from iOS
+            return Observable.error(Error.stalePeripheralError)
         }
 
         // 先释放之前的

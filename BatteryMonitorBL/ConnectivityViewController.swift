@@ -207,6 +207,8 @@ extension ConnectivityViewController: UITableViewDelegate {
                             errorMessage = "Invalid BigBattery device"
                         } else if case ZetaraManager.Error.connectionError = error {
                             errorMessage = "Connection failed - please try again"
+                        } else if case ZetaraManager.Error.stalePeripheralError = error {
+                            errorMessage = "Please scan again to reconnect"
                         } else {
                             errorMessage = "Connection error: \(error.localizedDescription)"
                         }
