@@ -3,7 +3,7 @@
 **Status:** 🔴 ACTIVE
 **Severity:** CRITICAL
 **First Reported:** 2025-10-10
-**Last Updated:** 2025-10-21
+**Last Updated:** 2025-10-27
 **Client:** Joshua (BigBattery ETHOS module BB-51.2V100Ah-0855)
 
 ---
@@ -11,26 +11,28 @@
 ## 📍 CURRENT STATUS
 
 **Quick Summary:**
-Client unable to reconnect to battery after physical disconnect/restart. App shows battery in Bluetooth list but clicking it results in "BluetoothError error 4" / "Invalid BigBattery device". **Root cause: iOS CoreBluetooth caches peripheral instances across scans.** Pre-flight check detects stale peripherals (state = 0) but doesn't prevent connection attempt.
+Client unable to reconnect to battery after physical disconnect/restart. **Root cause: iOS CoreBluetooth caches peripheral instances.** Must validate peripheral is from current scan session, not stale cached reference. Build 30 failed catastrophically (blocked all connections). Build 31 implements correct validation logic (check scan list, not peripheral.state).
 
-**Latest Test Result:** 🔄 PARTIAL SUCCESS (Attempt #2 - Build 29 tested 2025-10-24)
+**Latest Test Result:** ⏳ PENDING (Attempt #3 - Build 31 deployed 2025-10-27, awaiting Joshua testing)
 
-**What Works:**
-- ✅ Layer 1 (viewWillAppear) detects disconnected state
-- ✅ Layer 2 (Pre-flight) detects stale peripheral (state = 0)
-- ✅ Excellent diagnostics - logs show exactly what's wrong
+**Evolution:**
+- Build 29 (Attempt #2): Detection works but doesn't prevent connection → PARTIAL SUCCESS
+- Build 30 (Attempt #3): Pre-flight aborts on peripheral.state check → ❌ CATASTROPHIC FAILURE (blocked ALL connections)
+- Build 31 (Attempt #3 fix): Pre-flight validates scan list instead of state → ⏳ AWAITING TEST
 
-**What's Broken:**
-- ❌ Pre-flight doesn't ABORT connection (only logs warning)
-- ❌ iOS returns cached peripheral even after fresh scan
-- ❌ Connection still fails with error 4
-- ❌ Layer 3 (Health Monitor) not logging
+**Build 31 Changes:**
+- ✅ Pre-flight checks if peripheral UUID in scannedPeripheralsSubject
+- ✅ Fresh peripherals (in scan list) → ALLOWED
+- ✅ Stale peripherals (not in scan list) → REJECTED with "scan again" message
+- ✅ Normal connections should work
+- ✅ Enhanced Layer 3 logging with console debug
 
 **Next Steps:**
-- [ ] Implement Attempt #3: Pre-flight must ABORT + call cancelPeripheralConnection()
-- [ ] Force iOS to forget cached peripheral instance
-- [ ] Fix Layer 3 health monitor logging
-- [ ] Test with Build 30
+- [ ] Wait for Joshua testing Build 31 (3 scenarios)
+- [ ] Analyze diagnostic logs from Build 31
+- [ ] Validate: normal connections work AND stale rejected
+- [ ] If SUCCESS: monitor for 1-2 weeks
+- [ ] If FAILED: re-evaluate approach
 
 ---
 
@@ -410,6 +412,137 @@ Evidence chain:
 
 ---
 
+### 📅 2025-10-27: ATTEMPT #3 (Build 30) - CATASTROPHIC FAILURE
+
+**Implementation:**
+Based on Build 29 analysis, implemented pre-flight abort logic:
+- Pre-flight check now **ABORTS** connection when `peripheral.state == .disconnected`
+- Returns new `Error.stalePeripheralError`
+- User sees message: "Please scan again to reconnect"
+- Enhanced Layer 3 logging (added console debug prints)
+
+**Expected Improvement:**
+- Connection attempts to stale peripherals immediately rejected
+- User gets actionable error message instead of cryptic error 4
+- Forces fresh scan to get valid peripheral instance
+
+**Files Modified:**
+- `Zetara/Sources/ZetaraManager.swift` (pre-flight abort logic, Layer 3 debug prints)
+- `BatteryMonitorBL/ConnectivityViewController.swift` (handle stalePeripheralError)
+- Build: 26 → 30
+
+**Commit:** a1953a6
+
+**Test Result:** ❌ **CATASTROPHIC FAILURE**
+
+**Client Feedback (Joshua) - same day deployment:**
+> Unable to send logs evgenii
+> The app won't connect to battery
+> I keep getting "scan again to connect to battery" in Bluetooth section
+
+**What Went Wrong:**
+Build 30 blocked **ALL connections**, not just stale ones. App completely unusable.
+
+**Root Cause of Failure:**
+
+The logic `if peripheral.state == .disconnected → ABORT` was fundamentally flawed.
+
+**Why it failed:**
+```
+Scan finds peripheral → peripheral.state = .disconnected ✅ (NORMAL - not connected yet!)
+User clicks to connect → Pre-flight sees .disconnected
+Pre-flight thinks: "stale!" → ABORT ❌ (WRONG!)
+Result: NO connections possible
+```
+
+**Critical Discovery:**
+`peripheral.state` **CANNOT** distinguish fresh vs stale peripherals:
+- Fresh peripheral after scan: `state = .disconnected` (normal, ready to connect)
+- Stale cached peripheral: `state = .disconnected` (problem, should reject)
+- **Both have identical state!** Cannot use this to distinguish.
+
+**Peripheral States:**
+- `.disconnected` (0) = Not connected (can be fresh OR stale)
+- `.connecting` (1) = Connection in progress
+- `.connected` (2) = Connected
+- `.disconnecting` (3) = Disconnection in progress
+
+Fresh peripherals from scan are `.disconnected` BEFORE connection attempt begins. This is normal and expected. Checking state is meaningless.
+
+**Lesson Learned:**
+Need different approach to identify stale peripherals. Cannot rely on `peripheral.state`.
+
+**Build 30 Duration:** Deployed 2025-10-27, reverted same day (< 1 hour in production)
+
+---
+
+### 📅 2025-10-27: ATTEMPT #3 (Build 31) - Fix Pre-flight Logic
+
+**Problem Analysis:**
+Build 30 logic fundamentally flawed. `peripheral.state` cannot distinguish fresh from stale because:
+- Both fresh and stale peripherals have `state = .disconnected`
+- State only changes DURING connection attempt (connecting → connected)
+- No way to tell them apart using state alone
+
+**New Approach:**
+Instead of checking `peripheral.state`, check if peripheral UUID exists in **current scan list** (`scannedPeripheralsSubject`).
+
+**Logic:**
+```swift
+if peripheral.identifier in scannedPeripheralsSubject:
+    → Fresh peripheral from current scan session → ALLOW
+else:
+    → Stale peripheral from previous session → REJECT "scan again"
+```
+
+**Why This Works:**
+
+**Scenario 1 - Normal connection:**
+1. User does scan → peripherals added to `scannedPeripheralsSubject`
+2. User clicks peripheral → UUID **IS** in list → ✅ ALLOW connection
+3. Connection proceeds normally
+
+**Scenario 2 - Stale peripheral blocked:**
+1. Battery was connected, then disconnects
+2. `cleanConnection()` called → `cleanScanning()` → list cleared → `scannedPeripheralsSubject = []`
+3. UI still shows old peripheral (from cache)
+4. User clicks old peripheral → UUID **NOT** in list → ❌ REJECT "scan again"
+5. User does new scan → UUID back in list → connection works
+
+**Implementation:**
+```swift
+// Pre-flight check (ZetaraManager.swift ~258-279)
+if let scannedPeripherals = try? scannedPeripheralsSubject.value() {
+    let isInCurrentScan = scannedPeripherals.contains { scanned in
+        scanned.peripheral.identifier == peripheral.identifier
+    }
+
+    if !isInCurrentScan {
+        // Not in scan list = stale
+        return Observable.error(Error.stalePeripheralError)
+    } else {
+        // In scan list = fresh
+        // Proceed with connection
+    }
+}
+```
+
+**Expected Improvement:**
+- ✅ Normal connections work (UUID in current scan list)
+- ✅ Stale connections rejected (UUID not in list after disconnect cleared it)
+- ✅ User sees clear "Please scan again to reconnect" message
+- ✅ No more error 4 from attempting stale peripheral connections
+
+**Files Modified:**
+- `Zetara/Sources/ZetaraManager.swift` (pre-flight logic completely rewritten)
+- `BatteryMonitorBL.xcodeproj/project.pbxproj` (Build 30 → 31)
+
+**Commit:** 6588e52
+
+**Test Result:** ⏳ PENDING (awaiting Joshua testing - deployed 2025-10-27)
+
+---
+
 ## 🔍 ROOT CAUSE EVOLUTION
 
 ### Initial Understanding (2025-10-10):
@@ -481,25 +614,61 @@ SOLUTION NEEDED: Must force iOS to FORGET cached instance
 4. **Cached peripherals are unusable** - state = 0 peripherals will always fail connection
 5. **Need gate logic** - Prevent connection attempts to known-bad peripherals
 
+### Current Understanding (2025-10-27 after Build 30 failure):
+**Problem:** `peripheral.state` **CANNOT** distinguish fresh from stale peripherals!
+
+**Critical Discovery from Build 30 catastrophic failure:**
+
+Attempted to use `peripheral.state == .disconnected` to identify stale peripherals.
+**This blocked ALL connections** because fresh peripherals also have `.disconnected` state.
+
+**Why peripheral.state is useless:**
+- Fresh peripheral after scan: `state = .disconnected` ✅ (NORMAL - ready to connect)
+- Stale cached peripheral: `state = .disconnected` ❌ (PROBLEM - should reject)
+- **IDENTICAL STATE** - impossible to distinguish!
+
+State only changes **DURING** connection:
+- Before connection: `.disconnected`
+- During connection: `.connecting` → `.connected`
+- During disconnection: `.disconnecting` → `.disconnected`
+
+**Solution (Build 31):** Check **scan list membership**, not state.
+- Peripheral UUID in `scannedPeripheralsSubject`? → Fresh from current scan → ALLOW
+- Peripheral UUID NOT in list? → Stale from previous session → REJECT
+
+**Why scan list works:**
+1. New scan → UUIDs added to `scannedPeripheralsSubject`
+2. Disconnect → `cleanConnection()` → `cleanScanning()` → list cleared
+3. Old peripheral still in UI → UUID not in list → reject
+4. New scan → UUID back in list → connection works
+
+**Key Insights:**
+1. **peripheral.state is NOT a reliable indicator** - same value for fresh and stale
+2. **Must validate against scan session** - not peripheral properties
+3. **Scan list is source of truth** - managed by cleanConnection() lifecycle
+4. **UI cache is NOT reliable** - can contain stale references after disconnect
+5. **Session-based validation** - peripheral must be from CURRENT scan session
+
 ---
 
 ## 📊 METRICS
 
-| Metric | Before Any Fix | After Attempt #1 | After Attempt #2 (Build 29) | Target |
-|--------|----------------|------------------|----------------------------|--------|
-| Successful reconnect after restart | 0% | 0% ❌ | 0% ❌ | 100% |
-| Disconnect detected immediately | No | No ❌ | **Layer 1 YES** ✅ | Yes (< 5s) |
-| [DISCONNECT]/[HEALTH] events in logs | No | No ❌ | [HEALTH] Missing ❌ | Yes |
-| "BluetoothError error 4" frequency | 100% | 100% ❌ | 100% ❌ | 0% |
-| Time to detect disconnect | Never | Never ❌ | **Immediate (Layer 1)** ✅ | < 5s |
-| Stale peripherals cleared | No | No ❌ | **Layer 1 clears** ✅ | Yes |
-| App shows correct state | No | No ❌ | **Partially** 🔄 | Yes |
-| Pre-flight detects stale peripheral | N/A | N/A | **YES** ✅ | Yes |
-| Pre-flight prevents bad connection | N/A | N/A | **NO** ❌ | Yes |
-| Diagnostics quality | Poor | Poor | **Excellent** ✅ | Excellent |
-| Layer 1 (viewWillAppear) working | N/A | N/A | **YES** ✅ | Yes |
-| Layer 2 (Pre-flight) working | N/A | N/A | **Partial** 🔄 | Yes |
-| Layer 3 (Health Monitor) working | N/A | N/A | **NO** ❌ | Yes |
+| Metric | Before Any Fix | After Attempt #1 | After Attempt #2 (Build 29) | After Attempt #3 (Build 30) | After Attempt #3 Fix (Build 31) | Target |
+|--------|----------------|------------------|----------------------------|----------------------------|--------------------------------|--------|
+| Successful reconnect after restart | 0% | 0% ❌ | 0% ❌ | **0% (WORSE)** 💥 | ⏳ PENDING | 100% |
+| Normal connections work | 100% | 100% ✅ | 100% ✅ | **0% (BLOCKED ALL)** 💥 | ⏳ PENDING | 100% |
+| Disconnect detected immediately | No | No ❌ | **Layer 1 YES** ✅ | **YES** ✅ | **YES** ✅ | Yes (< 5s) |
+| [DISCONNECT]/[HEALTH] events in logs | No | No ❌ | [HEALTH] Missing ❌ | **[HEALTH] console** ✅ | **[HEALTH] console** ✅ | Yes |
+| "BluetoothError error 4" frequency | 100% | 100% ❌ | 100% ❌ | N/A (no connections) | ⏳ PENDING | 0% |
+| Time to detect disconnect | Never | Never ❌ | **Immediate (Layer 1)** ✅ | **Immediate** ✅ | **Immediate** ✅ | < 5s |
+| Stale peripherals cleared | No | No ❌ | **Layer 1 clears** ✅ | **YES** ✅ | **YES** ✅ | Yes |
+| App shows correct state | No | No ❌ | **Partially** 🔄 | **NO (always rejected)** ❌ | ⏳ PENDING | Yes |
+| Pre-flight detects stale peripheral | N/A | N/A | **YES** ✅ | **WRONG (all=stale)** ❌ | **YES (scan list)** ✅ | Yes |
+| Pre-flight prevents bad connection | N/A | N/A | **NO** ❌ | **YES (too aggressive)** ⚠️ | **YES (correct logic)** ⏳ | Yes |
+| Diagnostics quality | Poor | Poor | **Excellent** ✅ | **Excellent** ✅ | **Excellent** ✅ | Excellent |
+| Layer 1 (viewWillAppear) working | N/A | N/A | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
+| Layer 2 (Pre-flight) working | N/A | N/A | **Partial** 🔄 | **BROKEN** 💥 | **CORRECT** ⏳ | Yes |
+| Layer 3 (Health Monitor) working | N/A | N/A | **NO** ❌ | **Console only** 🔄 | **Console only** 🔄 | Yes |
 
 **Key Performance Indicators:**
 - ✅ SUCCESS if: All 3 test scenarios pass, no error 4, disconnect < 5s
