@@ -131,6 +131,7 @@ class ConnectivityViewController : UIViewController {
                 ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] ⚠️ Peripheral state is \(peripheralState.rawValue), not connected - forcing cleanup")
                 ZetaraManager.shared.cleanConnection()
                 scannedPeripherals = []
+                tableView.reloadData()
             } else {
                 ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] ✅ Peripheral state is connected")
             }
@@ -138,6 +139,7 @@ class ConnectivityViewController : UIViewController {
             // No connected peripheral - ensure scan list is clear
             ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] No connected peripheral - clearing scanned list")
             scannedPeripherals = []
+            tableView.reloadData()
         }
     }
 
@@ -247,7 +249,7 @@ extension ConnectivityViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        guard indexPath.row <= self.scannedPeripherals.count else {
+        guard indexPath.row < self.scannedPeripherals.count else {
             return cell
         }
 

@@ -234,10 +234,11 @@ class DiagnosticsViewController: UIViewController {
             .observeOn(MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
                 self?.addEvent(type: .dataUpdate, message: "New battery data received")
-                self?.tableView.reloadData()
+                // Note: addEvent() already calls tableView.reloadSections() for event logs section
+                // Calling reloadData() here would cause concurrent UITableView updates
             })
             .disposed(by: disposeBag)
-        
+
         // Подписываемся на события подключения/отключения устройства
         ZetaraManager.shared.connectedPeripheralSubject
             .observeOn(MainScheduler.instance)
@@ -248,7 +249,8 @@ class DiagnosticsViewController: UIViewController {
                 } else {
                     self?.addEvent(type: .disconnection, message: "Device disconnected")
                 }
-                self?.tableView.reloadData()
+                // Note: addEvent() already calls tableView.reloadSections() for event logs section
+                // Calling reloadData() here would cause concurrent UITableView updates
             })
             .disposed(by: disposeBag)
     }
