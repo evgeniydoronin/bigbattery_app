@@ -251,23 +251,31 @@ public class ZetaraManager: NSObject {
         protocolDataManager.logProtocolEvent("[CONNECT] Device UUID: \(peripheral.identifier.uuidString)")
         protocolDataManager.logProtocolEvent("[CONNECT] Cached UUID: \(cachedDeviceUUID ?? "none")")
 
-        // Layer 2: Pre-flight peripheral state check
-        // Check peripheral state BEFORE attempting connection
-        let peripheralState = peripheral.state
-        protocolDataManager.logProtocolEvent("[CONNECT] Pre-flight check: Peripheral state = \(peripheralState.rawValue)")
+        // Layer 2: Pre-flight check - verify peripheral is from current scan
+        // iOS CoreBluetooth caches peripheral instances across scans
+        // We must verify this peripheral came from the current scan session, not a stale cached reference
+        // Note: peripheral.state is NOT reliable (always .disconnected after scan, before connection)
+        if let scannedPeripherals = try? scannedPeripheralsSubject.value() {
+            let isInCurrentScan = scannedPeripherals.contains { scanned in
+                scanned.peripheral.identifier == peripheral.identifier
+            }
 
-        // If peripheral is already disconnected/disconnecting, this is likely a STALE cached reference from iOS
-        // iOS CoreBluetooth caches peripheral instances across scans, returning the same object even after fresh scan
-        // Attempting to connect to a cached peripheral with state = .disconnected will ALWAYS fail with error 4
-        if peripheralState == .disconnected || peripheralState == .disconnecting {
-            protocolDataManager.logProtocolEvent("[CONNECT] ❌ ABORT: Peripheral has stale state (\(peripheralState.rawValue))")
-            protocolDataManager.logProtocolEvent("[CONNECT] This is a cached iOS peripheral instance from previous connection")
-            protocolDataManager.logProtocolEvent("[CONNECT] Peripheral is already disconnected - cannot connect to stale instance")
-            protocolDataManager.logProtocolEvent("[CONNECT] Please clear the list and scan again to get fresh peripheral instance")
+            protocolDataManager.logProtocolEvent("[CONNECT] Pre-flight check: Peripheral in current scan list: \(isInCurrentScan)")
 
-            // ABORT connection attempt - return error immediately
-            // User must scan again to potentially get a fresh peripheral instance from iOS
-            return Observable.error(Error.stalePeripheralError)
+            if !isInCurrentScan {
+                // Peripheral NOT in scan list = stale cached reference from previous session
+                // This happens when battery disconnects → cleanConnection() clears scan list →
+                // but UI still shows old peripheral from cache
+                protocolDataManager.logProtocolEvent("[CONNECT] ❌ ABORT: Peripheral not found in current scan list")
+                protocolDataManager.logProtocolEvent("[CONNECT] This peripheral is from a previous scan session (UUID: \(peripheral.identifier.uuidString))")
+                protocolDataManager.logProtocolEvent("[CONNECT] Scan list was cleared during disconnect - this is a stale reference")
+                protocolDataManager.logProtocolEvent("[CONNECT] User must scan again to get fresh peripheral from current session")
+
+                // ABORT connection attempt - return error with user-friendly message
+                return Observable.error(Error.stalePeripheralError)
+            } else {
+                protocolDataManager.logProtocolEvent("[CONNECT] ✅ Peripheral verified from current scan session")
+            }
         }
 
         // 先释放之前的
