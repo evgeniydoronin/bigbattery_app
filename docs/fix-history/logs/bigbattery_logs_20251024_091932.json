@@ -1,0 +1,163 @@
+{
+  "rawDataInfo" : {
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "parseResult" : "success",
+        "timestamp" : "09:19:32 24.10.2025",
+        "data" : "0000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "systemInfo" : {
+    "isLowPowerMode" : false,
+    "cpuUsage" : 0,
+    "availableMemory" : 5910085632,
+    "batteryLevel" : 80
+  },
+  "bluetoothInfo" : {
+    "state" : "poweredOn",
+    "connectionAttempts" : 0
+  },
+  "timestamp" : "09:19:32 24.10.2025",
+  "deviceInfo" : {
+    "model" : "iPhone",
+    "systemVersion" : "26.0",
+    "systemName" : "iOS",
+    "name" : "iPhone"
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overcurrent" : false,
+      "overvoltage" : false,
+      "overtemperature" : false,
+      "undervoltage" : false,
+      "shortCircuit" : false
+    }
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "09:19:31 24.10.2025",
+        "step" : "connection",
+        "status" : "success",
+        "message" : "No device connected"
+      },
+      {
+        "timestamp" : "09:19:24 24.10.2025",
+        "message" : "No device connected",
+        "status" : "success",
+        "step" : "connection"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "09:19:24 24.10.2025",
+        "step" : "connection",
+        "message" : "Diagnostics screen launched"
+      }
+    ]
+  },
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "29"
+  },
+  "communicationErrorsInfo" : {
+    "timeouts" : 0,
+    "crcErrors" : 0,
+    "retries" : 0,
+    "packetLoss" : 0
+  },
+  "batteryInfo" : {
+    "soc" : 0,
+    "soh" : 0,
+    "current" : 0,
+    "cellVoltages" : [
+
+    ],
+    "voltage" : 0,
+    "status" : "Standby",
+    "tempPCB" : 0,
+    "cellCount" : 0,
+    "cellTemps" : [
+
+    ],
+    "tempEnv" : 0,
+    "timestamp" : "09:19:32 24.10.2025"
+  },
+  "events" : [
+    {
+      "timestamp" : "09:19:31 24.10.2025",
+      "message" : "No device connected",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "09:19:30 24.10.2025",
+      "message" : "New battery data received",
+      "type" : "Data Update"
+    },
+    {
+      "timestamp" : "09:19:24 24.10.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "timestamp" : "09:19:24 24.10.2025",
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched"
+    },
+    {
+      "timestamp" : "09:19:24 24.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    }
+  ],
+  "protocolInfo" : {
+    "currentValues" : {
+      "moduleId" : "--",
+      "rs485Protocol" : "--",
+      "canProtocol" : "--"
+    },
+    "lastUpdateTime" : "09:19:32 24.10.2025",
+    "recentLogs" : [
+      "[09:19:30] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:19:30] [CONNECTION] Notify UUID: 1007",
+      "[09:19:30] [CONNECTION] Write UUID: 1008",
+      "[09:19:30] [CONNECTION] ✅ Characteristics configured",
+      "[09:19:30] [CONNECT] Service UUID: 1006",
+      "[09:19:30] [CONNECT] Services discovered: 1",
+      "[09:19:30] [CONNECTIVITY] Connection failed: Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[09:19:30] [CONNECTION] Connection state cleaned",
+      "[09:19:30] [CONNECTION] Cached device UUID cleared",
+      "[09:19:30] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:19:30] [CONNECTION] Scanned peripherals cleared",
+      "[09:19:30] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:19:30] [CONNECTION] BMS data cleared",
+      "[09:19:30] [QUEUE] Request queue cleared",
+      "[09:19:30] [CONNECTION] Cleaning connection state",
+      "[09:19:30] [CONNECT] This peripheral reference may be invalid - connection likely to fail with error 4",
+      "[09:19:30] [CONNECT] ⚠️ WARNING: Attempting connection with stale peripheral (state: 0)",
+      "[09:19:30] [CONNECT] Pre-flight check: Peripheral state = 0",
+      "[09:19:30] [CONNECT] Cached UUID: none",
+      "[09:19:30] [CONNECT] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:19:30] [CONNECT] Device name: BB-51.2V100Ah-0855",
+      "[09:19:30] [CONNECT] Attempting connection",
+      "[09:19:27] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:19:27] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:19:19] [CONNECTION] Connection state cleaned",
+      "[09:19:19] [CONNECTION] Cached device UUID cleared",
+      "[09:19:19] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:19:19] [CONNECTION] Scanned peripherals cleared",
+      "[09:19:19] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:19:19] [CONNECTION] BMS data cleared"
+    ],
+    "statistics" : {
+      "successes" : 1,
+      "warnings" : 1,
+      "errors" : 0,
+      "totalLogs" : 30
+    }
+  }
+}

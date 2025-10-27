@@ -11,16 +11,26 @@
 ## 📍 CURRENT STATUS
 
 **Quick Summary:**
-Client unable to reconnect to battery after physical disconnect/restart. App shows battery in Bluetooth list but clicking it results in "BluetoothError error 4" / "Invalid BigBattery device". iOS CoreBluetooth doesn't generate disconnect events for physical power off, causing stale peripheral references.
+Client unable to reconnect to battery after physical disconnect/restart. App shows battery in Bluetooth list but clicking it results in "BluetoothError error 4" / "Invalid BigBattery device". **Root cause: iOS CoreBluetooth caches peripheral instances across scans.** Pre-flight check detects stale peripherals (state = 0) but doesn't prevent connection attempt.
 
-**Latest Test Result:** ⏳ PENDING (Attempt #2 - Proactive Monitoring deployed, waiting for client logs)
+**Latest Test Result:** 🔄 PARTIAL SUCCESS (Attempt #2 - Build 29 tested 2025-10-24)
+
+**What Works:**
+- ✅ Layer 1 (viewWillAppear) detects disconnected state
+- ✅ Layer 2 (Pre-flight) detects stale peripheral (state = 0)
+- ✅ Excellent diagnostics - logs show exactly what's wrong
+
+**What's Broken:**
+- ❌ Pre-flight doesn't ABORT connection (only logs warning)
+- ❌ iOS returns cached peripheral even after fresh scan
+- ❌ Connection still fails with error 4
+- ❌ Layer 3 (Health Monitor) not logging
 
 **Next Steps:**
-- [ ] Wait for Joshua testing results (Attempt #2 with 3-layer proactive monitoring)
-- [ ] Analyze new diagnostic logs
-- [ ] Update METRICS table with results
-- [ ] If failed: analyze WHY proactive monitoring didn't work
-- [ ] If partial: identify which layer worked, which didn't
+- [ ] Implement Attempt #3: Pre-flight must ABORT + call cancelPeripheralConnection()
+- [ ] Force iOS to forget cached peripheral instance
+- [ ] Fix Layer 3 health monitor logging
+- [ ] Test with Build 30
 
 ---
 
@@ -293,6 +303,113 @@ Need **PROACTIVE monitoring**, not reactive (waiting for events). Check `periphe
 
 ---
 
+### 📅 2025-10-24: ATTEMPT #2 RESULT - Partial Success
+
+**Test Result:** 🔄 PARTIAL SUCCESS
+
+**Client Testing (Joshua):**
+> Followed usual protocol:
+> Connect to battery
+> Check settings page, can't select different ID's or protocols,
+> Save changes button clicked
+> Restarted battery
+> App displays connection even though battery is off
+> Try to connect to battery again, connection error given
+
+**Diagnostic Logs:**
+- File: `docs/fix-history/logs/bigbattery_logs_20251024_091932.json`
+- Timestamp: 09:19:19-09:19:32 24.10.2025
+- Build: 29
+
+**Expected vs Reality Comparison:**
+
+| Expected (from Attempt #2) | Reality (from logs) | Evidence | Status |
+|---------------------------|---------------------|----------|---------|
+| [INIT] Health monitor started | NOT found | No [INIT] in recentLogs | ❌ MISSING |
+| [HEALTH] Periodic check events | NOT found | No [HEALTH] in any logs | ❌ MISSING |
+| [HEALTH] Disconnect detected within 3s | NOT found | No [HEALTH] events at all | ❌ FAILED |
+| [CONNECTIVITY] viewWillAppear check | FOUND ✅ | `[09:19:27] [CONNECTIVITY] viewWillAppear - checking peripheral state` | ✅ WORKS |
+| [CONNECTIVITY] No connected peripheral | FOUND ✅ | `[09:19:27] [CONNECTIVITY] No connected peripheral - clearing scanned list` | ✅ WORKS |
+| [CONNECT] Pre-flight check | FOUND ✅ | `[09:19:30] [CONNECT] Pre-flight check: Peripheral state = 0` | ✅ WORKS |
+| [CONNECT] WARNING logged | FOUND ✅ | `[09:19:30] [CONNECT] ⚠️ WARNING: Attempting connection with stale peripheral (state: 0)` | ✅ WORKS |
+| Connection SUCCESS | FAILED ❌ | `[09:19:30] [CONNECTIVITY] Connection failed: error 4` | ❌ FAILED |
+| No "BluetoothError error 4" | Still present | `RxBluetoothKit2.BluetoothError error 4` | ❌ SAME |
+| Stale peripheral prevented | NOT prevented | Pre-flight detected but didn't STOP connection | ❌ FAILED |
+
+**What Got Better:**
+- ✅ **Layer 1 (viewWillAppear) WORKS** - Successfully detects when no connected peripheral present
+- ✅ **Layer 2 (Pre-flight check) WORKS** - Successfully detects and logs stale peripheral (state = 0)
+- ✅ **Diagnostics massively improved** - Logs now show EXACTLY what's wrong with clear warnings
+- ✅ **Problem correctly identified** - Pre-flight accurately detects stale peripheral before connection attempt
+
+**What Got Worse:**
+- ❌ **Layer 3 (Health Monitor) MISSING** - No [INIT] or [HEALTH] logs appearing at all (needs investigation)
+
+**What Stayed Same (Still Broken):**
+- ❌ **Connection still fails with error 4** - User cannot reconnect to battery
+- ❌ **Pre-flight detection doesn't PREVENT connection** - Only logs warning, then proceeds to fail
+- ❌ **User experience unchanged** - Same "connection error" as before
+
+**Log Timeline Analysis:**
+```
+[09:19:19] Previous session cleanup
+[09:19:19] [CONNECTION] Scanned peripherals cleared
+
+[User returns to Connectivity screen - Layer 1 triggers]
+[09:19:27] [CONNECTIVITY] viewWillAppear - checking peripheral state
+[09:19:27] [CONNECTIVITY] No connected peripheral - clearing scanned list
+
+[User clicks battery - Layer 2 triggers]
+[09:19:30] [CONNECT] Attempting connection
+[09:19:30] [CONNECT] Device name: BB-51.2V100Ah-0855
+[09:19:30] [CONNECT] Pre-flight check: Peripheral state = 0  ← DETECTED!
+[09:19:30] [CONNECT] ⚠️ WARNING: Attempting connection with stale peripheral (state: 0)
+[09:19:30] [CONNECT] This peripheral reference may be invalid - connection likely to fail with error 4
+
+[Connection CONTINUES despite warning!]
+[09:19:30] [CONNECTION] Cleaning connection state
+[09:19:30] [CONNECTIVITY] Connection failed: error 4  ← FAILED!
+
+[iOS discovers services AFTER failure]
+[09:19:30] [CONNECT] Services discovered: 1
+[09:19:30] [CONNECTION] ✅ Characteristics configured
+```
+
+**Critical Finding:**
+
+Pre-flight check **DETECTS** the problem correctly (peripheral.state = 0), but **DOES NOT PREVENT** the connection attempt. Connection proceeds → cleanup happens → fails with error 4.
+
+**Root Cause Update:**
+
+Detection is NOT the problem! We successfully detect stale peripheral.
+
+**Real Problem: iOS caches peripheral instances even after fresh scan!**
+
+Evidence chain:
+1. Battery disconnects (physical power off)
+2. iOS keeps peripheral instance in memory (state changes to 0, but instance remains)
+3. User does fresh scan → finds same battery name
+4. iOS returns SAME cached peripheral instance (not a new one!)
+5. App attempts connection to cached peripheral with state = 0
+6. iOS rejects: error 4 (peripheral not in connected state)
+
+**What we need for Attempt #3:**
+1. ✅ Detection working (Layer 1, Layer 2 confirmed)
+2. ❌ Prevention NOT working - Need to:
+   - **ABORT** connection attempt when pre-flight detects state = 0
+   - **Force iOS to forget** old peripheral via `cancelPeripheralConnection()`
+   - **Return error** to user: "Need fresh scan"
+   - Get FRESH peripheral instance from iOS
+3. ❌ Layer 3 NOT working - Investigate why no [INIT]/[HEALTH] logs
+
+**Next Steps:**
+- [ ] Fix pre-flight to ABORT connection when state = 0 detected
+- [ ] Add `cancelPeripheralConnection()` call to force iOS to forget stale peripheral
+- [ ] Debug Layer 3 - why no health monitor logs appearing
+- [ ] Implement Attempt #3 with these fixes
+
+---
+
 ## 🔍 ROOT CAUSE EVOLUTION
 
 ### Initial Understanding (2025-10-10):
@@ -305,7 +422,7 @@ Need **PROACTIVE monitoring**, not reactive (waiting for events). Check `periphe
 **Solution:** Move disconnect handler to global scope (ZetaraManager singleton).
 **Assumption:** iOS generates disconnect events that our handler will catch.
 
-### Current Understanding (2025-10-21):
+### Understanding After Attempt #2 (2025-10-21):
 **Problem:** iOS CoreBluetooth **does NOT generate disconnect events** for physical power off!
 **Root Cause:** Reactive approach (waiting for events) fundamentally flawed for this scenario.
 **Solution:** Proactive approach - actively check `peripheral.state` instead of waiting for events.
@@ -317,19 +434,72 @@ Need **PROACTIVE monitoring**, not reactive (waiting for events). Check `periphe
 4. **Apple's "best practices" assume graceful disconnects** - real world has physical power off
 5. **Reactive patterns fail** when events don't fire - need proactive monitoring
 
+### Current Understanding (2025-10-24 after testing Attempt #2):
+**Problem:** Detection works, but **iOS caches peripheral instances across scans!**
+
+**What we learned from Build 29 testing:**
+- ✅ Layer 1 & Layer 2 successfully DETECT stale peripherals
+- ❌ But detection alone doesn't solve the problem!
+- ❌ iOS returns CACHED peripheral instance even after fresh scan
+
+**Root Cause Chain:**
+```
+Battery physically disconnects
+    ↓
+iOS peripheral instance remains in memory (state → 0, but object persists)
+    ↓
+User does fresh BLE scan
+    ↓
+iOS finds same device by name/UUID
+    ↓
+iOS returns SAME cached peripheral object (not creating new one)
+    ↓
+App detects peripheral.state = 0 (via pre-flight check)
+    ↓
+But connection attempt CONTINUES anyway
+    ↓
+iOS rejects: error 4 ("peripheral not connected")
+    ↓
+SOLUTION NEEDED: Must force iOS to FORGET cached instance
+```
+
+**Why previous solution was incomplete:**
+- Attempt #2 added detection (peripheral.state checks) ✅
+- But didn't add prevention (abort connection + force forget) ❌
+- Pre-flight logs warning but doesn't STOP the bad connection attempt
+
+**What Attempt #3 needs:**
+1. **Pre-flight must ABORT** - Return error instead of just logging warning
+2. **Must call `cancelPeripheralConnection()`** - Force iOS to release cached instance
+3. **Must get FRESH peripheral** - Only connect to peripherals with state = .disconnected from NEW scan
+4. **Fix Layer 3** - Health monitor not logging (separate issue)
+
+**Key Insights:**
+1. **iOS CoreBluetooth caches peripheral objects** - doesn't create new instances for same device
+2. **Detection ≠ Prevention** - Knowing about problem doesn't prevent it
+3. **Must explicitly tell iOS to forget** - `cancelPeripheralConnection()` required
+4. **Cached peripherals are unusable** - state = 0 peripherals will always fail connection
+5. **Need gate logic** - Prevent connection attempts to known-bad peripherals
+
 ---
 
 ## 📊 METRICS
 
-| Metric | Before Any Fix | After Attempt #1 | After Attempt #2 | Target |
-|--------|----------------|------------------|------------------|--------|
-| Successful reconnect after restart | 0% | 0% ❌ | ⏳ | 100% |
-| Disconnect detected immediately | No | No ❌ | ⏳ | Yes (< 5s) |
-| [DISCONNECT] events in logs | No | No ❌ | ⏳ | Yes (or [HEALTH]) |
-| "BluetoothError error 4" frequency | 100% (every attempt) | 100% ❌ | ⏳ | 0% |
-| Time to detect disconnect | N/A | Never | ⏳ | < 5s |
-| Stale peripherals cleared | No | No ❌ | ⏳ | Yes |
-| App shows correct state | No ("still connected") | No ❌ | ⏳ | Yes |
+| Metric | Before Any Fix | After Attempt #1 | After Attempt #2 (Build 29) | Target |
+|--------|----------------|------------------|----------------------------|--------|
+| Successful reconnect after restart | 0% | 0% ❌ | 0% ❌ | 100% |
+| Disconnect detected immediately | No | No ❌ | **Layer 1 YES** ✅ | Yes (< 5s) |
+| [DISCONNECT]/[HEALTH] events in logs | No | No ❌ | [HEALTH] Missing ❌ | Yes |
+| "BluetoothError error 4" frequency | 100% | 100% ❌ | 100% ❌ | 0% |
+| Time to detect disconnect | Never | Never ❌ | **Immediate (Layer 1)** ✅ | < 5s |
+| Stale peripherals cleared | No | No ❌ | **Layer 1 clears** ✅ | Yes |
+| App shows correct state | No | No ❌ | **Partially** 🔄 | Yes |
+| Pre-flight detects stale peripheral | N/A | N/A | **YES** ✅ | Yes |
+| Pre-flight prevents bad connection | N/A | N/A | **NO** ❌ | Yes |
+| Diagnostics quality | Poor | Poor | **Excellent** ✅ | Excellent |
+| Layer 1 (viewWillAppear) working | N/A | N/A | **YES** ✅ | Yes |
+| Layer 2 (Pre-flight) working | N/A | N/A | **Partial** 🔄 | Yes |
+| Layer 3 (Health Monitor) working | N/A | N/A | **NO** ❌ | Yes |
 
 **Key Performance Indicators:**
 - ✅ SUCCESS if: All 3 test scenarios pass, no error 4, disconnect < 5s
