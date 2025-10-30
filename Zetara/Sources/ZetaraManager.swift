@@ -447,6 +447,38 @@ public class ZetaraManager: NSObject {
         protocolDataManager.logProtocolEvent("[CONNECTION] Connection state cleaned")
     }
 
+    // Build 34: Launch-time fresh peripheral retrieval
+    // Called from AppDelegate on app launch and foreground to prevent stale characteristics
+    public func refreshPeripheralInstanceIfNeeded() {
+        protocolDataManager.logProtocolEvent("[LAUNCH] Checking for cached peripheral to refresh")
+
+        guard let cachedUUID = cachedDeviceUUID,
+              let uuidObj = UUID(uuidString: cachedUUID) else {
+            protocolDataManager.logProtocolEvent("[LAUNCH] No cached peripheral UUID found")
+            return
+        }
+
+        protocolDataManager.logProtocolEvent("[LAUNCH] Found cached UUID: \(cachedUUID)")
+
+        // Retrieve fresh peripheral instance from iOS CoreBluetooth
+        // This prevents error 4 (invalidHandle) from stale characteristic references
+        let freshPeripherals = manager.retrievePeripherals(withIdentifiers: [uuidObj])
+
+        guard let freshPeripheral = freshPeripherals.first else {
+            // Peripheral no longer available - clear stale state
+            protocolDataManager.logProtocolEvent("[LAUNCH] ⚠️ Peripheral no longer available, clearing state")
+            cleanConnection()
+            return
+        }
+
+        protocolDataManager.logProtocolEvent("[LAUNCH] ✅ Retrieved fresh peripheral instance")
+        protocolDataManager.logProtocolEvent("[LAUNCH] Fresh peripheral state: \(freshPeripheral.state.rawValue)")
+
+        // Update subject with fresh instance (replaces stale one in memory)
+        connectedPeripheralSubject.onNext(freshPeripheral)
+        protocolDataManager.logProtocolEvent("[LAUNCH] Updated peripheral reference with fresh instance")
+    }
+
     public func observeDisconect() -> Observable<Peripheral> {
         return manager.observeDisconnect()
             .do(onNext: { [weak self] (peripheral, error) in

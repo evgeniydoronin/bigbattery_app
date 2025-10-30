@@ -40,10 +40,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                                    mockData: mockDataForConfig,
                                    mockDeviceName: mockDeviceNameForConfig)
         ZetaraManager.setup(config)
-        
+
         UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor.black]
-        
+
+        // Build 34: Refresh peripheral instance on launch to prevent stale characteristics
+        // This catches cached peripherals from previous session before any operations attempt to use them
+        ZetaraManager.shared.refreshPeripheralInstanceIfNeeded()
+
         return true
+    }
+
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        // Build 34: Refresh peripheral instance when returning from background
+        // Prevents stale characteristics if peripheral disconnected while app was in background
+        ZetaraManager.shared.refreshPeripheralInstanceIfNeeded()
     }
     
 
