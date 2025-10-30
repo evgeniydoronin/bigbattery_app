@@ -17,6 +17,7 @@ public class ZetaraManager: NSObject {
         case notZetaraPeripheralError
         case writeControlDataError
         case stalePeripheralError  // iOS returned cached peripheral with invalid state
+        case peripheralNotFound  // Failed to retrieve peripheral from CoreBluetooth
     }
 
     public typealias ConnectedPeripheral = Peripheral
@@ -278,12 +279,28 @@ public class ZetaraManager: NSObject {
             }
         }
 
+        // Build 33 Fix: Retrieve fresh peripheral instance to avoid iOS cached stale characteristics
+        // Research: iOS caches services/characteristics at the peripheral object level
+        // After disconnect, these cached references become invalid (error 4: invalidHandle)
+        // Solution: Use retrievePeripherals(withIdentifiers:) to get fresh peripheral instance
+        // Source: Apple docs + Stack Overflow (CoreBluetooth doesn't discover services on reconnect)
+        let peripheralUUID = peripheral.identifier
+        let freshPeripherals = manager.retrievePeripherals(withIdentifiers: [peripheralUUID])
+
+        guard let freshPeripheral = freshPeripherals.first else {
+            protocolDataManager.logProtocolEvent("[CONNECT] ❌ Failed to retrieve fresh peripheral instance")
+            return Observable.error(Error.peripheralNotFound)
+        }
+
+        protocolDataManager.logProtocolEvent("[CONNECT] ✅ Retrieved fresh peripheral instance (prevents stale characteristic caches)")
+        protocolDataManager.logProtocolEvent("[CONNECT] Fresh peripheral UUID: \(freshPeripheral.identifier.uuidString)")
+
         // 先释放之前的
         cleanConnection()
 
         let serviceUUIDs = ZetaraManager.configuration.identifiers.map { $0.service.uuid }
 
-        self.connectionDisposable = peripheral.establishConnection()
+        self.connectionDisposable = freshPeripheral.establishConnection()
             .flatMap { $0.discoverServices(serviceUUIDs) }
             .do(onNext: { [weak self] services in
                 // Логируем найденные services
@@ -325,12 +342,12 @@ public class ZetaraManager: NSObject {
                             self?.protocolDataManager.logProtocolEvent("[CONNECTION] Write UUID: \(writeCharacteristic.uuid.uuidString)")
                             self?.protocolDataManager.logProtocolEvent("[CONNECTION] Notify UUID: \(notifyCharacteristic.uuid.uuidString)")
 
-                            // Сохраняем UUID подключенного устройства
-                            self?.cachedDeviceUUID = peripheral.identifier.uuidString
-                            print("[CONNECTION] Saved device UUID: \(peripheral.identifier.uuidString)")
-                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] Device UUID: \(peripheral.identifier.uuidString)")
+                            // Сохраняем UUID подключенного устройства (using fresh peripheral)
+                            self?.cachedDeviceUUID = freshPeripheral.identifier.uuidString
+                            print("[CONNECTION] Saved device UUID: \(freshPeripheral.identifier.uuidString)")
+                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] Device UUID: \(freshPeripheral.identifier.uuidString)")
 
-                            observer.onNext(peripheral)
+                            observer.onNext(freshPeripheral)
 
                             // Запускаем мониторинг подключения
                             self?.startConnectionMonitor()

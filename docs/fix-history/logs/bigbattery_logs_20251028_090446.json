@@ -1,0 +1,169 @@
+{
+  "appInfo" : {
+    "build" : "32",
+    "version" : "1.4.1"
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "09:04:45 28.10.2025",
+        "step" : "connection",
+        "message" : "No device connected",
+        "status" : "success"
+      },
+      {
+        "status" : "success",
+        "message" : "Log sending cancelled",
+        "timestamp" : "09:04:43 28.10.2025",
+        "step" : "connection"
+      },
+      {
+        "message" : "No device connected",
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "09:04:38 28.10.2025"
+      },
+      {
+        "status" : "success",
+        "message" : "Diagnostics screen launched",
+        "timestamp" : "09:04:38 28.10.2025",
+        "step" : "connection"
+      }
+    ]
+  },
+  "rawDataInfo" : {
+    "packetHistory" : [
+      {
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "parseResult" : "success",
+        "timestamp" : "09:04:46 28.10.2025"
+      }
+    ],
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000"
+  },
+  "timestamp" : "09:04:46 28.10.2025",
+  "deviceInfo" : {
+    "systemVersion" : "26.0",
+    "systemName" : "iOS",
+    "name" : "iPhone",
+    "model" : "iPhone"
+  },
+  "events" : [
+    {
+      "timestamp" : "09:04:45 28.10.2025",
+      "message" : "No device connected",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Connection",
+      "timestamp" : "09:04:43 28.10.2025",
+      "message" : "Log sending cancelled"
+    },
+    {
+      "timestamp" : "09:04:38 28.10.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "timestamp" : "09:04:38 28.10.2025",
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched"
+    },
+    {
+      "message" : "New battery data received",
+      "type" : "Data Update",
+      "timestamp" : "09:04:38 28.10.2025"
+    }
+  ],
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "shortCircuit" : false,
+      "overvoltage" : false,
+      "undervoltage" : false,
+      "overcurrent" : false,
+      "overtemperature" : false
+    }
+  },
+  "protocolInfo" : {
+    "statistics" : {
+      "successes" : 3,
+      "warnings" : 1,
+      "totalLogs" : 30,
+      "errors" : 1
+    },
+    "recentLogs" : [
+      "[09:04:36] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:04:36] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:04:36] [CONNECTION] Connection state cleaned",
+      "[09:04:36] [CONNECTION] Cached device UUID cleared",
+      "[09:04:36] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:04:36] [CONNECTION] Scanned peripherals cleared",
+      "[09:04:36] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:04:36] [CONNECTION] BMS data cleared",
+      "[09:04:35] [CONNECTION] 🛑 BMS timer stopped",
+      "[09:04:35] [QUEUE] Request queue cleared",
+      "[09:04:35] [CONNECTION] Cleaning connection state",
+      "[09:04:35] [CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!",
+      "[09:04:35] [CONNECT] ❌ Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[09:04:35] [HEALTH] Periodic check (tick 10) - Peripheral state: 2",
+      "[09:04:26] [SETTINGS] ✅ Module ID set successfully",
+      "[09:04:26] [QUEUE] ✅ setModuleId completed in 119ms",
+      "[09:04:26] [BLUETOOTH] ✅ Got control data response",
+      "[09:04:26] [BLUETOOTH] Is control data: true",
+      "[09:04:26] [BLUETOOTH] 📥 Received notification: 10070100b4b5",
+      "[09:04:26] [BMS] Validation - CRC: true, isBMSData: false",
+      "[09:04:26] [BMS] 📥 Received BMS response: 10070100b4b5",
+      "[09:04:26] [BLUETOOTH] 📡 Started observing notifications...",
+      "[09:04:26] [BLUETOOTH] 📤 Writing control data: 100701017575",
+      "[09:04:26] [SETTINGS] ⏭️ Skipping RS485 Protocol - already set to P01-GRW",
+      "[09:04:26] [QUEUE] 🚀 Executing setModuleId",
+      "[09:04:26] [SETTINGS] ⏭️ Skipping CAN Protocol - already set to P01-GRW",
+      "[09:04:26] [QUEUE] 📥 Request queued: setModuleId",
+      "[09:04:26] [SETTINGS] Setting Module ID: 'ID 2' → 'ID 1'",
+      "[09:04:26] [DISCONNECT HANDLER] Setting up disconnect handler",
+      "[09:04:17] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!"
+    ],
+    "currentValues" : {
+      "moduleId" : "--",
+      "canProtocol" : "--",
+      "rs485Protocol" : "--"
+    },
+    "lastUpdateTime" : "09:04:46 28.10.2025"
+  },
+  "bluetoothInfo" : {
+    "state" : "poweredOn",
+    "connectionAttempts" : 0
+  },
+  "systemInfo" : {
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0,
+    "isLowPowerMode" : false,
+    "batteryLevel" : 60
+  },
+  "batteryInfo" : {
+    "tempPCB" : 0,
+    "soc" : 0,
+    "tempEnv" : 0,
+    "status" : "Standby",
+    "cellCount" : 0,
+    "current" : 0,
+    "cellVoltages" : [
+
+    ],
+    "cellTemps" : [
+
+    ],
+    "timestamp" : "09:04:46 28.10.2025",
+    "voltage" : 0,
+    "soh" : 0
+  },
+  "communicationErrorsInfo" : {
+    "timeouts" : 0,
+    "crcErrors" : 0,
+    "packetLoss" : 0,
+    "retries" : 0
+  }
+}

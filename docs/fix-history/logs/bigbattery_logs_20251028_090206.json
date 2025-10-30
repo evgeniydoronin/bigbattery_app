@@ -1,0 +1,174 @@
+{
+  "appInfo" : {
+    "build" : "32",
+    "version" : "1.4.1"
+  },
+  "events" : [
+    {
+      "message" : "No device connected",
+      "timestamp" : "09:02:05 28.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "09:01:35 28.10.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "message" : "No device connected",
+      "timestamp" : "09:01:28 28.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "No device connected",
+      "timestamp" : "09:01:25 28.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "09:01:25 28.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "New battery data received",
+      "type" : "Data Update",
+      "timestamp" : "09:01:25 28.10.2025"
+    }
+  ],
+  "batteryInfo" : {
+    "soh" : 0,
+    "timestamp" : "09:02:06 28.10.2025",
+    "cellTemps" : [
+
+    ],
+    "soc" : 0,
+    "tempPCB" : 0,
+    "tempEnv" : 0,
+    "status" : "Standby",
+    "current" : 0,
+    "cellCount" : 0,
+    "cellVoltages" : [
+
+    ],
+    "voltage" : 0
+  },
+  "rawDataInfo" : {
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "parseResult" : "success",
+        "timestamp" : "09:02:06 28.10.2025"
+      }
+    ],
+    "parseErrors" : [
+
+    ]
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "09:02:05 28.10.2025",
+        "message" : "No device connected"
+      },
+      {
+        "step" : "connection",
+        "message" : "No device connected",
+        "timestamp" : "09:01:28 28.10.2025",
+        "status" : "success"
+      },
+      {
+        "timestamp" : "09:01:25 28.10.2025",
+        "status" : "success",
+        "step" : "connection",
+        "message" : "No device connected"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "09:01:25 28.10.2025",
+        "message" : "Diagnostics screen launched",
+        "step" : "connection"
+      }
+    ]
+  },
+  "communicationErrorsInfo" : {
+    "packetLoss" : 0,
+    "retries" : 0,
+    "crcErrors" : 0,
+    "timeouts" : 0
+  },
+  "timestamp" : "09:02:06 28.10.2025",
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "undervoltage" : false,
+      "overvoltage" : false,
+      "overcurrent" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false
+    }
+  },
+  "protocolInfo" : {
+    "lastUpdateTime" : "09:02:06 28.10.2025",
+    "statistics" : {
+      "warnings" : 0,
+      "errors" : 2,
+      "totalLogs" : 30,
+      "successes" : 1
+    },
+    "currentValues" : {
+      "rs485Protocol" : "--",
+      "moduleId" : "--",
+      "canProtocol" : "--"
+    },
+    "recentLogs" : [
+      "[09:01:57] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:01:57] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:01:40] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:01:40] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:01:37] [CONNECTIVITY] Connection failed: Please scan again to reconnect",
+      "[09:01:37] [CONNECT] User must scan again to get fresh peripheral from current session",
+      "[09:01:37] [CONNECT] Scan list was cleared during disconnect - this is a stale reference",
+      "[09:01:37] [CONNECT] This peripheral is from a previous scan session (UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427)",
+      "[09:01:37] [CONNECT] ❌ ABORT: Peripheral not found in current scan list",
+      "[09:01:37] [CONNECT] Pre-flight check: Peripheral in current scan list: false",
+      "[09:01:37] [CONNECT] Cached UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:01:37] [CONNECT] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:01:37] [CONNECT] Device name: BB-51.2V100Ah-0855",
+      "[09:01:37] [CONNECT] Attempting connection",
+      "[09:01:36] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:01:36] [CONNECTION] Notify UUID: 1007",
+      "[09:01:36] [CONNECTION] Write UUID: 1008",
+      "[09:01:36] [CONNECTION] ✅ Characteristics configured",
+      "[09:01:36] [CONNECTIVITY] Connection failed: Please scan again to reconnect",
+      "[09:01:36] [CONNECT] User must scan again to get fresh peripheral from current session",
+      "[09:01:36] [CONNECT] Scan list was cleared during disconnect - this is a stale reference",
+      "[09:01:36] [CONNECT] This peripheral is from a previous scan session (UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427)",
+      "[09:01:36] [CONNECT] ❌ ABORT: Peripheral not found in current scan list",
+      "[09:01:36] [CONNECT] Pre-flight check: Peripheral in current scan list: false",
+      "[09:01:36] [CONNECT] Cached UUID: none",
+      "[09:01:36] [CONNECT] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:01:36] [CONNECT] Device name: BB-51.2V100Ah-0855",
+      "[09:01:36] [CONNECT] Attempting connection",
+      "[09:01:36] [CONNECT] Service UUID: 1006",
+      "[09:01:36] [CONNECT] Services discovered: 1"
+    ]
+  },
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "deviceInfo" : {
+    "model" : "iPhone",
+    "name" : "iPhone",
+    "systemVersion" : "26.0",
+    "systemName" : "iOS"
+  },
+  "systemInfo" : {
+    "availableMemory" : 5910085632,
+    "isLowPowerMode" : false,
+    "batteryLevel" : 60,
+    "cpuUsage" : 0
+  }
+}

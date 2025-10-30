@@ -1,0 +1,163 @@
+{
+  "rawDataInfo" : {
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "parseResult" : "success",
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "timestamp" : "09:07:26 28.10.2025"
+      }
+    ]
+  },
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "retries" : 0,
+    "packetLoss" : 0,
+    "timeouts" : 0
+  },
+  "systemInfo" : {
+    "availableMemory" : 5910085632,
+    "batteryLevel" : 60,
+    "cpuUsage" : 0,
+    "isLowPowerMode" : false
+  },
+  "bluetoothInfo" : {
+    "state" : "poweredOn",
+    "connectionAttempts" : 0
+  },
+  "appInfo" : {
+    "build" : "32",
+    "version" : "1.4.1"
+  },
+  "deviceInfo" : {
+    "name" : "iPhone",
+    "model" : "iPhone",
+    "systemName" : "iOS",
+    "systemVersion" : "26.0"
+  },
+  "batteryInfo" : {
+    "soh" : 0,
+    "voltage" : 0,
+    "cellTemps" : [
+
+    ],
+    "cellVoltages" : [
+
+    ],
+    "soc" : 0,
+    "status" : "Standby",
+    "timestamp" : "09:07:26 28.10.2025",
+    "tempEnv" : 0,
+    "cellCount" : 0,
+    "current" : 0,
+    "tempPCB" : 0
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overvoltage" : false,
+      "overcurrent" : false,
+      "shortCircuit" : false,
+      "overtemperature" : false,
+      "undervoltage" : false
+    }
+  },
+  "protocolInfo" : {
+    "currentValues" : {
+      "moduleId" : "--",
+      "rs485Protocol" : "--",
+      "canProtocol" : "--"
+    },
+    "recentLogs" : [
+      "[09:07:24] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:07:24] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:07:23] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:07:23] [CONNECTION] Notify UUID: 1007",
+      "[09:07:23] [CONNECTION] Write UUID: 1008",
+      "[09:07:23] [CONNECTION] ✅ Characteristics configured",
+      "[09:07:23] [CONNECT] Service UUID: 1006",
+      "[09:07:23] [CONNECT] Services discovered: 1",
+      "[09:07:22] [CONNECTIVITY] Connection failed: Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[09:07:22] [CONNECTION] Connection state cleaned",
+      "[09:07:22] [CONNECTION] Cached device UUID cleared",
+      "[09:07:22] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:07:22] [CONNECTION] Scanned peripherals cleared",
+      "[09:07:22] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:07:22] [CONNECTION] BMS data cleared",
+      "[09:07:22] [QUEUE] Request queue cleared",
+      "[09:07:22] [CONNECTION] Cleaning connection state",
+      "[09:07:22] [CONNECT] ✅ Peripheral verified from current scan session",
+      "[09:07:22] [CONNECT] Pre-flight check: Peripheral in current scan list: true",
+      "[09:07:22] [CONNECT] Cached UUID: none",
+      "[09:07:22] [CONNECT] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:07:22] [CONNECT] Device name: BB-51.2V100Ah-0855",
+      "[09:07:22] [CONNECT] Attempting connection",
+      "[09:07:15] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:07:15] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:07:06] [CONNECTION] Connection state cleaned",
+      "[09:07:06] [CONNECTION] Cached device UUID cleared",
+      "[09:07:06] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:07:06] [CONNECTION] Scanned peripherals cleared",
+      "[09:07:06] [PROTOCOL MANAGER] Clearing all protocols"
+    ],
+    "lastUpdateTime" : "09:07:26 28.10.2025",
+    "statistics" : {
+      "errors" : 0,
+      "totalLogs" : 30,
+      "warnings" : 0,
+      "successes" : 2
+    }
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "09:07:26 28.10.2025",
+        "message" : "No device connected"
+      },
+      {
+        "status" : "success",
+        "step" : "connection",
+        "timestamp" : "09:07:08 28.10.2025",
+        "message" : "No device connected"
+      },
+      {
+        "message" : "Diagnostics screen launched",
+        "timestamp" : "09:07:08 28.10.2025",
+        "status" : "success",
+        "step" : "connection"
+      }
+    ]
+  },
+  "events" : [
+    {
+      "timestamp" : "09:07:26 28.10.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "timestamp" : "09:07:22 28.10.2025",
+      "message" : "New battery data received",
+      "type" : "Data Update"
+    },
+    {
+      "message" : "No device connected",
+      "timestamp" : "09:07:08 28.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "type" : "Connection",
+      "timestamp" : "09:07:08 28.10.2025"
+    },
+    {
+      "type" : "Data Update",
+      "message" : "New battery data received",
+      "timestamp" : "09:07:08 28.10.2025"
+    }
+  ],
+  "timestamp" : "09:07:26 28.10.2025"
+}
