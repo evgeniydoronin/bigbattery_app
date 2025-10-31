@@ -1,0 +1,186 @@
+{
+  "extendedBatteryInfo" : {
+    "cellVoltageMin" : 3.3289999961853027,
+    "cellVoltageStdDev" : 0.00055907695576802845,
+    "cellVoltageDelta" : 0.0020000934600830078,
+    "cellVoltageAverage" : 3.3302507400512695,
+    "tempMin" : 23,
+    "tempDelta" : 0,
+    "protectionStatus" : {
+      "overcurrent" : false,
+      "shortCircuit" : false,
+      "undervoltage" : false,
+      "overtemperature" : false,
+      "overvoltage" : false
+    },
+    "tempMax" : 23,
+    "cellVoltageMax" : 3.3310000896453857
+  },
+  "bluetoothInfo" : {
+    "peripheralName" : "BB-51.2V100Ah-0855",
+    "state" : "poweredOn",
+    "connectionAttempts" : 0,
+    "peripheralIdentifier" : "1997B63E-02F2-BB1F-C0DE-63B68D347427"
+  },
+  "systemInfo" : {
+    "isLowPowerMode" : false,
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0,
+    "batteryLevel" : 30
+  },
+  "events" : [
+    {
+      "type" : "Connection",
+      "timestamp" : "14:12:50 30.10.2025",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "14:12:50 30.10.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "14:12:50 30.10.2025",
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "type" : "Connection"
+    },
+    {
+      "message" : "New battery data received",
+      "timestamp" : "14:12:50 30.10.2025",
+      "type" : "Data Update"
+    }
+  ],
+  "timestamp" : "14:12:50 30.10.2025",
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "14:12:50 30.10.2025",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      },
+      {
+        "step" : "connection",
+        "timestamp" : "14:12:50 30.10.2025",
+        "status" : "success",
+        "message" : "Diagnostics screen launched"
+      },
+      {
+        "status" : "success",
+        "step" : "connection",
+        "timestamp" : "14:12:50 30.10.2025",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      }
+    ]
+  },
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "packetLoss" : 0,
+    "retries" : 0,
+    "timeouts" : 0
+  },
+  "rawDataInfo" : {
+    "lastReceivedPacket" : "B81E55420000000050000000000000006400000000000000560E5540B81E5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E5540B81E5540B81E55401B2F5540B81E5540B81E5540171717171717",
+    "packetHistory" : [
+      {
+        "data" : "B81E55420000000050000000000000006400000000000000560E5540B81E5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E55401B2F5540B81E5540B81E5540B81E55401B2F5540B81E5540B81E5540171717171717",
+        "timestamp" : "14:12:50 30.10.2025",
+        "parseResult" : "success"
+      }
+    ],
+    "parseErrors" : [
+
+    ]
+  },
+  "batteryInfo" : {
+    "cellTemps" : [
+      23,
+      23,
+      23,
+      23
+    ],
+    "tempPCB" : 23,
+    "voltage" : 53.279998779296875,
+    "current" : 0,
+    "tempEnv" : 23,
+    "soh" : 100,
+    "status" : "Standby",
+    "timestamp" : "14:12:50 30.10.2025",
+    "soc" : 80,
+    "cellCount" : 16,
+    "cellVoltages" : [
+      3.3289999961853027,
+      3.3299999237060547,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3299999237060547,
+      3.3299999237060547,
+      3.3310000896453857,
+      3.3299999237060547,
+      3.3299999237060547
+    ]
+  },
+  "deviceInfo" : {
+    "model" : "iPhone",
+    "name" : "iPhone",
+    "systemName" : "iOS",
+    "systemVersion" : "26.0"
+  },
+  "protocolInfo" : {
+    "currentValues" : {
+      "moduleId" : "ID 1",
+      "rs485Protocol" : "P02-LUX",
+      "canProtocol" : "P06-LUX"
+    },
+    "recentLogs" : [
+      "[14:12:49] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[14:12:49] [PROTOCOL MANAGER] ✅ CAN loaded: P06-LUX",
+      "[14:12:49] [QUEUE] ✅ getCAN completed in 2054ms",
+      "[14:12:49] [BLUETOOTH] ✅ Got control data response",
+      "[14:12:49] [BLUETOOTH] Is control data: true",
+      "[14:12:49] [BLUETOOTH] 📥 Received notification: 100470050b5030312d4752570000005030322d534c4b0000005030332d4459000000005030342d4d47520000005030352d5643540000005030362d4c55580000005030372d534d410000005030382d494e480000005030392d534f4c0000005031302d41464f0000005031312d5354550000002907",
+      "[14:12:49] [BLUETOOTH] 📡 Started observing notifications...",
+      "[14:12:49] [BLUETOOTH] 📤 Writing control data: 10040072c5",
+      "[14:12:49] [QUEUE] 🚀 Executing getCAN",
+      "[14:12:48] [PROTOCOL MANAGER] ✅ RS485 loaded: P02-LUX",
+      "[14:12:48] [QUEUE] ✅ getRS485 completed in 1452ms",
+      "[14:12:48] [BLUETOOTH] ✅ Got control data response",
+      "[14:12:48] [BLUETOOTH] Is control data: true",
+      "[14:12:48] [BLUETOOTH] 📥 Received notification: 10033401055030312d4752570000005030322d4c55580000005030332d5343480000005030342d494e480000005030352d564f4c0000003041",
+      "[14:12:48] [QUEUE] ⏳ Waiting 498ms before getCAN",
+      "[14:12:48] [BLUETOOTH] 📡 Started observing notifications...",
+      "[14:12:48] [BLUETOOTH] 📤 Writing control data: 10030070f5",
+      "[14:12:48] [QUEUE] 🚀 Executing getRS485",
+      "[14:12:48] [PROTOCOL MANAGER] ✅ Module ID loaded: ID 1",
+      "[14:12:48] [QUEUE] ✅ getModuleId completed in 927ms",
+      "[14:12:48] [BLUETOOTH] ✅ Got control data response",
+      "[14:12:48] [BLUETOOTH] Is control data: true",
+      "[14:12:48] [BLUETOOTH] 📥 Received notification: 100201016574",
+      "[14:12:48] [QUEUE] ⏳ Waiting 498ms before getRS485",
+      "[14:12:48] [BLUETOOTH] 📡 Started observing notifications...",
+      "[14:12:48] [BLUETOOTH] 📤 Writing control data: 1002007165",
+      "[14:12:48] [QUEUE] 🚀 Executing getModuleId",
+      "[14:12:48] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[14:12:48] [PROTOCOL MANAGER] ✅ CAN loaded: P06-LUX",
+      "[14:12:48] [QUEUE] ✅ getCAN completed in 1235ms"
+    ],
+    "statistics" : {
+      "successes" : 11,
+      "warnings" : 0,
+      "totalLogs" : 30,
+      "errors" : 0
+    },
+    "lastUpdateTime" : "14:12:50 30.10.2025"
+  },
+  "appInfo" : {
+    "build" : "34",
+    "version" : "1.4.1"
+  }
+}

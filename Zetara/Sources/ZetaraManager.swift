@@ -452,6 +452,14 @@ public class ZetaraManager: NSObject {
     public func refreshPeripheralInstanceIfNeeded() {
         protocolDataManager.logProtocolEvent("[LAUNCH] Checking for cached peripheral to refresh")
 
+        // Build 35: Guard against refresh during disconnect to prevent crash
+        // Skip refresh if peripheral is currently disconnecting
+        if let currentPeripheral = try? connectedPeripheralSubject.value(),
+           currentPeripheral.state == .disconnecting {
+            protocolDataManager.logProtocolEvent("[LAUNCH] ⚠️ Skip refresh - peripheral disconnecting")
+            return
+        }
+
         guard let cachedUUID = cachedDeviceUUID,
               let uuidObj = UUID(uuidString: cachedUUID) else {
             protocolDataManager.logProtocolEvent("[LAUNCH] No cached peripheral UUID found")
