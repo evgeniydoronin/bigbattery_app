@@ -355,8 +355,8 @@ class SettingsViewController: UIViewController {
         disconnectHandlerDisposable?.dispose()
         disconnectHandlerDisposable = nil
 
-        // Отменяем все текущие подписки
-        disposeBag = DisposeBag()
+        // Build 36: Keep disposeBag alive to maintain protocol subscriptions
+        // This allows Settings screen to receive protocol updates after reconnect
     }
 
     // MARK: - Setup ScrollView

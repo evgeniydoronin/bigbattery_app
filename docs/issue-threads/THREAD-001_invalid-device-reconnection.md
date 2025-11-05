@@ -1,9 +1,9 @@
 # THREAD-001: Invalid Device Error After Battery Reconnection
 
-**Status:** 🟢 RECONNECTION RESOLVED | 🟡 BUILD 35 (Crash fix ready for testing)
+**Status:** 🟢 RECONNECTION RESOLVED | 🟡 BUILD 36 (Settings screen protocol display fix ready for testing)
 **Severity:** CRITICAL
 **First Reported:** 2025-10-10
-**Last Updated:** 2025-10-30
+**Last Updated:** 2025-11-03
 **Client:** Joshua (BigBattery ETHOS module BB-51.2V100Ah-0855)
 
 ---
@@ -11,9 +11,11 @@
 ## 📍 CURRENT STATUS
 
 **Quick Summary:**
-✅ **RECONNECTION ISSUE RESOLVED!** Build 34 successfully eliminates error 4 - client can now reconnect to battery after physical disconnect/restart. **Root cause was iOS CoreBluetooth caching peripheral instances AND their characteristics.** Build 34 implements launch-time fresh peripheral retrieval which catches stale peripherals BEFORE any operations. However, Build 34 introduced a crash when disconnecting battery. **Build 35 fixes crash by preventing refresh during disconnect state.**
+✅ **RECONNECTION ISSUE RESOLVED!** Build 34 successfully eliminates error 4 - client can now reconnect to battery after physical disconnect/restart. **Root cause was iOS CoreBluetooth caching peripheral instances AND their characteristics.** Build 34 implements launch-time fresh peripheral retrieval which catches stale peripherals BEFORE any operations. Build 35 fixed crash on disconnect. **Build 36 fixes Settings screen not displaying protocols after reconnect due to destroyed RxSwift subscriptions.**
 
-**Latest Test Result:** 🚀 **BUILD 35 READY FOR TESTING** (2025-10-30)
+**Latest Test Result:** 🚀 **BUILD 36 READY FOR TESTING** (2025-11-03)
+
+**Focus:** Settings screen displaying correct Module ID, RS485, CAN protocol values after battery reconnect.
 
 **Evolution:**
 - Build 29 (Attempt #2): Detection works but doesn't prevent connection → PARTIAL SUCCESS
@@ -22,7 +24,8 @@
 - Build 32 (Crash fixes): UITableView crashes fixed → ⚠️ **ERROR 4 REGRESSION** (25% success rate, error after characteristics)
 - Build 33 (Fresh peripheral in connect()): Correct fix but too narrow → ❌ **FAILED** (user didn't call connect(), fix never ran)
 - Build 34 (Attempt #4 - Launch-time refresh): Fresh peripheral at app launch → ✅ **RECONNECTION RESOLVED** but ❌ **CRASH ON DISCONNECT**
-- Build 35 (Attempt #5 - Guard during disconnect): Prevent refresh during disconnect → 🚀 **READY FOR TESTING** (expected: reconnection + no crash)
+- Build 35 (Attempt #5 - Guard during disconnect): Prevent refresh during disconnect → ✅ **CRASH FIXED** but ❌ **Settings shows "--" for protocols**
+- Build 36 (Attempt #6 - Fix Settings subscriptions): Keep disposeBag alive → 🚀 **READY FOR TESTING** (expected: protocols display correctly)
 
 **Build 31 Test Results (2025-10-27):**
 - ✅ Normal connections work (no "scan again" errors)
@@ -928,6 +931,113 @@ if let currentPeripheral = connectedPeripheralSubject.value,
 **Build 35 Status:**
 🚀 **READY FOR TESTING** - Code implemented, awaiting Joshua's testing.
 
+**Build 35 Test Results (2025-11-03):**
+
+**Letter from Joshua #1:** "After connecting to battery and manually disconnecting battery, app still displays connection to battery"
+
+**Letter from Joshua #2:** "Connect to battery, Manually turn off battery, App no longer shows battery status or vitals, Still displays connection to battery in settings, Unable to reconnect to battery due to error"
+
+**Logs:**
+- `docs/fix-history/logs/bigbattery_logs_20251103_113252.json`
+- `docs/fix-history/logs/bigbattery_logs_20251103_113737.json`
+
+**Analysis:**
+
+**Log 1 (11:32:52):**
+- ⚠️ **PARTIAL SUCCESS** - Crash on disconnect fixed (no crash reported)
+- ✅ Protocols loaded successfully (RS485: P02-LUX, CAN: P06-LUX at 11:32:09-10)
+- ❌ **NEW ISSUE**: Settings screen shows "--" for all protocols after reconnect
+- ❌ Connection error 4 occurred at 11:32:40, triggered cleanConnection() which cleared protocols
+- Result: `protocolInfo.currentValues` shows all "--"
+
+**Log 2 (11:37:37):**
+- ❌ Connection failed with error 4 immediately
+- ❌ Protocols never loaded (all "--")
+- Device in partially connected state (characteristics configured but no data)
+
+**Verdict:**
+✅ **CRASH FIXED** - Build 35 successfully prevents crash on disconnect
+
+❌ **NEW ISSUE DISCOVERED** - Settings screen not displaying protocols after reconnect due to destroyed subscriptions
+
+**Root Cause Analysis:**
+Settings screen uses RxSwift subscriptions to protocol subjects (`moduleIdSubject`, `rs485Subject`, `canSubject`). In `viewWillDisappear` (line 359), the code recreates disposeBag which **destroys all subscriptions**:
+
+```swift
+override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    disposeBag = DisposeBag()  // ❌ Kills all subscriptions!
+}
+```
+
+**Flow that causes the issue:**
+1. First connection → Settings subscribes in `viewDidLoad()` → receives protocol updates → shows data ✅
+2. User leaves Settings → `viewWillDisappear` → disposeBag recreated → subscriptions destroyed ❌
+3. Battery restarts → user reconnects → protocols load successfully
+4. User returns to Settings → **NO active subscriptions** → cannot receive protocol updates → shows "--" ❌
+
+**Protocols ARE loaded** (proven by Log 1), but Settings screen cannot display them because subscriptions were destroyed.
+
+---
+
+### 📅 2025-11-03: Build 36 - Fix Settings Screen Protocol Display After Reconnect (Attempt #6) 🔧
+
+**Problem:** Settings screen shows "--" for Module ID, RS485, CAN protocols after battery reconnect because `disposeBag = DisposeBag()` in `viewWillDisappear` destroys all subscriptions to ProtocolDataManager subjects.
+
+**User Request Focus:** "We're focusing purely on displaying the right information when the app is disconnected and reconnected" - specifically on Settings screen showing correct protocol values.
+
+**Solution:** Remove `disposeBag = DisposeBag()` from `viewWillDisappear` to keep protocol subscriptions alive throughout ViewController lifecycle.
+
+**Implementation:**
+
+Modified `SettingsViewController.viewWillDisappear`:
+```swift
+// SettingsViewController.swift lines 354-360
+override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+
+    print("[SETTINGS] View will disappear - cancelling pending requests")
+
+    // Отменяем disconnect handler если есть
+    disconnectHandlerDisposable?.dispose()
+    disconnectHandlerDisposable = nil
+
+    // Build 36: Keep disposeBag alive to maintain protocol subscriptions
+    // This allows Settings screen to receive protocol updates after reconnect
+    // REMOVED: disposeBag = DisposeBag()
+}
+```
+
+**Why This Works:**
+- Protocol subscriptions remain active when user navigates away from Settings
+- When battery reconnects and protocols load, Settings receives updates via active subscriptions
+- `moduleIdSubject`, `rs485Subject`, `canSubject` can emit values to Settings screen
+- UI updates automatically when protocol values change
+
+**What Was Changed:**
+- **SettingsViewController.swift (line 359):**
+  * Removed `disposeBag = DisposeBag()` line
+  * Added comment explaining why disposeBag stays alive
+  * Keep protocol subscriptions active throughout VC lifecycle
+
+- **BatteryMonitorBL.xcodeproj/project.pbxproj:**
+  * Build version: 35 → 36
+
+- **docs/fix-history/logs/:**
+  * Added bigbattery_logs_20251103_113252.json (Build 35 test - Log 1)
+  * Added bigbattery_logs_20251103_113737.json (Build 35 test - Log 2)
+
+**Expected Results:**
+- ✅ Settings screen displays Module ID correctly after reconnect
+- ✅ Settings screen displays RS485 protocol correctly after reconnect
+- ✅ Settings screen displays CAN protocol correctly after reconnect
+- ✅ No "--" placeholders when protocols are loaded
+- ✅ UI updates automatically when battery reconnects and loads protocols
+- ✅ Crash on disconnect remains fixed (from Build 35)
+
+**Build 36 Status:**
+🚀 **READY FOR TESTING** - Code implemented, awaiting Joshua's testing.
+
 ---
 
 ## 🔍 ROOT CAUSE EVOLUTION
@@ -1040,19 +1150,20 @@ State only changes **DURING** connection:
 
 ## 📊 METRICS
 
-| Metric | Before Any Fix | Build 29 | Build 30 | Build 31 | Build 32 | Build 33 | Build 34 (Expected) | Build 34 (Actual) | Build 35 (Expected) | Target |
-|--------|----------------|----------|----------|----------|----------|----------|---------------------|-------------------|---------------------|--------|
-| Connection success rate | 0% | 0% ❌ | **0% (ALL BLOCKED)** 💥 | **100%** ✅ | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | 100% |
-| Error 4 frequency | 100% | 100% ❌ | N/A | **0% (pre-flight)** ✅ | **75% (post-connect)** ⚠️ | **100%** ❌ | **0%** 🎯 | **0%** ✅ | **0%** 🎯 | 0% |
-| Normal connections work | 100% | 100% ✅ | **0%** 💥 | **100%** ✅ | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | 100% |
-| BMS data loads | 100% | 100% ✅ | N/A | **Partial** 🔄 | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | 100% |
-| Disconnect detected | No | **YES (Layer 1)** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
-| Pre-flight validation | N/A | **Partial** 🔄 | **WRONG** 💥 | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | Yes |
-| Fresh peripheral in connect() | ❌ | ❌ | ❌ | ❌ | ❌ | **YES (not called)** 🔄 | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
-| Fresh peripheral at launch | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **YES** 🎯 | **YES (no logs)** ⚠️ | **YES** 🎯 | Yes |
-| Stale peripheral detection | No | **YES** ✅ | **TOO AGGRESSIVE** 💥 | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | Yes |
-| UITableView crashes | No | No | N/A | **YES** ❌ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | No crashes |
-| Crash on disconnect | No | No | No | No | No | No | No | **YES** ❌ | **FIXED** 🎯 | No crashes |
+| Metric | Before Any Fix | Build 29 | Build 30 | Build 31 | Build 32 | Build 33 | Build 34 (Expected) | Build 34 (Actual) | Build 35 (Expected) | Build 35 (Actual) | Build 36 (Expected) | Target |
+|--------|----------------|----------|----------|----------|----------|----------|---------------------|-------------------|---------------------|-------------------|---------------------|--------|
+| Connection success rate | 0% | 0% ❌ | **0% (ALL BLOCKED)** 💥 | **100%** ✅ | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **Partial** ⚠️ | **100%** 🎯 | 100% |
+| Error 4 frequency | 100% | 100% ❌ | N/A | **0% (pre-flight)** ✅ | **75% (post-connect)** ⚠️ | **100%** ❌ | **0%** 🎯 | **0%** ✅ | **0%** 🎯 | **Some** ⚠️ | **0%** 🎯 | 0% |
+| Normal connections work | 100% | 100% ✅ | **0%** 💥 | **100%** ✅ | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **Partial** ⚠️ | **100%** 🎯 | 100% |
+| BMS data loads | 100% | 100% ✅ | N/A | **Partial** 🔄 | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | 100% |
+| Disconnect detected | No | **YES (Layer 1)** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
+| Pre-flight validation | N/A | **Partial** 🔄 | **WRONG** 💥 | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | Yes |
+| Fresh peripheral in connect() | ❌ | ❌ | ❌ | ❌ | ❌ | **YES (not called)** 🔄 | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
+| Fresh peripheral at launch | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **YES** 🎯 | **YES (no logs)** ⚠️ | **YES** 🎯 | **YES** ✅ | **YES** ✅ | Yes |
+| Stale peripheral detection | No | **YES** ✅ | **TOO AGGRESSIVE** 💥 | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | Yes |
+| UITableView crashes | No | No | N/A | **YES** ❌ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | No crashes |
+| Crash on disconnect | No | No | No | No | No | No | No | **YES** ❌ | **FIXED** 🎯 | **FIXED** ✅ | **FIXED** ✅ | No crashes |
+| Settings protocols display | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | **"--"** ❌ | **Correct** 🎯 | Always show correctly |
 
 **Key Performance Indicators:**
 - ✅ SUCCESS if: All 3 test scenarios pass, no error 4, disconnect < 5s

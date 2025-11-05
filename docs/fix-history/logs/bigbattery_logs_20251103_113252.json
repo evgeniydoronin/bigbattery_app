@@ -1,0 +1,147 @@
+{
+  "deviceInfo" : {
+    "systemVersion" : "26.0",
+    "systemName" : "iOS",
+    "name" : "iPhone",
+    "model" : "iPhone"
+  },
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "35"
+  },
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "rawDataInfo" : {
+    "packetHistory" : [
+      {
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "parseResult" : "success",
+        "timestamp" : "11:32:52 03.11.2025"
+      }
+    ],
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000"
+  },
+  "events" : [
+    {
+      "timestamp" : "11:32:51 03.11.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "11:32:51 03.11.2025",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Data Update",
+      "timestamp" : "11:32:51 03.11.2025",
+      "message" : "New battery data received"
+    }
+  ],
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "retries" : 0,
+    "timeouts" : 0,
+    "packetLoss" : 0
+  },
+  "protocolInfo" : {
+    "recentLogs" : [
+      "[11:32:41] [CONNECTION] Connection state cleaned",
+      "[11:32:41] [CONNECTION] Cached device UUID cleared",
+      "[11:32:41] [CONNECTION] All Bluetooth characteristics cleared",
+      "[11:32:41] [CONNECTION] Scanned peripherals cleared",
+      "[11:32:41] [PROTOCOL MANAGER] Clearing all protocols",
+      "[11:32:41] [CONNECTION] BMS data cleared",
+      "[11:32:41] [CONNECTION] 🛑 BMS timer stopped",
+      "[11:32:41] [QUEUE] Request queue cleared",
+      "[11:32:41] [CONNECTION] Cleaning connection state",
+      "[11:32:41] [CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!",
+      "[11:32:40] [CONNECT] ❌ Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[11:32:21] [HEALTH] Periodic check (tick 10) - Peripheral state: 2",
+      "[11:32:10] [PROTOCOL MANAGER] 🎉 All protocols loaded successfully!",
+      "[11:32:10] [PROTOCOL MANAGER] ✅ CAN loaded: P06-LUX",
+      "[11:32:10] [QUEUE] ✅ getCAN completed in 2025ms",
+      "[11:32:10] [BLUETOOTH] ✅ Got control data response",
+      "[11:32:10] [BLUETOOTH] Is control data: true",
+      "[11:32:10] [BLUETOOTH] 📥 Received notification: 100470050b5030312d4752570000005030322d534c4b0000005030332d4459000000005030342d4d47520000005030352d5643540000005030362d4c55580000005030372d534d410000005030382d494e480000005030392d534f4c0000005031302d41464f0000005031312d5354550000002907",
+      "[11:32:10] [BMS] Validation - CRC: true, isBMSData: false",
+      "[11:32:10] [BMS] 📥 Received BMS response: 100470050b5030312d4752570000005030322d534c4b0000005030332d4459000000005030342d4d47520000005030352d5643540000005030362d4c55580000005030372d534d410000005030382d494e480000005030392d534f4c0000005031302d41464f0000005031312d5354550000002907",
+      "[11:32:09] [BLUETOOTH] 📡 Started observing notifications...",
+      "[11:32:09] [BLUETOOTH] 📤 Writing control data: 10040072c5",
+      "[11:32:09] [QUEUE] 🚀 Executing getCAN",
+      "[11:32:09] [PROTOCOL MANAGER] ✅ RS485 loaded: P02-LUX",
+      "[11:32:09] [QUEUE] ✅ getRS485 completed in 1422ms",
+      "[11:32:09] [BLUETOOTH] ✅ Got control data response",
+      "[11:32:09] [BLUETOOTH] Is control data: true",
+      "[11:32:09] [BLUETOOTH] 📥 Received notification: 10033401055030312d4752570000005030322d4c55580000005030332d5343480000005030342d494e480000005030352d564f4c0000003041",
+      "[11:32:09] [BMS] Validation - CRC: true, isBMSData: false",
+      "[11:32:09] [BMS] 📥 Received BMS response: 10033401055030312d4752570000005030322d4c55580000005030332d5343480000005030342d494e480000005030352d564f4c0000003041"
+    ],
+    "currentValues" : {
+      "rs485Protocol" : "--",
+      "moduleId" : "--",
+      "canProtocol" : "--"
+    },
+    "lastUpdateTime" : "11:32:52 03.11.2025",
+    "statistics" : {
+      "errors" : 1,
+      "warnings" : 1,
+      "totalLogs" : 30,
+      "successes" : 6
+    }
+  },
+  "timestamp" : "11:32:52 03.11.2025",
+  "batteryInfo" : {
+    "voltage" : 0,
+    "cellCount" : 0,
+    "soh" : 0,
+    "current" : 0,
+    "timestamp" : "11:32:52 03.11.2025",
+    "cellTemps" : [
+
+    ],
+    "tempPCB" : 0,
+    "soc" : 0,
+    "cellVoltages" : [
+
+    ],
+    "status" : "Standby",
+    "tempEnv" : 0
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "undervoltage" : false,
+      "overvoltage" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false,
+      "overcurrent" : false
+    }
+  },
+  "systemInfo" : {
+    "availableMemory" : 5910085632,
+    "isLowPowerMode" : false,
+    "batteryLevel" : 80,
+    "cpuUsage" : 0
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "11:32:51 03.11.2025",
+        "step" : "connection",
+        "message" : "No device connected",
+        "status" : "success"
+      },
+      {
+        "status" : "success",
+        "message" : "Diagnostics screen launched",
+        "timestamp" : "11:32:51 03.11.2025",
+        "step" : "connection"
+      }
+    ]
+  }
+}
