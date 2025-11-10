@@ -1,0 +1,163 @@
+{
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "step" : "connection",
+        "timestamp" : "09:11:15 07.11.2025",
+        "message" : "No device connected",
+        "status" : "success"
+      },
+      {
+        "step" : "connection",
+        "message" : "No device connected",
+        "status" : "success",
+        "timestamp" : "09:11:13 07.11.2025"
+      },
+      {
+        "step" : "connection",
+        "message" : "Diagnostics screen launched",
+        "status" : "success",
+        "timestamp" : "09:11:13 07.11.2025"
+      }
+    ]
+  },
+  "deviceInfo" : {
+    "systemVersion" : "26.0",
+    "systemName" : "iOS",
+    "name" : "iPhone",
+    "model" : "iPhone"
+  },
+  "batteryInfo" : {
+    "tempEnv" : 0,
+    "soh" : 0,
+    "status" : "Standby",
+    "current" : 0,
+    "tempPCB" : 0,
+    "voltage" : 0,
+    "cellTemps" : [
+
+    ],
+    "cellVoltages" : [
+
+    ],
+    "soc" : 0,
+    "timestamp" : "09:11:16 07.11.2025",
+    "cellCount" : 0
+  },
+  "appInfo" : {
+    "build" : "36",
+    "version" : "1.4.1"
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "undervoltage" : false,
+      "overcurrent" : false,
+      "shortCircuit" : false,
+      "overvoltage" : false,
+      "overtemperature" : false
+    }
+  },
+  "events" : [
+    {
+      "timestamp" : "09:11:15 07.11.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "message" : "No device connected",
+      "timestamp" : "09:11:15 07.11.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "09:11:13 07.11.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "type" : "Connection",
+      "timestamp" : "09:11:13 07.11.2025",
+      "message" : "Diagnostics screen launched"
+    },
+    {
+      "message" : "New battery data received",
+      "timestamp" : "09:11:13 07.11.2025",
+      "type" : "Data Update"
+    }
+  ],
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "timeouts" : 0,
+    "packetLoss" : 0,
+    "retries" : 0
+  },
+  "systemInfo" : {
+    "isLowPowerMode" : false,
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0,
+    "batteryLevel" : 70
+  },
+  "timestamp" : "09:11:16 07.11.2025",
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "protocolInfo" : {
+    "statistics" : {
+      "errors" : 2,
+      "successes" : 1,
+      "warnings" : 0,
+      "totalLogs" : 30
+    },
+    "lastUpdateTime" : "09:11:16 07.11.2025",
+    "recentLogs" : [
+      "[09:11:15] [CONNECTION] Connection state cleaned",
+      "[09:11:15] [CONNECTION] Cached device UUID cleared",
+      "[09:11:15] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:11:15] [CONNECTION] Scanned peripherals cleared",
+      "[09:11:15] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:11:15] [CONNECTION] BMS data cleared",
+      "[09:11:15] [CONNECTION] 🛑 BMS timer stopped",
+      "[09:11:15] [QUEUE] Request queue cleared",
+      "[09:11:15] [CONNECTION] Cleaning connection state",
+      "[09:11:15] [BMS] ❌ No peripheral\/characteristics available",
+      "[09:11:15] [BMS] Device connected: false",
+      "[09:11:15] [BMS] 📡 getBMSData() called",
+      "[09:11:15] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[09:11:13] [CONNECTION] Connection state cleaned",
+      "[09:11:13] [CONNECTION] Cached device UUID cleared",
+      "[09:11:13] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:11:13] [CONNECTION] Scanned peripherals cleared",
+      "[09:11:13] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:11:13] [CONNECTION] BMS data cleared",
+      "[09:11:13] [CONNECTION] 🛑 BMS timer stopped",
+      "[09:11:13] [QUEUE] Request queue cleared",
+      "[09:11:13] [CONNECTION] Cleaning connection state",
+      "[09:11:13] [BMS] ❌ No peripheral\/characteristics available",
+      "[09:11:13] [BMS] Device connected: false",
+      "[09:11:13] [BMS] 📡 getBMSData() called",
+      "[09:11:13] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[09:11:06] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:11:06] [CONNECTION] Notify UUID: 1007",
+      "[09:11:06] [CONNECTION] Write UUID: 1008",
+      "[09:11:06] [CONNECTION] ✅ Characteristics configured"
+    ],
+    "currentValues" : {
+      "canProtocol" : "--",
+      "moduleId" : "--",
+      "rs485Protocol" : "--"
+    }
+  },
+  "rawDataInfo" : {
+    "packetHistory" : [
+      {
+        "parseResult" : "success",
+        "timestamp" : "09:11:16 07.11.2025",
+        "data" : "0000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "parseErrors" : [
+
+    ]
+  }
+}
