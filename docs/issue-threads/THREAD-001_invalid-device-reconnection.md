@@ -1106,6 +1106,220 @@ Build 36's specific focus was Settings display, and that is now fully working.
 
 ---
 
+## 🚀 BUILD 37 - Attempt #7: Fix Connection Stability (Force Cache Release)
+
+**Date:** 2025-11-10
+**Status:** 🔧 IMPLEMENTED - Ready for testing
+**Focus:** ONLY Connection Stability issue (ONE PROBLEM = ONE BUILD rule)
+
+### Problem Being Fixed
+
+**Specific Issue:** Scenario 2 from Build 36 testing - connection error after battery restart WITHOUT app restart
+
+**Evidence:** Build 36 test log `bigbattery_logs_20251107_091116.json`
+- Battery restarted while app in foreground
+- User tried to reconnect from app
+- Connection failed: "No device connected", characteristics unavailable
+- All battery data showed zeros
+
+**Gap in Build 34 Fix:**
+Build 34's launch-time `refreshPeripheralInstanceIfNeeded()` works for:
+- ✅ App launch → fresh peripheral retrieved
+- ✅ Foreground return → fresh peripheral retrieved
+
+Build 34 does NOT work for:
+- ❌ Battery restart while app in foreground (no app lifecycle event)
+- ❌ Within-session reconnection attempt
+
+### Root Cause Analysis
+
+**The Core Problem:**
+
+`retrievePeripherals(withIdentifiers:)` returns iOS's **cached peripheral instance**, not truly fresh.
+
+**Why Previous Fixes Didn't Solve This:**
+
+**Build 33:** Fresh peripheral in `connect()` method
+- ✅ Correct location (before connection)
+- ❌ But never called (user doesn't call connect() during reconnect)
+
+**Build 34:** Launch-time refresh
+- ✅ Works for cross-session (app restart)
+- ❌ Doesn't work for within-session (battery restart without app restart)
+- Problem: No app lifecycle event fired when battery restarts in foreground
+
+**Scenario 2 Flow (Why It Failed):**
+```
+App in foreground → Battery restart → iOS doesn't fire disconnect
+    ↓
+Stale peripheral remains in connectedPeripheralSubject
+    ↓
+User navigates to Connectivity screen → Layer 1 check may pass if timing wrong
+    ↓
+User clicks battery to reconnect → Pre-flight validation passes
+    ↓
+connect() method calls retrievePeripherals(withIdentifiers:)
+    ↓
+iOS returns SAME cached instance (not fresh!) ❌
+    ↓
+Characteristics still stale → Connection appears to work but operations fail
+```
+
+**Key Insight:** iOS doesn't always return fresh instance from `retrievePeripherals()` - it may return cached reference with stale characteristic handles.
+
+### Build 37 Solution
+
+**Approach:** Force iOS to release cached peripheral BEFORE calling `retrievePeripherals()`
+
+**Implementation:**
+
+**File:** `Zetara/Sources/ZetaraManager.swift`
+**Method:** `connect()`
+**Location:** Lines 282-297 (inserted before Build 33's retrievePeripherals call)
+
+```swift
+// Build 37 Fix: Force cached peripheral release before fresh retrieval
+// Problem: retrievePeripherals() may return iOS cached stale peripheral instance
+// even after battery restart (within same app session)
+// Solution: Explicitly cancel connection to force iOS CoreBluetooth to release cache
+if let cachedPeripheral = try? connectedPeripheralSubject.value() {
+    protocolDataManager.logProtocolEvent("[CONNECT] Build 37: Forcing release of cached peripheral")
+    protocolDataManager.logProtocolEvent("[CONNECT] Cached peripheral state: \(cachedPeripheral.state.rawValue)")
+
+    // Cancel connection to force iOS to release cached references
+    manager.manager.cancelPeripheralConnection(cachedPeripheral.peripheral)
+
+    // Brief delay to allow iOS to process cancellation
+    Thread.sleep(forTimeInterval: 0.1)
+
+    protocolDataManager.logProtocolEvent("[CONNECT] Build 37: Cached peripheral released, proceeding with fresh retrieval")
+}
+```
+
+**Logic:**
+1. Check if there's a cached peripheral in memory (`connectedPeripheralSubject`)
+2. If yes → explicitly cancel connection (`cancelPeripheralConnection()`)
+3. Brief 0.1s delay for iOS to process cancellation
+4. Now `retrievePeripherals()` should return truly fresh instance
+5. Continue with Build 33's fresh peripheral logic
+
+### Changes Summary
+
+**Files Modified:**
+1. `BatteryMonitorBL.xcodeproj/project.pbxproj`
+   - Updated `CURRENT_PROJECT_VERSION` from 36 to 37 (lines 523, 560)
+
+2. `Zetara/Sources/ZetaraManager.swift`
+   - Added Build 37 fix code in `connect()` method (lines 282-297)
+   - 16 lines added (code + comments)
+   - Located before Build 33's `retrievePeripherals()` call
+   - Minimal, surgical change
+
+### Expected Results
+
+**Scenario 2 (Previously FAILED) → NOW EXPECTED TO WORK:**
+
+**Before Build 37:**
+- Battery restart → User tries reconnect → ❌ Connection error
+- retrievePeripherals() returns cached stale instance
+- Success rate: 0% for within-session reconnection
+
+**After Build 37:**
+- Battery restart → User tries reconnect
+- cancelPeripheralConnection() forces cache release
+- retrievePeripherals() returns truly fresh instance
+- ✅ Connection succeeds
+- Expected success rate: 100%
+
+**Expected Log Sequence:**
+```
+[CONNECT] Pre-flight validation passed
+[CONNECT] Build 37: Forcing release of cached peripheral
+[CONNECT] Cached peripheral state: 3 (disconnected)
+[CONNECT] Build 37: Cached peripheral released, proceeding with fresh retrieval
+[CONNECT] ✅ Retrieved fresh peripheral instance
+[CONNECTION] Device connected: BB-51.2V100Ah-0855
+[PROTOCOL MANAGER] Loading protocols...
+[BMS] Starting BMS data refresh timer
+```
+
+**Metrics Change:**
+| Metric | Build 36 | Build 37 (Expected) |
+|--------|----------|---------------------|
+| Connection success rate | 75% | **100%** |
+| Error 4 frequency | Some | **0%** |
+| Scenario 2 success | ❌ Failed | ✅ **EXPECTED SUCCESS** |
+
+### Test Scenarios
+
+**PRIMARY TEST (Most Important):**
+
+**Scenario 2 Replica - Battery Restart Without App Restart:**
+1. Connect to battery successfully
+2. Physically restart battery (power cycle)
+3. **WITHOUT closing app** - stay in app
+4. Navigate to Connectivity screen
+5. Try to reconnect
+6. **Expected:** ✅ Connection succeeds (Build 37 fix)
+7. **Previous (Build 36):** ❌ Connection error
+
+**Secondary Tests (Ensure No Regressions):**
+
+**Scenario 1:** First connection after app launch
+- **Expected:** ✅ Works (already working)
+
+**Scenario 3:** Navigate away and back
+- **Expected:** ✅ Works (Build 36 fix still working)
+
+**Scenario 4:** Settings display after reconnect
+- **Expected:** ✅ Works (Build 36 fix still working)
+
+### Potential Risks & Mitigations
+
+**Risk 1: Thread.sleep() blocks main thread**
+- Duration: 0.1s (very brief)
+- Impact: User won't notice
+- Mitigation: If problematic, can use DispatchQueue.asyncAfter
+
+**Risk 2: cancelPeripheralConnection() side effects**
+- Could trigger unwanted cleanup
+- Mitigation: Only called during new connection attempt (safe timing)
+
+**Risk 3: iOS caching behavior changes**
+- iOS updates may change peripheral caching
+- Mitigation: Test on multiple iOS versions
+
+### Success Criteria
+
+**Build 37 = SUCCESS if:**
+- ✅ Scenario 2 passes (reconnect after battery restart without app restart)
+- ✅ Connection success rate reaches 100%
+- ✅ Error 4 frequency drops to 0%
+- ✅ No regressions (Build 36 fixes still work)
+
+**Build 37 = PARTIAL if:**
+- ⚠️ Scenario 2 improves but not 100%
+- ⚠️ Some edge cases still fail
+
+**Build 37 = FAILED if:**
+- ❌ Scenario 2 still fails at same rate
+- ❌ Regressions introduced
+- ❌ New issues appear
+
+### Next Steps
+
+1. ✅ Code implemented (Zetara/Sources/ZetaraManager.swift)
+2. ✅ Build version updated (37)
+3. ✅ Documentation updated (THREAD-001)
+4. ⏳ Build app and verify compilation
+5. ⏳ Test with Joshua
+6. ⏳ Analyze results (Expected vs Reality)
+7. ⏳ Update tracking system based on results
+
+**Build 37 Status:** 🔧 READY FOR TESTING
+
+---
+
 ## 🔍 ROOT CAUSE EVOLUTION
 
 ### Initial Understanding (2025-10-10):

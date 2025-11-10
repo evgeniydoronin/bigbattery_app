@@ -268,8 +268,10 @@ class DiagnosticsViewController: UIViewController {
         }
         
         // Обновляем таблицу, если она уже загружена
+        // Build 37: Use reloadData() instead of reloadSections() to avoid batch update inconsistency
+        // when bmsData changes concurrently via RxSwift subscriptions
         if isViewLoaded {
-            tableView.reloadSections(IndexSet(integer: Section.eventLogs.rawValue), with: .automatic)
+            tableView.reloadData()
         }
     }
     

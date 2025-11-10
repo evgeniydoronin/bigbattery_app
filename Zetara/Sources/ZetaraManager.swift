@@ -279,6 +279,23 @@ public class ZetaraManager: NSObject {
             }
         }
 
+        // Build 37 Fix: Force cached peripheral release before fresh retrieval
+        // Problem: retrievePeripherals() may return iOS cached stale peripheral instance
+        // even after battery restart (within same app session)
+        // Solution: Explicitly cancel connection to force iOS CoreBluetooth to release cache
+        if let cachedPeripheral = try? connectedPeripheralSubject.value() {
+            protocolDataManager.logProtocolEvent("[CONNECT] Build 37: Forcing release of cached peripheral")
+            protocolDataManager.logProtocolEvent("[CONNECT] Cached peripheral state: \(cachedPeripheral.state.rawValue)")
+
+            // Cancel connection to force iOS to release cached references
+            manager.manager.cancelPeripheralConnection(cachedPeripheral.peripheral)
+
+            // Brief delay to allow iOS to process cancellation
+            Thread.sleep(forTimeInterval: 0.1)
+
+            protocolDataManager.logProtocolEvent("[CONNECT] Build 37: Cached peripheral released, proceeding with fresh retrieval")
+        }
+
         // Build 33 Fix: Retrieve fresh peripheral instance to avoid iOS cached stale characteristics
         // Research: iOS caches services/characteristics at the peripheral object level
         // After disconnect, these cached references become invalid (error 4: invalidHandle)
