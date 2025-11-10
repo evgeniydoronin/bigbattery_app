@@ -4,6 +4,45 @@
 
 ---
 
+## ⚡ QUICK REFERENCE - Быстрый доступ к информации
+
+**Нужно быстро найти информацию о билдах и стабильности? Используй эти ресурсы:**
+
+### 📊 Build & Feature Tracking
+
+| Вопрос | Где искать | Время поиска |
+|--------|-----------|--------------|
+| "Что работает в Build 36?" | [BUILD-TRACKING.md](tracking/BUILD-TRACKING.md) | 30 сек |
+| "Последний стабильный билд?" | [STABLE-BUILDS.md](tracking/STABLE-BUILDS.md) | 10 сек |
+| "Когда Settings сломался?" | [REGRESSION-TIMELINE.md](tracking/REGRESSION-TIMELINE.md) | 1 мин |
+| "Как откатиться на working version?" | [STABLE-BUILDS.md](tracking/STABLE-BUILDS.md) - Rollback Scenarios | 30 сек |
+| "Детали проблемы reconnection?" | [THREAD-001](issue-threads/THREAD-001_invalid-device-reconnection.md) | 5-10 мин |
+
+### 🏷️ Git Tags для быстрого доступа
+
+```bash
+# Показать конкретный билд
+git show build-36
+
+# Сравнить два билда
+git diff build-35..build-36
+
+# Откатиться на билд
+git checkout build-35
+```
+
+**Доступные tags:** `build-29` through `build-36`
+
+### 🎯 Текущий статус (2025-11-10)
+
+- **Recommended Build:** Build 36 ✅
+- **Current Focus:** Connection Stability (Build 37 в разработке)
+- **Last Update:** 2025-11-07 - Settings display RESOLVED
+
+**Подробности:** См. [STABLE-BUILDS.md](tracking/STABLE-BUILDS.md)
+
+---
+
 ## 🎯 DECISION TREE - Определи тип задачи (30 секунд)
 
 **Прочитай сообщение клиента и определи:**
