@@ -262,7 +262,23 @@ extension ConnectivityViewController: UITableViewDataSource {
                 } else {
                     cell.textLabel?.text = ""
                 }
-                
+
+            case .unconnected where indexPath.section == 0:
+                // Build 38: Show "Reconnecting..." status when auto-reconnect is active
+                let hasStoredUUID = UserDefaults.standard.string(forKey: "com.zetara.lastConnectedPeripheralUUID") != nil
+                let autoReconnectEnabled = ZetaraManager.shared.autoReconnectEnabled
+
+                if hasStoredUUID && autoReconnectEnabled {
+                    cell.textLabel?.text = "Last Device"
+                    cell.detailTextLabel?.text = "Reconnecting..."
+                    cell.accessoryType = .none
+                } else {
+                    // Fallback to normal scanning display
+                    let device = self.scannedPeripherals[indexPath.row]
+                    cell.textLabel?.text = device.peripheral.name
+                    cell.accessoryType = .disclosureIndicator
+                }
+
             default:
                 let device = self.scannedPeripherals[indexPath.row]
                 cell.textLabel?.text = device.peripheral.name

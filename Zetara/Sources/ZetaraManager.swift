@@ -85,6 +85,24 @@ public class ZetaraManager: NSObject {
     // UUID текущего подключенного устройства (для проверки валидности)
     private var cachedDeviceUUID: String?
 
+    // MARK: - Build 38: Persistent Storage for Auto-Reconnect
+    // Persistent storage keys for auto-reconnection feature
+    private let lastConnectedUUIDKey = "com.zetara.lastConnectedPeripheralUUID"
+    private let autoReconnectEnabledKey = "com.zetara.autoReconnectEnabled"
+
+    // Auto-reconnect configuration (default: enabled)
+    // User can disable this in Settings if they don't want automatic reconnection
+    public var autoReconnectEnabled: Bool {
+        get {
+            // Default to true if not set (first launch or after update)
+            return UserDefaults.standard.object(forKey: autoReconnectEnabledKey) as? Bool ?? true
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: autoReconnectEnabledKey)
+            protocolDataManager.logProtocolEvent("[CONFIG] Auto-reconnect \(newValue ? "enabled" : "disabled")")
+        }
+    }
+
     public static let shared = ZetaraManager()
 
     private override init() {
@@ -109,17 +127,34 @@ public class ZetaraManager: NSObject {
 
         // Global disconnect handler (NOT tied to any ViewController lifecycle)
         // Follows Apple CoreBluetooth best practices for peripheral lifecycle management
+        // Build 38: Modified to enable auto-reconnect using persistent connection requests
         manager.observeDisconnect()
             .subscribe(onNext: { [weak self] (peripheral, error) in
+                guard let self = self else { return }
+
                 let peripheralName = peripheral.name ?? "Unknown"
-                self?.protocolDataManager.logProtocolEvent("[DISCONNECT] 🔌 Device disconnected: \(peripheralName)")
+                let peripheralUUID = peripheral.identifier.uuidString
+
+                self.protocolDataManager.logProtocolEvent("[DISCONNECT] 🔌 Device disconnected: \(peripheralName)")
+                self.protocolDataManager.logProtocolEvent("[DISCONNECT] UUID: \(peripheralUUID)")
 
                 if let error = error {
-                    self?.protocolDataManager.logProtocolEvent("[DISCONNECT] Reason: \(error.localizedDescription)")
+                    self.protocolDataManager.logProtocolEvent("[DISCONNECT] Reason: \(error.localizedDescription)")
+                } else {
+                    self.protocolDataManager.logProtocolEvent("[DISCONNECT] Reason: User disconnect or peripheral powered off")
                 }
 
-                // Автоматическая очистка при отключении
-                self?.cleanConnection()
+                // Build 38: CRITICAL CHANGE - Partial cleanup instead of full
+                // This preserves UUID for auto-reconnect capability
+                self.cleanConnectionPartial()
+
+                // Attempt auto-reconnect if enabled (default: true)
+                if self.autoReconnectEnabled {
+                    self.protocolDataManager.logProtocolEvent("[RECONNECT] Auto-reconnect enabled - attempting reconnection")
+                    self.attemptAutoReconnect(peripheralUUID: peripheralUUID)
+                } else {
+                    self.protocolDataManager.logProtocolEvent("[RECONNECT] Auto-reconnect disabled - manual reconnection required")
+                }
             })
             .disposed(by: disposeBag)
 
@@ -360,9 +395,12 @@ public class ZetaraManager: NSObject {
                             self?.protocolDataManager.logProtocolEvent("[CONNECTION] Notify UUID: \(notifyCharacteristic.uuid.uuidString)")
 
                             // Сохраняем UUID подключенного устройства (using fresh peripheral)
+                            // Build 38: Save BOTH in memory AND persistent storage for auto-reconnect
                             self?.cachedDeviceUUID = freshPeripheral.identifier.uuidString
+                            UserDefaults.standard.set(freshPeripheral.identifier.uuidString, forKey: self!.lastConnectedUUIDKey)
                             print("[CONNECTION] Saved device UUID: \(freshPeripheral.identifier.uuidString)")
-                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] Device UUID: \(freshPeripheral.identifier.uuidString)")
+                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] Device UUID saved (memory + persistent storage)")
+                            self?.protocolDataManager.logProtocolEvent("[CONNECTION] UUID: \(freshPeripheral.identifier.uuidString)")
 
                             observer.onNext(freshPeripheral)
 
@@ -422,7 +460,9 @@ public class ZetaraManager: NSObject {
             }
         }
 
-        protocolDataManager.logProtocolEvent("[CONNECTION] Cleaning connection state")
+        // Build 38: Full cleanup is MANUAL disconnect (not auto-reconnect)
+        protocolDataManager.logProtocolEvent("[CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)")
+        protocolDataManager.logProtocolEvent("[CLEANUP] This will clear ALL connection data including persistent UUID")
 
         // Останавливаем мониторинг подключения
         stopConnectionMonitor()
@@ -455,13 +495,230 @@ public class ZetaraManager: NSObject {
         writeCharacteristic = nil
         notifyCharacteristic = nil
         identifier = nil
+
+        // Build 38: Clear persistent UUID (prevent auto-reconnect after manual disconnect)
+        UserDefaults.standard.removeObject(forKey: lastConnectedUUIDKey)
+        protocolDataManager.logProtocolEvent("[CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)")
+
         cachedDeviceUUID = nil
         protocolDataManager.logProtocolEvent("[CONNECTION] All Bluetooth characteristics cleared")
-        protocolDataManager.logProtocolEvent("[CONNECTION] Cached device UUID cleared")
+        protocolDataManager.logProtocolEvent("[CONNECTION] Cached device UUID cleared (memory)")
 
         connectedPeripheralSubject.onNext(nil)
 
         protocolDataManager.logProtocolEvent("[CONNECTION] Connection state cleaned")
+    }
+
+    // Build 38: Partial cleanup for auto-reconnect
+    /// Partial cleanup - clears ONLY invalidated data (characteristics/services)
+    /// KEEPS peripheral UUID and connection state for auto-reconnect capability
+    /// Used during disconnect to preserve reconnection foundation
+    /// Apple docs: "All services, characteristics become invalidated after disconnect"
+    private func cleanConnectionPartial() {
+        protocolDataManager.logProtocolEvent("[CLEANUP] Partial cleanup - preserving UUID for auto-reconnect")
+
+        // Останавливаем мониторинг подключения
+        stopConnectionMonitor()
+
+        // Останавливаем BMS timer
+        if timer != nil {
+            timer?.invalidate()
+            timer = nil
+            protocolDataManager.logProtocolEvent("[CLEANUP] 🛑 BMS timer stopped")
+        }
+
+        // Очищаем Request Queue
+        lastRequestTime = nil
+        protocolDataManager.logProtocolEvent("[CLEANUP] Request queue cleared")
+
+        // Очищаем BMS data
+        cleanData()
+        protocolDataManager.logProtocolEvent("[CLEANUP] BMS data cleared")
+
+        // Очищаем протокольные данные
+        protocolDataManager.clearProtocols()
+
+        // Очищаем ТОЛЬКО characteristics (invalid after disconnect per Apple docs)
+        // Apple: "All services, characteristics, and characteristic descriptors
+        // become invalidated after it disconnects"
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
+        identifier = nil
+        protocolDataManager.logProtocolEvent("[CLEANUP] Characteristics cleared (invalidated by disconnect)")
+
+        // CRITICAL: DO NOT clear these (needed for auto-reconnect):
+        // - cachedDeviceUUID (keep for auto-reconnect attempt)
+        // - connectedPeripheralSubject (will be updated by auto-reconnect)
+        // - scannedPeripheralsSubject (not needed for retrievePeripherals)
+        // - persistent UUID in UserDefaults (keep for cross-session reconnect)
+
+        protocolDataManager.logProtocolEvent("[CLEANUP] Partial cleanup complete - ready for auto-reconnect")
+        protocolDataManager.logProtocolEvent("[CLEANUP] UUID preserved: \(cachedDeviceUUID ?? "none")")
+    }
+
+    // Build 38: Auto-reconnect implementation
+    /// Attempts automatic reconnection to previously connected peripheral
+    /// Uses retrievePeripherals(withIdentifiers:) to get fresh peripheral instance
+    /// Establishes persistent connection request that survives battery power cycles
+    /// - Parameter peripheralUUID: UUID string of peripheral to reconnect
+    private func attemptAutoReconnect(peripheralUUID: String) {
+        protocolDataManager.logProtocolEvent("[RECONNECT] ⚡ Starting auto-reconnect sequence")
+        protocolDataManager.logProtocolEvent("[RECONNECT] Target UUID: \(peripheralUUID)")
+
+        guard let uuid = UUID(uuidString: peripheralUUID) else {
+            protocolDataManager.logProtocolEvent("[RECONNECT] ❌ Invalid UUID format")
+            return
+        }
+
+        // Step 1: Retrieve fresh peripheral instance from iOS CoreBluetooth
+        // This is KEY - we don't scan, we retrieve by known UUID
+        // Apple: "If peripheral disconnects and reconnects at iOS level, app needs to
+        // retrieve the peripheral object and explicitly connect through CBCentralManager"
+        let retrievedPeripherals = manager.retrievePeripherals(withIdentifiers: [uuid])
+
+        guard let freshPeripheral = retrievedPeripherals.first else {
+            protocolDataManager.logProtocolEvent("[RECONNECT] ❌ Peripheral not found by UUID")
+            protocolDataManager.logProtocolEvent("[RECONNECT] iOS may have forgotten this peripheral")
+            protocolDataManager.logProtocolEvent("[RECONNECT] Manual scan required")
+            // Fallback: require manual scan
+            connectedPeripheralSubject.onNext(nil)
+            return
+        }
+
+        protocolDataManager.logProtocolEvent("[RECONNECT] ✅ Retrieved fresh peripheral instance")
+        protocolDataManager.logProtocolEvent("[RECONNECT] Peripheral state: \(freshPeripheral.state.rawValue)")
+        protocolDataManager.logProtocolEvent("[RECONNECT] Peripheral name: \(freshPeripheral.name ?? "Unknown")")
+
+        // Step 2: Check if peripheral is already connected at iOS level
+        // (can happen with bonded peripherals or HID devices)
+        if freshPeripheral.state == .connected {
+            protocolDataManager.logProtocolEvent("[RECONNECT] ⚡ Peripheral already connected at iOS level!")
+            protocolDataManager.logProtocolEvent("[RECONNECT] Proceeding directly to service/characteristic discovery")
+
+            // Already connected at iOS level - just rediscover services
+            rediscoverServicesAndCharacteristics(peripheral: freshPeripheral)
+            return
+        }
+
+        // Step 3: Establish PERSISTENT connection request
+        // Apple: "Connection requests do not time out - iOS will auto-connect when peripheral in range"
+        // This is THE KEY to auto-reconnect - the connection request persists until peripheral appears
+        protocolDataManager.logProtocolEvent("[RECONNECT] 🔌 Establishing persistent connection request")
+        protocolDataManager.logProtocolEvent("[RECONNECT] iOS will auto-connect when peripheral comes in range")
+        protocolDataManager.logProtocolEvent("[RECONNECT] This request will NOT timeout")
+
+        // Update UI state to show disconnected (will be updated on successful reconnect)
+        connectedPeripheralSubject.onNext(nil)
+
+        // THIS IS THE KEY: calling establishConnection() creates a persistent request
+        // It will NOT timeout - iOS will connect automatically when peripheral appears
+        // Even after battery power cycle, when battery powers on, iOS will auto-connect
+        connectionDisposable?.dispose()
+        connectionDisposable = freshPeripheral.establishConnection()
+            .subscribe(onNext: { [weak self] connectedPeripheral in
+                guard let self = self else { return }
+
+                self.protocolDataManager.logProtocolEvent("[RECONNECT] ✅ ✅ ✅ AUTO-RECONNECT SUCCESSFUL!")
+                self.protocolDataManager.logProtocolEvent("[RECONNECT] Peripheral reconnected: \(connectedPeripheral.name ?? "Unknown")")
+                self.protocolDataManager.logProtocolEvent("[RECONNECT] Connection state: \(connectedPeripheral.state.rawValue)")
+
+                // Rediscover services and characteristics with fresh peripheral
+                // This is necessary because all characteristics become invalid after disconnect
+                self.rediscoverServicesAndCharacteristics(peripheral: connectedPeripheral)
+
+            }, onError: { [weak self] error in
+                self?.protocolDataManager.logProtocolEvent("[RECONNECT] ❌ Auto-reconnect failed: \(error.localizedDescription)")
+                self?.protocolDataManager.logProtocolEvent("[RECONNECT] Connection request still active - waiting for peripheral")
+                // Note: Don't give up - connection request stays active
+                // iOS will continue trying when peripheral comes in range
+                // User can manually scan if needed
+            })
+
+        protocolDataManager.logProtocolEvent("[RECONNECT] Persistent connection request established ✅")
+        protocolDataManager.logProtocolEvent("[RECONNECT] Waiting for peripheral to come back in range...")
+        protocolDataManager.logProtocolEvent("[RECONNECT] User will be notified when connection succeeds")
+    }
+
+    // Build 38: Service/Characteristic rediscovery after reconnection
+    /// Rediscovers services and characteristics for reconnected peripheral
+    /// Apple: "All services, characteristics become invalidated after disconnect"
+    /// Must rediscover to get fresh, valid characteristic handles
+    /// - Parameter peripheral: Freshly connected peripheral
+    private func rediscoverServicesAndCharacteristics(peripheral: Peripheral) {
+        protocolDataManager.logProtocolEvent("[RECONNECT] 🔍 Rediscovering services and characteristics")
+        protocolDataManager.logProtocolEvent("[RECONNECT] This is required because characteristics invalidated after disconnect")
+
+        let serviceUUIDs = ZetaraManager.configuration.identifiers.map { $0.service.uuid }
+
+        Observable.just(peripheral)
+            .flatMap { $0.discoverServices(serviceUUIDs).asObservable() }
+            .flatMap { Observable.from($0) }
+            .flatMap { Identifier.asSingle(service: $0).asObservable() }
+            .flatMap { tuple -> Observable<[Characteristic]> in
+                tuple.service.discoverCharacteristics([tuple.identifer.writeCharacteristic.uuid,
+                                                       tuple.identifer.notifyCharacteristic.uuid])
+                    .asObservable()
+                    .observeOn(MainScheduler.instance)
+            }
+            .subscribeOn(MainScheduler.instance)
+            .subscribe { [weak self] event in
+                guard let self = self else { return }
+
+                switch event {
+                case .next(let characteristics):
+                    if let identifier = Identifier.identifier(of: characteristics.first!),
+                       let writeCharacteristic = characteristics[characteristicOf: identifier.writeCharacteristic],
+                       let notifyCharacteristic = characteristics[characteristicOf: identifier.notifyCharacteristic] {
+
+                        // Configure characteristics with fresh handles
+                        self.writeCharacteristic = writeCharacteristic
+                        self.notifyCharacteristic = notifyCharacteristic
+                        self.identifier = identifier
+
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] ✅ Characteristics rediscovered successfully")
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] Write UUID: \(writeCharacteristic.uuid.uuidString)")
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] Notify UUID: \(notifyCharacteristic.uuid.uuidString)")
+
+                        // Update connected peripheral subject - this triggers UI update
+                        self.connectedPeripheralSubject.onNext(peripheral)
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] connectedPeripheralSubject updated")
+
+                        // Start connection monitor to detect future disconnects
+                        self.startConnectionMonitor()
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] Connection monitor started")
+
+                        // Auto-load protocols after reconnection (with delay for stability)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            self.protocolDataManager.logProtocolEvent("[RECONNECT] 🔄 Auto-loading protocols after reconnection")
+                            self.protocolDataManager.loadAllProtocols(afterDelay: 0)
+                        }
+
+                        // Start BMS timer after protocol loading (with delay)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                            self.protocolDataManager.logProtocolEvent("[RECONNECT] ⏱️ Starting BMS timer after reconnection")
+                            self.startRefreshBMSData()
+                        }
+
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] 🎉 🎉 🎉 AUTO-RECONNECTION COMPLETE!")
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] Battery data will resume automatically")
+
+                    } else {
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] ❌ Failed to configure characteristics")
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] Identifier or characteristics not recognized")
+                        // Connection request stays active - iOS will retry
+                    }
+
+                case .error(let error):
+                    self.protocolDataManager.logProtocolEvent("[RECONNECT] ❌ Service discovery error: \(error.localizedDescription)")
+                    self.protocolDataManager.logProtocolEvent("[RECONNECT] Connection request still active - will retry")
+                    // Don't give up - connection request persists
+                    // User can try manual reconnect if needed
+
+                case .completed:
+                    break
+                }
+            }
+            .disposed(by: disposeBag)
     }
 
     // Build 34: Launch-time fresh peripheral retrieval
