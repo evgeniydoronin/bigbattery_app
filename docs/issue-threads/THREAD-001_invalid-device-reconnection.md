@@ -1316,7 +1316,256 @@ if let cachedPeripheral = try? connectedPeripheralSubject.value() {
 6. ⏳ Analyze results (Expected vs Reality)
 7. ⏳ Update tracking system based on results
 
-**Build 37 Status:** 🔧 READY FOR TESTING
+**Build 37 Status:** ❌ **FAILED** - Fix never executed
+
+### 📊 Build 37 Test Results (2025-11-14)
+
+**Test Status:** ❌ **FAILED**
+**Test Date:** November 14, 2025
+**Tester:** Joshua
+**Build Version:** 37
+
+#### Test Scenarios Executed
+
+**Test 1: Battery Restart Without App Restart (PRIMARY)**
+- **Status:** ❌ FAILED
+- **Log:** `bigbattery_logs_20251114_091457.json`
+- **Result:** Connection error, app does NOT reconnect
+- **Error 4:** Present (09:14:10, 09:14:52)
+
+**Test 2: Settings Save (Crash Verification)**
+- **Status:** ✅/❌ PARTIAL
+- **Log:** `bigbattery_logs_20251114_095054.json`
+- **Crash:** ✅ NO crash (DiagnosticsViewController fix works!)
+- **Reconnection:** ❌ Unable to reconnect after save
+
+#### Expected vs Reality Comparison
+
+| Expected Behavior | Reality in Logs | Evidence | Status |
+|------------------|-----------------|----------|--------|
+| [CONNECT] Build 37: Forcing release of cached peripheral | **NOT FOUND** | No such log entry | ❌ MISSING |
+| [CONNECT] Cached peripheral state: X | **NOT FOUND** | No state logging | ❌ MISSING |
+| [CONNECT] Cached peripheral released | **NOT FOUND** | No release confirmation | ❌ MISSING |
+| cancelPeripheralConnection() called | **NOT EXECUTED** | No evidence in logs | ❌ MISSING |
+| Connection succeeds after battery restart | **FAILED** | Error 4, connection error | ❌ FAILED |
+| Error 4 eliminated | **ERROR 4 PRESENT** | 09:14:10, 09:14:52 | ❌ FAILED |
+| Fresh peripheral retrieval | **NOT ATTEMPTED** | Pre-flight aborted before Build 37 code | ❌ BLOCKED |
+
+#### Critical Finding
+
+**Build 37 fix code NEVER EXECUTED in either test.**
+
+The expected log entries from ZetaraManager.swift lines 282-297 are completely absent:
+- No "Build 37: Forcing release of cached peripheral"
+- No "Cached peripheral state: X"
+- No "Cached peripheral released, proceeding with fresh retrieval"
+
+**Root Cause:** Pre-flight validation (Build 31) aborted connection attempts BEFORE reaching Build 37 fix code.
+
+#### Detailed Log Analysis
+
+**Test 1 Timeline (Battery Restart):**
+```
+[09:14:10] Error 4 occurs → triggers cleanup
+[09:14:10] Cleaning connection state (after error)
+[09:14:10] Scan list cleared by cleanup
+[09:14:12] User clicks battery to reconnect (2 seconds later)
+[09:14:12] Pre-flight check: Peripheral not in scan list
+[09:14:12] ❌ ABORT: "Peripheral not found in current scan list"
+[09:14:12] "This peripheral is from a previous scan session"
+[09:14:12] "Scan list was cleared during disconnect - this is a stale reference"
+[09:14:52] ❌ Connection error: BluetoothError error 4
+```
+
+**Key Observations:**
+1. Cleanup happened correctly (scan list cleared) ✅
+2. Pre-flight validation detected stale peripheral ✅
+3. Connection ABORTED with helpful error message ✅
+4. **BUT** Build 37 code never reached (function returned before line 282) ❌
+
+**Test 2 Timeline (Settings Save):**
+```
+[09:50:44] Connection state cleaned
+[09:50:53] Connection state cleaned (second cleanup)
+[09:50:29] No connected peripheral - clearing scanned list
+[09:50:25] Connection failed: Please scan again to reconnect
+[09:50:25] User must scan again to get fresh peripheral from current session
+```
+
+**Key Observations:**
+1. Multiple cleanup cycles occurred ✅
+2. Scan list cleared correctly ✅
+3. Pre-flight instructed user to scan again ✅
+4. Build 37 fix never executed ❌
+
+#### Why Build 37 Fix Failed
+
+**Code Execution Flow in ZetaraManager.swift connect() method:**
+
+```
+Lines 252-279: Pre-flight validation (Build 31)
+    ├─ Check: Is peripheral UUID in scannedPeripheralsSubject?
+    ├─ If NO → Log error message
+    ├─ Return Observable.error(...) ← FUNCTION EXITS HERE
+    └─ ABORT connection attempt
+
+Lines 282-297: Build 37 fix (forced cache release) ← NEVER REACHED
+    ├─ Get cached peripheral from connectedPeripheralSubject
+    ├─ Call cancelPeripheralConnection()
+    ├─ Thread.sleep(0.1)
+    └─ Log "Build 37: Cached peripheral released"
+
+Lines 299+: Build 33 fresh retrieval
+```
+
+**The Problem:**
+- Pre-flight validation (Build 31) correctly identifies peripheral not in fresh scan list
+- Pre-flight returns `Observable.error()` which **terminates function execution**
+- Build 37 code placed AFTER pre-flight validation
+- When pre-flight aborts → function returns → Build 37 code unreachable
+
+**Evidence:**
+- Test 1 logs: "[CONNECT] ❌ ABORT: Peripheral not found in current scan list"
+- Test 2 logs: "[CONNECT] Connection failed: Please scan again to reconnect"
+- **Zero** instances of "Build 37: Forcing release" in either log
+
+#### What Actually Happened
+
+**Scenario Flow (Both Tests):**
+
+```
+1. Battery disconnects (restart OR settings save triggers disconnect)
+   ↓
+2. Cleanup eventually triggered (reactive, via timeout/error detection)
+   ↓
+3. cleanConnection() → cleanScanning() → scannedPeripheralsSubject cleared
+   ↓
+4. UI TableView still shows old peripheral (cached in UI layer)
+   ↓
+5. User clicks old peripheral from UI (reasonable user action)
+   ↓
+6. connect() method called with old peripheral reference
+   ↓
+7. Pre-flight check (Build 31): "Is peripheral UUID in scannedPeripheralsSubject?"
+   ↓
+8. Answer: NO (list was cleared in step 3)
+   ↓
+9. Pre-flight conclusion: "This is stale peripheral from previous session"
+   ↓
+10. Pre-flight action: Return Observable.error → ABORT connection
+    ↓
+11. Function returns → Build 37 code lines 282-297 NEVER EXECUTE
+    ↓
+12. User sees error: "Please scan again to reconnect"
+```
+
+**The Gap:** Between cleanup (scan list cleared) and UI state (still showing old peripheral).
+
+**Why This Is Actually Correct Behavior:**
+- Pre-flight validation IS working correctly! ✅
+- It correctly identifies peripheral not in current scan list ✅
+- It correctly prevents connection to stale references ✅
+- **BUT** this prevents Build 37 fix from ever running ❌
+
+#### Real Problem Identified
+
+**We misunderstood the core issue:**
+
+**What we thought:**
+- iOS caches peripheral instances with stale characteristic handles
+- Solution: Force cache release with cancelPeripheralConnection()
+
+**What actually happens:**
+1. Disconnect occurs (battery restart or settings save)
+2. iOS doesn't fire disconnect event immediately (known from Build 21)
+3. Cleanup happens reactively (after timeout or error detection)
+4. Scan list gets cleared (working correctly)
+5. **UI doesn't update** - TableView still shows old peripheral
+6. User clicks old peripheral (logical action)
+7. Pre-flight detects it's not in fresh scan list → ABORT (working correctly)
+8. Build 37 fix blocked by pre-flight (implementation location error)
+
+**Root Cause:** Not iOS peripheral caching. It's **scan list clearing + UI state mismatch**.
+
+#### Comparison with Build 36
+
+| Metric | Build 36 | Build 37 | Change |
+|--------|----------|----------|--------|
+| Connection success (Scenario 2) | 0% | 0% | **NO CHANGE** |
+| Error 4 frequency | Present | Present | **NO CHANGE** |
+| Build 37 fix executed | N/A | 0% (never) | **FIX BLOCKED** |
+| Pre-flight validation works | ✅ Yes | ✅ Yes | **SAME** |
+| Settings display | ✅ Yes | Not tested | **LIKELY SAME** |
+| DiagnosticsViewController crash | Fixed in Build 37 | ✅ Fixed | **IMPROVEMENT** |
+| User experience (reconnection) | Manual scan required | Manual scan required | **NO CHANGE** |
+
+**Verdict:** Build 37 shows **minimal improvement** (crash fix only). PRIMARY goal (auto-reconnection) completely unmet.
+
+#### Lessons Learned
+
+**What We Learned:**
+
+1. **Code placement matters critically**
+   - Putting fix AFTER pre-flight validation = fix never runs
+   - Pre-flight abort terminates function execution
+   - Must place critical code BEFORE early returns
+
+2. **Pre-flight validation working TOO well**
+   - Correctly rejects stale peripherals ✅
+   - But also blocks fix attempts ❌
+   - Creates catch-22: Can't fix stale peripherals if pre-flight blocks all access
+
+3. **Real problem is different than assumed**
+   - Not: iOS peripheral caching with stale handles
+   - Actually: Scan list cleared but UI still shows old peripheral
+   - User clicks old peripheral → pre-flight correctly rejects → user confused
+
+4. **Need different approach for Build 38**
+   - Don't try to "fix" stale peripherals with forced cache release
+   - Instead: Automatically trigger fresh scan when scan list cleared
+   - Let pre-flight validation continue working (it's doing its job correctly)
+
+5. **DiagnosticsViewController fix WORKS** ✅
+   - No crashes reported in Test 2
+   - reloadData() instead of reloadSections() solved batch update issue
+   - At least one positive outcome from Build 37
+
+**What Got Better:**
+- ✅ DiagnosticsViewController crash eliminated
+
+**What Stayed Broken:**
+- ❌ Auto-reconnection after battery restart (PRIMARY goal)
+- ❌ Auto-reconnection after settings save
+- ❌ Error 4 still occurs
+- ❌ User still must manually scan
+
+**Success Rate:** 0% on PRIMARY objective, 100% on SECONDARY objective (crash fix)
+
+#### Next Steps Considerations
+
+**For Build 38, we should:**
+
+1. **NOT move Build 37 fix before pre-flight**
+   - Pre-flight is correctly protecting us from stale peripherals
+   - Moving fix before pre-flight = disabling safety mechanism
+   - Would likely cause other problems
+
+2. **Instead: Fix the real problem**
+   - Problem: Scan list cleared, UI shows old peripheral, user clicks, pre-flight rejects
+   - Solution: Auto-trigger scan when scan list cleared after disconnect
+   - Location: UI layer (ConnectivityViewController)
+   - Benefit: Minimal risk, doesn't touch Bluetooth logic
+
+3. **Keep ALL existing fixes untouched**
+   - Build 31 pre-flight validation - KEEP ✅
+   - Build 36 Settings display - KEEP ✅
+   - Build 37 DiagnosticsViewController fix - KEEP ✅
+   - Build 37 forced cache release code - LEAVE IN PLACE (might be useful later)
+
+4. **One problem = one build**
+   - Build 38: ONLY auto-scan after disconnect cleanup
+   - Don't try to fix error 4, other issues, etc.
+   - Focus on one clear objective
 
 ---
 
@@ -1426,24 +1675,154 @@ State only changes **DURING** connection:
 4. **UI cache is NOT reliable** - can contain stale references after disconnect
 5. **Session-based validation** - peripheral must be from CURRENT scan session
 
+### Current Understanding (2025-11-14 after Build 37 testing):
+**Problem:** Build 37 fix implementation location was WRONG - placed AFTER pre-flight abort!
+
+**Critical Discovery from Build 37 FAILED testing:**
+
+Build 37 attempted to force iOS peripheral cache release with `cancelPeripheralConnection()`.
+**Fix code NEVER EXECUTED** because pre-flight validation (Build 31) aborted connection attempts BEFORE reaching Build 37 fix code.
+
+**Why Build 37 failed:**
+
+**Code Flow in ZetaraManager.swift connect():**
+```
+Lines 252-279: Pre-flight validation (Build 31)
+    └─ If peripheral not in scan list → Return Observable.error() → FUNCTION EXITS
+
+Lines 282-297: Build 37 fix (cancelPeripheralConnection) ← UNREACHABLE CODE!
+```
+
+**Evidence from logs:**
+- Test 1 (Battery Restart): "[CONNECT] ❌ ABORT: Peripheral not found in current scan list"
+- Test 2 (Settings Save): "[CONNECT] Connection failed: Please scan again to reconnect"
+- **ZERO** instances of "Build 37: Forcing release of cached peripheral"
+- Build 37 fix never ran in either test
+
+**Real Problem Uncovered:**
+
+**What we thought (Build 37 hypothesis):**
+- iOS caches peripheral instances with stale characteristic handles
+- Solution: Force cache release with `cancelPeripheralConnection()`
+- Implementation: Add forced release in `connect()` method
+
+**What actually happens (Build 37 reality):**
+1. Battery disconnects (restart OR settings save)
+2. iOS doesn't fire disconnect event (known since Build 21)
+3. Cleanup triggered reactively (timeout or error detection)
+4. `cleanConnection()` → `cleanScanning()` → **scan list cleared**
+5. UI TableView still shows old peripheral (cached in UI layer)
+6. User clicks old peripheral (reasonable user action)
+7. Pre-flight check: Peripheral UUID not in `scannedPeripheralsSubject` (cleared in step 4)
+8. Pre-flight **correctly** aborts: "This peripheral is from previous session"
+9. Function returns → Build 37 fix never reached
+10. User sees error → must manually scan
+
+**Root Cause:** Not iOS peripheral caching. It's **scan list clearing + UI state mismatch**.
+
+**Why Pre-Flight Validation is Actually Working Correctly:**
+- ✅ Scan list cleared after disconnect (cleanup working)
+- ✅ Pre-flight detects peripheral not in current session (validation working)
+- ✅ Pre-flight prevents connection to stale peripheral (protection working)
+- ❌ BUT this creates catch-22: Can't "fix" stale peripherals if pre-flight blocks all access
+- ❌ Build 37 attempted to fix something that pre-flight correctly prevents
+
+**The Real Gap:**
+
+```
+Disconnect happens
+    ↓
+Cleanup clears scan list (correct behavior)
+    ↓
+UI still shows old peripheral (UI layer not updated)
+    ↓
+User clicks old peripheral (expects it to work)
+    ↓
+Pre-flight rejects it (correct behavior)
+    ↓
+USER CONFUSED: "Why can't I connect? Battery is right there!"
+```
+
+**The UX Problem:**
+- User sees peripheral in UI list
+- User clicks peripheral
+- App says "scan again"
+- User thinks: "But I can SEE the battery in the list!"
+- **Gap:** UI shows old peripheral that scan list doesn't contain
+
+**Why "Force Cache Release" Approach Was Wrong:**
+
+1. **Pre-flight protection is GOOD** - it prevents error 4 by rejecting stale peripherals
+2. **Disabling pre-flight would be BAD** - would reintroduce error 4 problems
+3. **Moving Build 37 fix BEFORE pre-flight would be RISKY** - might break protection
+4. **Forcing cache release doesn't solve UX problem** - user still sees old peripheral in UI
+
+**What Build 38 Should Do Instead:**
+
+Instead of trying to "fix" stale peripherals, **prevent the UX confusion:**
+
+**Solution:** Auto-trigger fresh scan when scan list cleared after disconnect
+
+**Location:** UI layer (ConnectivityViewController), NOT Bluetooth logic
+
+**Implementation:**
+```swift
+// In ConnectivityViewController
+scannedPeripheralsSubject
+    .subscribe(onNext: { [weak self] peripherals in
+        if peripherals.isEmpty && self?.wasConnected == true {
+            // Scan list cleared after disconnect - auto-start fresh scan
+            self?.startScanning()
+        }
+    })
+```
+
+**Benefits:**
+- ✅ Minimal risk - only affects UI layer
+- ✅ Doesn't touch Bluetooth logic (ZetaraManager)
+- ✅ Keeps pre-flight protection working
+- ✅ Solves UX problem (fresh scan → fresh peripheral list → user can connect)
+- ✅ No manual scan required by user
+
+**Key Insights:**
+
+1. **Code placement is critical** - Placing fix AFTER early return = unreachable code
+2. **Pre-flight validation working TOO well** - Correctly blocks stale peripherals but also blocks fix attempts
+3. **Don't fight good protection mechanisms** - Pre-flight is doing its job correctly
+4. **Real problem is UX not Bluetooth** - UI showing old peripheral while scan list empty
+5. **Fix in the right layer** - UI problem needs UI solution, not Bluetooth layer fix
+6. **Defensive code can block fixes** - Early returns, guards, validation can make code unreachable
+7. **Test assumptions matter** - We assumed iOS caching was problem, but it was UI/scan list mismatch
+8. **One positive outcome** - DiagnosticsViewController crash fix works! (reloadData() vs reloadSections())
+
+**Comparison: Build 36 vs Build 37:**
+- Connection success (Scenario 2): 0% → 0% (NO CHANGE)
+- Error 4 frequency: Some → Some (NO CHANGE)
+- DiagnosticsViewController crash: N/A → FIXED ✅ (IMPROVEMENT)
+- User experience: Manual scan → Manual scan (NO CHANGE)
+
+**Success Rate:** 0% on PRIMARY objective (auto-reconnection), 100% on SECONDARY objective (crash fix)
+
 ---
 
 ## 📊 METRICS
 
-| Metric | Before Any Fix | Build 29 | Build 30 | Build 31 | Build 32 | Build 33 | Build 34 (Expected) | Build 34 (Actual) | Build 35 (Expected) | Build 35 (Actual) | Build 36 (Expected) | Build 36 (Actual) | Target |
-|--------|----------------|----------|----------|----------|----------|----------|---------------------|-------------------|---------------------|-------------------|---------------------|-------------------|--------|
-| Connection success rate | 0% | 0% ❌ | **0% (ALL BLOCKED)** 💥 | **100%** ✅ | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **Partial** ⚠️ | **100%** 🎯 | **75%** ⚠️ | 100% |
-| Error 4 frequency | 100% | 100% ❌ | N/A | **0% (pre-flight)** ✅ | **75% (post-connect)** ⚠️ | **100%** ❌ | **0%** 🎯 | **0%** ✅ | **0%** 🎯 | **Some** ⚠️ | **0%** 🎯 | **Some** ⚠️ | 0% |
-| Normal connections work | 100% | 100% ✅ | **0%** 💥 | **100%** ✅ | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **Partial** ⚠️ | **100%** 🎯 | **Partial** ⚠️ | 100% |
-| BMS data loads | 100% | 100% ✅ | N/A | **Partial** 🔄 | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **100%** ✅ | 100% |
-| Disconnect detected | No | **YES (Layer 1)** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
-| Pre-flight validation | N/A | **Partial** 🔄 | **WRONG** 💥 | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | Yes |
-| Fresh peripheral in connect() | ❌ | ❌ | ❌ | ❌ | ❌ | **YES (not called)** 🔄 | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
-| Fresh peripheral at launch | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **YES** 🎯 | **YES (no logs)** ⚠️ | **YES** 🎯 | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
-| Stale peripheral detection | No | **YES** ✅ | **TOO AGGRESSIVE** 💥 | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | Yes |
-| UITableView crashes | No | No | N/A | **YES** ❌ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | No crashes |
-| Crash on disconnect | No | No | No | No | No | No | No | **YES** ❌ | **FIXED** 🎯 | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | No crashes |
-| Settings protocols display | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | **"--"** ❌ | **Correct** 🎯 | **✅ SUCCESS!** | Always show correctly |
+| Metric | Before Any Fix | Build 29 | Build 30 | Build 31 | Build 32 | Build 33 | Build 34 (Expected) | Build 34 (Actual) | Build 35 (Expected) | Build 35 (Actual) | Build 36 (Expected) | Build 36 (Actual) | Build 37 (Actual) | Target |
+|--------|----------------|----------|----------|----------|----------|----------|---------------------|-------------------|---------------------|-------------------|---------------------|-------------------|-------------------|--------|
+| Connection success rate | 0% | 0% ❌ | **0% (ALL BLOCKED)** 💥 | **100%** ✅ | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **Partial** ⚠️ | **100%** 🎯 | **75%** ⚠️ | **0%** ❌ | 100% |
+| Error 4 frequency | 100% | 100% ❌ | N/A | **0% (pre-flight)** ✅ | **75% (post-connect)** ⚠️ | **100%** ❌ | **0%** 🎯 | **0%** ✅ | **0%** 🎯 | **Some** ⚠️ | **0%** 🎯 | **Some** ⚠️ | **Some** ⚠️ | 0% |
+| Normal connections work | 100% | 100% ✅ | **0%** 💥 | **100%** ✅ | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **Partial** ⚠️ | **100%** 🎯 | **Partial** ⚠️ | **Partial** ⚠️ | 100% |
+| BMS data loads | 100% | 100% ✅ | N/A | **Partial** 🔄 | **25%** ⚠️ | **0%** ❌ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **100%** ✅ | **100%** 🎯 | **100%** ✅ | Not tested | 100% |
+| Disconnect detected | No | **YES (Layer 1)** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | Yes |
+| Pre-flight validation | N/A | **Partial** 🔄 | **WRONG** 💥 | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | Yes |
+| Fresh peripheral in connect() | ❌ | ❌ | ❌ | ❌ | ❌ | **YES (not called)** 🔄 | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **YES** ✅ | **NOT REACHED** ❌ | Yes |
+| Fresh peripheral at launch | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **YES** 🎯 | **YES (no logs)** ⚠️ | **YES** 🎯 | **YES** ✅ | **YES** ✅ | **YES** ✅ | Not tested | Yes |
+| Stale peripheral detection | No | **YES** ✅ | **TOO AGGRESSIVE** 💥 | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | **CORRECT** ✅ | Yes |
+| UITableView crashes | No | No | N/A | **YES** ❌ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | No crashes |
+| Crash on disconnect | No | No | No | No | No | No | No | **YES** ❌ | **FIXED** 🎯 | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | **FIXED** ✅ | No crashes |
+| Settings protocols display | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | **"--"** ❌ | **Correct** 🎯 | **✅ SUCCESS!** | Not tested | Always show correctly |
+| DiagnosticsViewController crash | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | **✅ FIXED!** | No crashes |
+| Build 37 fix executed | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | **0% (blocked)** ❌ | 100% |
 
 **Key Performance Indicators:**
 - ✅ SUCCESS if: All 3 test scenarios pass, no error 4, disconnect < 5s

@@ -1,0 +1,147 @@
+{
+  "timestamp" : "09:14:57 14.11.2025",
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "09:14:57 14.11.2025",
+        "step" : "connection",
+        "message" : "No device connected",
+        "status" : "success"
+      },
+      {
+        "step" : "connection",
+        "status" : "success",
+        "message" : "Diagnostics screen launched",
+        "timestamp" : "09:14:57 14.11.2025"
+      }
+    ]
+  },
+  "deviceInfo" : {
+    "name" : "iPhone",
+    "model" : "iPhone",
+    "systemName" : "iOS",
+    "systemVersion" : "26.0"
+  },
+  "batteryInfo" : {
+    "cellTemps" : [
+
+    ],
+    "current" : 0,
+    "soc" : 0,
+    "tempEnv" : 0,
+    "status" : "Standby",
+    "cellCount" : 0,
+    "voltage" : 0,
+    "soh" : 0,
+    "tempPCB" : 0,
+    "cellVoltages" : [
+
+    ],
+    "timestamp" : "09:14:57 14.11.2025"
+  },
+  "appInfo" : {
+    "build" : "37",
+    "version" : "1.4.1"
+  },
+  "rawDataInfo" : {
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "parseResult" : "success",
+        "timestamp" : "09:14:57 14.11.2025",
+        "data" : "0000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "events" : [
+    {
+      "timestamp" : "09:14:57 14.11.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "timestamp" : "09:14:57 14.11.2025",
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched"
+    },
+    {
+      "type" : "Data Update",
+      "timestamp" : "09:14:57 14.11.2025",
+      "message" : "New battery data received"
+    }
+  ],
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overcurrent" : false,
+      "shortCircuit" : false,
+      "overvoltage" : false,
+      "undervoltage" : false,
+      "overtemperature" : false
+    }
+  },
+  "protocolInfo" : {
+    "currentValues" : {
+      "rs485Protocol" : "--",
+      "canProtocol" : "--",
+      "moduleId" : "--"
+    },
+    "statistics" : {
+      "warnings" : 0,
+      "errors" : 2,
+      "totalLogs" : 30,
+      "successes" : 1
+    },
+    "lastUpdateTime" : "09:14:57 14.11.2025",
+    "recentLogs" : [
+      "[09:14:52] [CONNECT] ❌ Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[09:14:34] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:14:34] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:14:17] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:14:17] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:14:12] [CONNECTIVITY] Connection failed: Please scan again to reconnect",
+      "[09:14:12] [CONNECT] User must scan again to get fresh peripheral from current session",
+      "[09:14:12] [CONNECT] Scan list was cleared during disconnect - this is a stale reference",
+      "[09:14:12] [CONNECT] This peripheral is from a previous scan session (UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427)",
+      "[09:14:12] [CONNECT] ❌ ABORT: Peripheral not found in current scan list",
+      "[09:14:12] [CONNECT] Pre-flight check: Peripheral in current scan list: false",
+      "[09:14:12] [CONNECT] Cached UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:14:12] [CONNECT] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:14:12] [CONNECT] Device name: BB-51.2V100Ah-0855",
+      "[09:14:12] [CONNECT] Attempting connection",
+      "[09:14:12] [CONNECTION] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[09:14:12] [CONNECTION] Notify UUID: 1007",
+      "[09:14:12] [CONNECTION] Write UUID: 1008",
+      "[09:14:12] [CONNECTION] ✅ Characteristics configured",
+      "[09:14:11] [CONNECT] Service UUID: 1006",
+      "[09:14:11] [CONNECT] Services discovered: 1",
+      "[09:14:10] [CONNECTIVITY] Connection failed: Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[09:14:10] [CONNECTION] Connection state cleaned",
+      "[09:14:10] [CONNECTION] Cached device UUID cleared",
+      "[09:14:10] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:14:10] [CONNECTION] Scanned peripherals cleared",
+      "[09:14:10] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:14:10] [CONNECTION] BMS data cleared",
+      "[09:14:10] [QUEUE] Request queue cleared",
+      "[09:14:10] [CONNECTION] Cleaning connection state"
+    ]
+  },
+  "systemInfo" : {
+    "isLowPowerMode" : false,
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0,
+    "batteryLevel" : 65
+  },
+  "communicationErrorsInfo" : {
+    "retries" : 0,
+    "crcErrors" : 0,
+    "packetLoss" : 0,
+    "timeouts" : 0
+  }
+}

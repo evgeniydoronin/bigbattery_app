@@ -2,8 +2,8 @@
 
 Quick reference для поиска последнего стабильного билда для каждой фичи и rollback сценариев.
 
-**Last Updated:** 2025-11-10
-**Current Recommended Build:** Build 36
+**Last Updated:** 2025-11-17
+**Current Recommended Build:** Build 36 (Build 37 FAILED)
 
 ---
 
@@ -11,6 +11,7 @@ Quick reference для поиска последнего стабильного 
 
 | Feature | Last Known Good Build | Commit Hash | Git Tag | Date | Evidence |
 |---------|----------------------|-------------|---------|------|----------|
+| **DiagnosticsViewController Crash Fix** | Build 37 ✅ | d1bb7a1 | `build-37` | 2025-11-10 | Test 2 - no crash when saving settings |
 | **Settings Protocol Display** | Build 36 ✅ | c5db5fe | `build-36` | 2025-11-07 | THREAD-001 Build 36 SUCCESS, 4 test logs |
 | **Reconnection (Error 4 eliminated)** | Build 34 ✅ | 749a187 | `build-34` | 2025-10-30 | THREAD-001 Build 34 SUCCESS, error 4 = 0% |
 | **No Crash on Disconnect** | Build 35 ✅ | b4ba427 | `build-35` | 2025-11-03 | THREAD-001 Build 35 fix, guard during disconnect |
@@ -18,6 +19,63 @@ Quick reference для поиска последнего стабильного 
 | **BMS Data Loading** | Build 34 ✅ | 749a187 | `build-34` | 2025-10-30 | Test logs show consistent data loading |
 | **Pre-flight Validation** | Build 31 ✅ | 6588e52 | `build-31` | 2025-10-27 | THREAD-001 Build 31, scan list validation |
 | **Health Monitor** | Build 29 ✅ | a1953a6 | `build-29` | 2025-10-25 | THREAD-001 Build 29, Layer 1+3 monitoring |
+
+---
+
+## ❌ Build 37 Status: FAILED
+
+**Date:** 2025-11-10
+**Commit:** d1bb7a1
+**Tag:** `build-37`
+**Status:** ❌ FAILED - PRIMARY objective not met
+
+### Why Build 37 is NOT Recommended
+
+Build 37 attempted to fix connection stability (battery restart reconnection) but **FAILED**:
+
+**❌ What FAILED:**
+- **Connection Stability** - 0% success, same as Build 36
+- **Build 37 fix execution** - 0%, code never ran (blocked by pre-flight validation)
+- **Error 4** - Still present
+- **Auto-reconnection** - Still requires manual scan
+
+**✅ What WORKS (only positive outcome):**
+- **DiagnosticsViewController crash** - FIXED ✅
+  - No crash when saving settings
+  - reloadData() instead of reloadSections() solved batch update issue
+
+### Why Build 37 Fix Failed
+
+**Root Cause:** Code placement error - fix placed AFTER pre-flight abort
+
+**Flow:**
+```
+Pre-flight validation (lines 252-279) → If stale peripheral → Return error → EXIT
+Build 37 fix (lines 282-297) → NEVER REACHED
+```
+
+**Evidence:** ZERO instances of "Build 37: Forcing release" in test logs
+
+### Test Results (2025-11-14)
+
+**Test 1: Battery Restart**
+- ❌ Connection failed
+- ❌ Error 4 present
+- ❌ Build 37 fix never ran
+
+**Test 2: Settings Save**
+- ✅ NO crash (DiagnosticsViewController fix works)
+- ❌ Unable to reconnect (Build 37 fix never ran)
+
+**Success Rate:** 0% on PRIMARY objective (connection stability)
+
+### Recommendation
+
+**DO NOT use Build 37 for production.** Use **Build 36** instead.
+
+**One Exception:** If you need DiagnosticsViewController crash fix, you can use Build 37, but be aware that connection stability is NOT improved.
+
+For most users: **Build 36 is still recommended.**
 
 ---
 

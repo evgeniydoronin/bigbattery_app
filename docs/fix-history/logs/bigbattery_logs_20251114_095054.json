@@ -1,0 +1,147 @@
+{
+  "events" : [
+    {
+      "message" : "No device connected",
+      "timestamp" : "09:50:54 14.11.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "09:50:54 14.11.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "New battery data received",
+      "type" : "Data Update",
+      "timestamp" : "09:50:54 14.11.2025"
+    }
+  ],
+  "deviceInfo" : {
+    "name" : "iPhone",
+    "systemVersion" : "26.0",
+    "model" : "iPhone",
+    "systemName" : "iOS"
+  },
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "communicationErrorsInfo" : {
+    "retries" : 0,
+    "packetLoss" : 0,
+    "crcErrors" : 0,
+    "timeouts" : 0
+  },
+  "systemInfo" : {
+    "batteryLevel" : 60,
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0,
+    "isLowPowerMode" : false
+  },
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "37"
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overtemperature" : false,
+      "undervoltage" : false,
+      "shortCircuit" : false,
+      "overvoltage" : false,
+      "overcurrent" : false
+    }
+  },
+  "batteryInfo" : {
+    "tempEnv" : 0,
+    "timestamp" : "09:50:54 14.11.2025",
+    "status" : "Standby",
+    "voltage" : 0,
+    "soh" : 0,
+    "cellVoltages" : [
+
+    ],
+    "soc" : 0,
+    "tempPCB" : 0,
+    "cellTemps" : [
+
+    ],
+    "current" : 0,
+    "cellCount" : 0
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "09:50:54 14.11.2025",
+        "message" : "No device connected"
+      },
+      {
+        "timestamp" : "09:50:54 14.11.2025",
+        "step" : "connection",
+        "status" : "success",
+        "message" : "Diagnostics screen launched"
+      }
+    ]
+  },
+  "rawDataInfo" : {
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "timestamp" : "09:50:54 14.11.2025",
+        "parseResult" : "success",
+        "data" : "0000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "protocolInfo" : {
+    "currentValues" : {
+      "canProtocol" : "--",
+      "rs485Protocol" : "--",
+      "moduleId" : "--"
+    },
+    "statistics" : {
+      "successes" : 0,
+      "warnings" : 0,
+      "totalLogs" : 30,
+      "errors" : 2
+    },
+    "recentLogs" : [
+      "[09:50:53] [CONNECTION] Connection state cleaned",
+      "[09:50:53] [CONNECTION] Cached device UUID cleared",
+      "[09:50:53] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:50:53] [CONNECTION] Scanned peripherals cleared",
+      "[09:50:53] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:50:53] [CONNECTION] BMS data cleared",
+      "[09:50:53] [CONNECTION] 🛑 BMS timer stopped",
+      "[09:50:53] [QUEUE] Request queue cleared",
+      "[09:50:53] [CONNECTION] Cleaning connection state",
+      "[09:50:53] [BMS] ❌ No peripheral\/characteristics available",
+      "[09:50:53] [BMS] Device connected: false",
+      "[09:50:53] [BMS] 📡 getBMSData() called",
+      "[09:50:53] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[09:50:44] [CONNECTION] Connection state cleaned",
+      "[09:50:44] [CONNECTION] Cached device UUID cleared",
+      "[09:50:44] [CONNECTION] All Bluetooth characteristics cleared",
+      "[09:50:44] [CONNECTION] Scanned peripherals cleared",
+      "[09:50:44] [PROTOCOL MANAGER] Clearing all protocols",
+      "[09:50:44] [CONNECTION] BMS data cleared",
+      "[09:50:44] [CONNECTION] 🛑 BMS timer stopped",
+      "[09:50:44] [QUEUE] Request queue cleared",
+      "[09:50:44] [CONNECTION] Cleaning connection state",
+      "[09:50:44] [BMS] ❌ No peripheral\/characteristics available",
+      "[09:50:44] [BMS] Device connected: false",
+      "[09:50:44] [BMS] 📡 getBMSData() called",
+      "[09:50:44] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[09:50:29] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[09:50:29] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[09:50:25] [CONNECTIVITY] Connection failed: Please scan again to reconnect",
+      "[09:50:25] [CONNECT] User must scan again to get fresh peripheral from current session"
+    ],
+    "lastUpdateTime" : "09:50:54 14.11.2025"
+  },
+  "timestamp" : "09:50:54 14.11.2025"
+}

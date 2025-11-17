@@ -2,8 +2,122 @@
 
 Хронология всех значимых break и fix событий в обратном порядке (новые → старые).
 
-**Last Updated:** 2025-11-10
-**Latest Event:** Build 36 - Settings Display RESOLVED
+**Last Updated:** 2025-11-17
+**Latest Event:** Build 37 - Connection Stability Fix FAILED
+
+---
+
+## 2025-11-14: Build 37 - Connection Stability Fix FAILED ❌
+
+**Event Type:** FAILED FIX ATTEMPT
+**Impact:** LOW - No regression, but no improvement either
+
+### What Was Attempted
+Fix auto-reconnection when battery restarts without app restart (Scenario 2 from Build 36).
+
+**Hypothesis:** iOS caches peripheral instances with stale characteristic handles → need to force cache release with `cancelPeripheralConnection()`.
+
+### Why It Failed
+
+**Root Cause:** Code placement error - fix placed AFTER pre-flight validation abort point.
+
+**Code Flow:**
+```
+Lines 252-279: Pre-flight validation (Build 31)
+    └─ If peripheral not in scan list → Observable.error() → RETURN
+Lines 282-297: Build 37 fix (cancelPeripheralConnection) ← UNREACHABLE!
+```
+
+**Evidence:**
+- Test logs contain ZERO instances of "Build 37: Forcing release"
+- Test 1: "[CONNECT] ❌ ABORT: Peripheral not found in current scan list"
+- Test 2: "[CONNECT] Connection failed: Please scan again to reconnect"
+- Build 37 fix code never executed in either test
+
+### What Actually Happened
+
+**Scenario Flow:**
+1. Battery disconnects (restart OR settings save)
+2. Cleanup triggered → `scannedPeripheralsSubject` cleared
+3. UI TableView still shows old peripheral (cached in UI layer)
+4. User clicks old peripheral (reasonable action)
+5. Pre-flight check: "Peripheral not in scan list" → ABORT (correct behavior)
+6. Function returns → Build 37 code never reached
+
+**Real Problem Identified:** Not iOS peripheral caching, but **scan list clearing + UI state mismatch**.
+
+### Test Results (2025-11-14)
+
+**Test 1: Battery Restart**
+- ❌ Connection failed, error 4 present
+- ❌ Build 37 fix never ran
+
+**Test 2: Settings Save**
+- ✅ NO crash (DiagnosticsViewController fix works!)
+- ❌ Unable to reconnect (Build 37 fix never ran)
+
+**Success Rate:** 0% on PRIMARY objective, 100% on SECONDARY objective
+
+### Impact
+
+**❌ What Got WORSE:** Nothing (no regression)
+
+**✅ What Got BETTER:** DiagnosticsViewController crash eliminated
+
+**➡️ What Stayed SAME:** Connection stability (0% → 0%)
+
+### Positive Outcome
+
+**DiagnosticsViewController Crash Fix WORKS** ✅
+
+**Problem:** UITableView crash when saving settings:
+```
+Invalid batch updates: sections/rows inconsistent
+```
+
+**Solution:** Changed `reloadSections()` to `reloadData()` in `addEvent()` method
+
+**File:** `BatteryMonitorBL/DiagnosticsViewController.swift` (line 274)
+
+**Result:** No crashes in Test 2 when saving settings
+
+### Evidence
+
+- **Commit:** d1bb7a1
+- **Tag:** `build-37`
+- **Test Logs:** 2 tests, 0 PRIMARY success, 1 SECONDARY success
+- **Thread:** THREAD-001 Attempt #7
+
+### Lessons Learned
+
+1. **Code placement is critical** - Placing fix AFTER early return = unreachable code
+2. **Pre-flight validation working TOO well** - Blocks stale peripherals AND fix attempts
+3. **Real problem is UX not Bluetooth** - UI showing old peripheral while scan list empty
+4. **Don't fight good protection** - Pre-flight doing its job correctly
+5. **Fix in right layer** - UI problem needs UI solution, not Bluetooth layer fix
+6. **Test assumptions** - We assumed iOS caching problem, but it was UI/scan list mismatch
+
+### Recommendation for Build 38
+
+**DO:**
+- Auto-trigger scan when scan list cleared (UI layer solution)
+- Keep pre-flight validation (it's protecting us)
+- Keep all existing fixes untouched
+
+**DON'T:**
+- Move Build 37 fix before pre-flight (would disable protection)
+- Try to "fix" stale peripherals (pre-flight correctly rejects them)
+- Touch Bluetooth logic (working correctly)
+
+**Proposed Solution:**
+```swift
+// In ConnectivityViewController
+scannedPeripheralsSubject.subscribe(onNext: { [weak self] peripherals in
+    if peripherals.isEmpty && self?.wasConnected == true {
+        self?.startScanning()  // Auto-scan after cleanup
+    }
+})
+```
 
 ---
 

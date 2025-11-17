@@ -2,8 +2,8 @@
 
 Feature × Build matrix показывающий что работает/не работает в каждом билде.
 
-**Last Updated:** 2025-11-10
-**Current Build:** Build 36
+**Last Updated:** 2025-11-17
+**Current Build:** Build 37 (FAILED - Build 36 still recommended)
 
 ---
 
@@ -11,6 +11,7 @@ Feature × Build matrix показывающий что работает/не р
 
 | Build | Date | Status | Key Achievement | Major Issues |
 |-------|------|--------|----------------|--------------|
+| **37** | 2025-11-10 | ❌ **FAILED** | DiagnosticsViewController crash fixed | Fix code never executed (pre-flight blocks) |
 | **36** | 2025-11-07 | ✅ **STABLE** | Settings display fixed | Connection stability (separate issue) |
 | **35** | 2025-11-03 | ⚠️ PARTIAL | Crash fixed | Settings shows "--" |
 | **34** | 2025-10-30 | ⚠️ PARTIAL | Reconnection resolved | Crash on disconnect |
@@ -22,7 +23,167 @@ Feature × Build matrix показывающий что работает/не р
 
 ---
 
-## Build 36 (2025-11-07) - CURRENT ✅ STABLE
+## Build 37 (2025-11-10) ❌ FAILED
+
+**Status:** ❌ **FAILED** - PRIMARY objective not met, fix code never executed
+
+### Feature Status
+
+| Feature | Status | Evidence | Notes |
+|---------|--------|----------|-------|
+| **Connection (Battery Restart)** | ❌ FAILED | Test 1 connection error | PRIMARY goal completely failed |
+| **Reconnection After Settings Save** | ❌ FAILED | Test 2 unable to reconnect | User must manually scan |
+| **Build 37 Fix Execution** | ❌ NEVER RAN | 0% - blocked by pre-flight | Code unreachable due to placement |
+| **DiagnosticsViewController Crash** | ✅ FIXED | Test 2 - NO crash | **ONLY positive outcome** |
+| **Settings Protocol Display** | ⬜ NOT TESTED | N/A | Likely still works (Build 36 fix untouched) |
+| **Pre-flight Validation** | ✅ WORKS | Tests 1 & 2 - correctly rejects stale | Working as designed |
+| **Error 4** | ⚠️ STILL PRESENT | Test 1: 09:14:10, 09:14:52 | Not eliminated |
+| **BMS Data Loading** | ⬜ NOT TESTED | N/A | Likely works |
+
+### What Was Attempted in Build 37
+
+**Problem:** Connection stability when battery restarts without app restart (Scenario 2 from Build 36)
+
+**Hypothesis:** iOS caches peripheral instances with stale characteristic handles → need to force cache release
+
+**Solution Attempted:**
+- Call `cancelPeripheralConnection()` before `retrievePeripherals()`
+- Add Thread.sleep(0.1) to allow iOS to process cancellation
+- Force iOS CoreBluetooth to release cached peripheral references
+
+**File Changed:** `Zetara/Sources/ZetaraManager.swift` (lines 282-297)
+
+**Secondary Fix:** DiagnosticsViewController crash
+- Changed `reloadSections()` to `reloadData()` (line 274)
+- **This fix WORKS** ✅
+
+### Why Build 37 Failed
+
+**Critical Finding:** Build 37 fix code **NEVER EXECUTED** in either test.
+
+**Root Cause:** Code placement error
+
+**Code Flow in connect() method:**
+```
+Lines 252-279: Pre-flight validation (Build 31)
+    └─ If peripheral not in scan list → Return Observable.error() → EXITS
+
+Lines 282-297: Build 37 fix (cancelPeripheralConnection) ← UNREACHABLE!
+```
+
+**What Actually Happened:**
+1. Battery disconnect → cleanup → scan list cleared
+2. UI still shows old peripheral (cached in TableView)
+3. User clicks old peripheral
+4. Pre-flight check: "Peripheral not in scan list" → ABORT (correct behavior)
+5. Function returns before line 282 → Build 37 code NEVER REACHED
+
+**Evidence:**
+- **ZERO** instances of "Build 37: Forcing release of cached peripheral" in logs
+- Test 1: "[CONNECT] ❌ ABORT: Peripheral not found in current scan list"
+- Test 2: "[CONNECT] Connection failed: Please scan again to reconnect"
+
+### Real Problem Identified
+
+**What we thought:**
+- iOS peripheral caching causing stale characteristic handles
+- Need to force cache release with cancelPeripheralConnection()
+
+**What actually happens:**
+- Scan list cleared after disconnect (correct)
+- UI still shows old peripheral (UI layer issue)
+- Pre-flight correctly rejects stale peripheral (working as designed)
+- **Gap:** UI state mismatch, not Bluetooth caching
+
+**The UX Problem:**
+```
+User sees peripheral in UI → User clicks → Pre-flight rejects → "Scan again" error
+→ User confused: "But I SEE the battery right there!"
+```
+
+### Test Results
+
+**Test 1: Battery Restart Without App Restart**
+- Status: ❌ FAILED
+- Log: `bigbattery_logs_20251114_091457.json`
+- Connection error, error 4 present
+- Build 37 fix never ran
+
+**Test 2: Settings Save (Crash Verification)**
+- Status: ✅/❌ PARTIAL
+- Log: `bigbattery_logs_20251114_095054.json`
+- ✅ NO crash (DiagnosticsViewController fix works!)
+- ❌ Unable to reconnect (Build 37 fix never ran)
+
+### Comparison with Build 36
+
+| Metric | Build 36 | Build 37 | Change |
+|--------|----------|----------|--------|
+| Connection success (Scenario 2) | 0% | 0% | NO CHANGE |
+| Error 4 frequency | Some | Some | NO CHANGE |
+| Settings display | ✅ Works | Not tested (likely works) | SAME |
+| DiagnosticsViewController crash | N/A | ✅ FIXED | **IMPROVEMENT** |
+| User experience (reconnection) | Manual scan required | Manual scan required | NO CHANGE |
+
+**Success Rate:** 0% on PRIMARY objective, 100% on SECONDARY objective
+
+### Git Information
+
+**Commit:** d1bb7a1
+**Tag:** `build-37`
+**Branch:** feature/fix-protocols-and-connection
+
+**View this build:**
+```bash
+git show build-37
+git checkout build-37
+```
+
+### Test Logs
+
+- `docs/fix-history/logs/bigbattery_logs_20251114_091457.json` (Test 1 - Battery Restart)
+- `docs/fix-history/logs/bigbattery_logs_20251114_095054.json` (Test 2 - Settings Save)
+
+### Lessons Learned
+
+1. **Code placement matters** - Fix placed AFTER early return = unreachable code
+2. **Pre-flight validation working TOO well** - Blocks stale peripherals AND fix attempts
+3. **Real problem is UX not Bluetooth** - UI/scan list mismatch, not iOS caching
+4. **Don't fight good protection** - Pre-flight doing its job correctly
+5. **Fix in right layer** - UI problem needs UI solution, not Bluetooth fix
+
+### Recommendations for Build 38
+
+**DO:**
+- Auto-trigger scan when scan list cleared (UI layer solution)
+- Keep pre-flight validation working (it's protecting us)
+- Keep all existing fixes (Build 31, 36, 37 crash fix)
+- ONE PROBLEM = ONE BUILD (only auto-scan)
+
+**DON'T:**
+- Move Build 37 fix before pre-flight (would disable protection)
+- Try to "fix" stale peripherals (pre-flight correctly rejects them)
+- Touch Bluetooth logic (ZetaraManager working correctly)
+
+**Proposed Solution for Build 38:**
+```swift
+// In ConnectivityViewController
+scannedPeripheralsSubject.subscribe(onNext: { [weak self] peripherals in
+    if peripherals.isEmpty && self?.wasConnected == true {
+        self?.startScanning()  // Auto-scan after disconnect cleanup
+    }
+})
+```
+
+### Thread Reference
+
+**THREAD-001** - Attempt #7 (Build 37 section)
+Lines 1321-1569: Build 37 test results and analysis
+Lines 1678-1805: ROOT CAUSE EVOLUTION - Build 37 understanding
+
+---
+
+## Build 36 (2025-11-07) - ✅ STABLE (RECOMMENDED)
 
 **Status:** ✅ **RECOMMENDED** - All critical features working
 
