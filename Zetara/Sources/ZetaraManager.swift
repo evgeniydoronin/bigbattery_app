@@ -761,6 +761,67 @@ public class ZetaraManager: NSObject {
         protocolDataManager.logProtocolEvent("[LAUNCH] Updated peripheral reference with fresh instance")
     }
 
+    // Build 39: Startup auto-reconnect
+    /// Initiates auto-reconnect at app startup if UUID exists in UserDefaults
+    /// Called from AppDelegate.didFinishLaunchingWithOptions after setup()
+    /// Handles both "Bluetooth already on" and "Bluetooth off at launch" scenarios
+    public func initiateStartupAutoReconnect() {
+        protocolDataManager.logProtocolEvent("[STARTUP] Checking for stored UUID to auto-reconnect")
+
+        // Get stored UUID from persistent storage
+        guard let storedUUIDString = UserDefaults.standard.string(forKey: lastConnectedUUIDKey) else {
+            protocolDataManager.logProtocolEvent("[STARTUP] No stored UUID found - manual scan required")
+            return
+        }
+
+        guard autoReconnectEnabled else {
+            protocolDataManager.logProtocolEvent("[STARTUP] Auto-reconnect disabled by user")
+            return
+        }
+
+        protocolDataManager.logProtocolEvent("[STARTUP] Found stored UUID: \(storedUUIDString)")
+        protocolDataManager.logProtocolEvent("[STARTUP] Auto-reconnect enabled - checking Bluetooth state")
+
+        // Check if already attempting reconnection to avoid duplicates
+        if let currentPeripheral = try? connectedPeripheralSubject.value(),
+           currentPeripheral.state == .connecting {
+            protocolDataManager.logProtocolEvent("[STARTUP] Auto-reconnect already in progress - skipping duplicate")
+            return
+        }
+
+        // Check current Bluetooth state synchronously
+        // observeStateWithInitialValue() emits current state immediately
+        let stateDisposable = manager.observeStateWithInitialValue()
+            .take(1)
+            .subscribe(onNext: { [weak self] currentState in
+                guard let self = self else { return }
+
+                self.protocolDataManager.logProtocolEvent("[STARTUP] Current Bluetooth state: \(currentState)")
+
+                if currentState == .poweredOn {
+                    // Bluetooth already powered on - proceed immediately
+                    self.protocolDataManager.logProtocolEvent("[STARTUP] Bluetooth already powered on - initiating auto-reconnect immediately")
+                    self.attemptAutoReconnect(peripheralUUID: storedUUIDString)
+                } else {
+                    // Bluetooth not ready - wait for .poweredOn state
+                    self.protocolDataManager.logProtocolEvent("[STARTUP] Bluetooth not ready (\(currentState)) - will auto-reconnect when Bluetooth powers on")
+
+                    // Set up one-time listener for Bluetooth ready
+                    // This will trigger auto-reconnect when user enables Bluetooth
+                    self.observableState
+                        .filter { $0 == .poweredOn }
+                        .take(1)  // Fire only once
+                        .subscribe(onNext: { [weak self] _ in
+                            self?.protocolDataManager.logProtocolEvent("[STARTUP] Bluetooth now powered on - initiating auto-reconnect")
+                            self?.attemptAutoReconnect(peripheralUUID: storedUUIDString)
+                        })
+                        .disposed(by: self.disposeBag)
+                }
+            })
+
+        stateDisposable.dispose()
+    }
+
     public func observeDisconect() -> Observable<Peripheral> {
         return manager.observeDisconnect()
             .do(onNext: { [weak self] (peripheral, error) in

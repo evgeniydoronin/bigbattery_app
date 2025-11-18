@@ -47,6 +47,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // This catches cached peripherals from previous session before any operations attempt to use them
         ZetaraManager.shared.refreshPeripheralInstanceIfNeeded()
 
+        // Build 39: Initiate startup auto-reconnect if UUID exists in UserDefaults
+        // This enables cross-session auto-reconnect (app restart with battery off → app auto-reconnects when battery powers on)
+        ZetaraManager.shared.initiateStartupAutoReconnect()
+
         return true
     }
 
