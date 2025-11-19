@@ -23,7 +23,7 @@
 
 ---
 
-## Priority Tests (Previously FAILED → Should PASS Now)
+## Priority Tests (Previously FAILED, Should PASS Now)
 
 ### Test 1: Mid-session Reconnect (Basic Battery Restart)
 
@@ -37,14 +37,14 @@
 7. **Wait up to 30 seconds** - DO NOT manually scan!
 
 **Expected Result:**
-- ✅ App auto-reconnects WITHOUT requiring manual scan
-- ✅ Battery data appears automatically
-- ✅ Connection successful
+- App auto-reconnects WITHOUT requiring manual scan
+- Battery data appears automatically
+- Connection successful
 
 **If FAILED:**
-- ❌ App shows "Not connected"
-- ❌ Must manually scan to reconnect
-- ❌ "Connection error" appears
+- App shows "Not connected"
+- Must manually scan to reconnect
+- "Connection error" appears
 
 **After test:** Send logs immediately (share button in app)
 
@@ -67,20 +67,20 @@
 10. Check if connection restores automatically
 
 **Expected Result:**
-- ✅ App auto-reconnects WITHOUT requiring manual scan
-- ✅ Settings screen shows correct Module ID and protocols after reconnect
-- ✅ Connection successful
+- App auto-reconnects WITHOUT requiring manual scan
+- Settings screen shows correct Module ID and protocols after reconnect
+- Connection successful
 
 **If FAILED:**
-- ❌ App shows "Not connected"
-- ❌ Must manually navigate to Bluetooth screen and scan
-- ❌ Settings shows "--" for protocols
+- App shows "Not connected"
+- Must manually navigate to Bluetooth screen and scan
+- Settings shows "--" for protocols
 
 **After test:** Send logs immediately (share button in app)
 
 ---
 
-## Regression Test (Previously PASSED → Should Still PASS)
+## Regression Test (Previously PASSED, Should Still PASS)
 
 ### Test 3: Cross-session Reconnect (App Restart)
 
@@ -94,13 +94,13 @@
 7. **Wait up to 30 seconds** - DO NOT manually scan!
 
 **Expected Result:**
-- ✅ App auto-reconnects WITHOUT requiring manual scan
-- ✅ Battery data appears automatically on Home screen
-- ✅ Connection successful
+- App auto-reconnects WITHOUT requiring manual scan
+- Battery data appears automatically on Home screen
+- Connection successful
 
 **If FAILED:**
-- ❌ App shows "Not connected"
-- ❌ Must manually scan to reconnect
+- App shows "Not connected"
+- Must manually scan to reconnect
 
 **After test:** Send logs immediately (share button in app)
 
@@ -134,15 +134,15 @@
 **Test 1 & 2 (Mid-session reconnect):**
 ```
 [CLEANUP] Partial cleanup - preserving UUID for auto-reconnect
-[RECONNECT] ⚡ Starting auto-reconnect sequence
+[RECONNECT] Starting auto-reconnect sequence
 [RECONNECT] Target UUID: ...
 [RECONNECT] Retrieved 1 peripheral(s) with matching UUID
-[CONNECT] ✅ Connection established
+[CONNECT] Connection established
 ```
 
 **Should NOT see:**
 ```
-[CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)
+[CLEANUP] Full cleanup requested (MANUAL disconnect)
 [CLEANUP] Cleared persistent UUID from storage
 ```
 
@@ -150,8 +150,8 @@
 ```
 [STARTUP] Checking for auto-reconnect possibility
 [STARTUP] Found cached UUID: ...
-[RECONNECT] ⚡ Starting auto-reconnect sequence
-[CONNECT] ✅ Connection established
+[RECONNECT] Starting auto-reconnect sequence
+[CONNECT] Connection established
 ```
 
 ---
@@ -175,8 +175,6 @@ _[Any observations, weird behavior, etc.]_
 - Test 2: ~3 minutes (includes Settings navigation)
 - Test 3: ~2 minutes
 - **Total: ~7 minutes**
-
-Much faster than Build 40's 6 tests!
 
 ---
 
