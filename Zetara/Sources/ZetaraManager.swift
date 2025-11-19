@@ -177,11 +177,24 @@ public class ZetaraManager: NSObject {
                 // If peripheral.state != .connected, connection was lost without disconnect event!
                 if currentState != .connected {
                     self.protocolDataManager.logProtocolEvent("[HEALTH] ⚠️ DETECTED: Peripheral state changed to \(currentState.rawValue)")
-                    self.protocolDataManager.logProtocolEvent("[HEALTH] Connection lost without disconnect event - forcing cleanup")
+                    self.protocolDataManager.logProtocolEvent("[HEALTH] Connection lost without disconnect event - triggering auto-reconnect")
                     print("[HEALTH] ⚠️ DETECTED: Peripheral state changed to \(currentState.rawValue)")  // Console debug
 
-                    // Trigger cleanup
-                    self.cleanConnection()
+                    // Build 40 FIX: Use partial cleanup + auto-reconnect instead of full cleanup
+                    // This preserves UUID for automatic reconnection (Build 38 feature)
+                    self.cleanConnectionPartial()
+
+                    // Attempt auto-reconnect if enabled and UUID available
+                    if self.autoReconnectEnabled {
+                        if let uuid = self.cachedDeviceUUID {
+                            self.protocolDataManager.logProtocolEvent("[HEALTH] Triggering auto-reconnect with UUID: \(uuid)")
+                            self.attemptAutoReconnect(peripheralUUID: uuid)
+                        } else {
+                            self.protocolDataManager.logProtocolEvent("[HEALTH] ⚠️ Cannot auto-reconnect: No cached UUID")
+                        }
+                    } else {
+                        self.protocolDataManager.logProtocolEvent("[HEALTH] Auto-reconnect disabled - manual scan required")
+                    }
                 }
             })
             .disposed(by: disposeBag)
@@ -564,6 +577,14 @@ public class ZetaraManager: NSObject {
     private func attemptAutoReconnect(peripheralUUID: String) {
         protocolDataManager.logProtocolEvent("[RECONNECT] ⚡ Starting auto-reconnect sequence")
         protocolDataManager.logProtocolEvent("[RECONNECT] Target UUID: \(peripheralUUID)")
+
+        // Build 40: Prevent duplicate auto-reconnect attempts
+        // If iOS didDisconnect fires after health monitor, this prevents second attempt
+        if let peripheral = try? connectedPeripheralSubject.value(),
+           peripheral.state == .connecting {
+            protocolDataManager.logProtocolEvent("[RECONNECT] ⚠️ Auto-reconnect already in progress - skipping duplicate")
+            return
+        }
 
         guard let uuid = UUID(uuidString: peripheralUUID) else {
             protocolDataManager.logProtocolEvent("[RECONNECT] ❌ Invalid UUID format")
