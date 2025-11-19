@@ -1,0 +1,163 @@
+{
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "step" : "connection",
+        "timestamp" : "13:03:33 19.11.2025",
+        "status" : "success",
+        "message" : "No device connected"
+      },
+      {
+        "timestamp" : "13:03:26 19.11.2025",
+        "step" : "connection",
+        "message" : "No device connected",
+        "status" : "success"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "13:03:26 19.11.2025",
+        "message" : "Diagnostics screen launched",
+        "step" : "connection"
+      }
+    ]
+  },
+  "events" : [
+    {
+      "timestamp" : "13:03:33 19.11.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "timestamp" : "13:03:31 19.11.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "message" : "No device connected",
+      "timestamp" : "13:03:26 19.11.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "13:03:26 19.11.2025",
+      "type" : "Connection"
+    },
+    {
+      "message" : "New battery data received",
+      "timestamp" : "13:03:26 19.11.2025",
+      "type" : "Data Update"
+    }
+  ],
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "protocolInfo" : {
+    "currentValues" : {
+      "rs485Protocol" : "--",
+      "moduleId" : "--",
+      "canProtocol" : "--"
+    },
+    "statistics" : {
+      "warnings" : 0,
+      "errors" : 0,
+      "successes" : 3,
+      "totalLogs" : 30
+    },
+    "recentLogs" : [
+      "[13:03:32] [CONNECTION] UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[13:03:32] [CONNECTION] Device UUID saved (memory + persistent storage)",
+      "[13:03:32] [CONNECTION] Notify UUID: 1007",
+      "[13:03:32] [CONNECTION] Write UUID: 1008",
+      "[13:03:32] [CONNECTION] ✅ Characteristics configured",
+      "[13:03:32] [CONNECT] Service UUID: 1006",
+      "[13:03:32] [CONNECT] Services discovered: 1",
+      "[13:03:31] [CONNECTIVITY] Connection failed: Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[13:03:31] [CONNECTION] Connection state cleaned",
+      "[13:03:31] [CONNECTION] Cached device UUID cleared (memory)",
+      "[13:03:31] [CONNECTION] All Bluetooth characteristics cleared",
+      "[13:03:31] [CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)",
+      "[13:03:31] [CONNECTION] Scanned peripherals cleared",
+      "[13:03:31] [PROTOCOL MANAGER] Clearing all protocols",
+      "[13:03:31] [CONNECTION] BMS data cleared",
+      "[13:03:31] [QUEUE] Request queue cleared",
+      "[13:03:31] [CLEANUP] This will clear ALL connection data including persistent UUID",
+      "[13:03:31] [CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)",
+      "[13:03:31] [CONNECT] Fresh peripheral UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[13:03:31] [CONNECT] ✅ Retrieved fresh peripheral instance (prevents stale characteristic caches)",
+      "[13:03:31] [CONNECT] ✅ Peripheral verified from current scan session",
+      "[13:03:31] [CONNECT] Pre-flight check: Peripheral in current scan list: true",
+      "[13:03:31] [CONNECT] Cached UUID: none",
+      "[13:03:31] [CONNECT] Device UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[13:03:31] [CONNECT] Device name: BB-51.2V100Ah-0855",
+      "[13:03:31] [CONNECT] Attempting connection",
+      "[13:03:28] [CONNECTIVITY] No connected peripheral - clearing scanned list",
+      "[13:03:28] [CONNECTIVITY] viewWillAppear - checking peripheral state",
+      "[13:03:16] [CONNECTION] Connection state cleaned",
+      "[13:03:16] [CONNECTION] Cached device UUID cleared (memory)"
+    ],
+    "lastUpdateTime" : "13:03:34 19.11.2025"
+  },
+  "communicationErrorsInfo" : {
+    "timeouts" : 0,
+    "retries" : 0,
+    "packetLoss" : 0,
+    "crcErrors" : 0
+  },
+  "deviceInfo" : {
+    "name" : "iPhone",
+    "systemName" : "iOS",
+    "model" : "iPhone",
+    "systemVersion" : "26.2"
+  },
+  "rawDataInfo" : {
+    "packetHistory" : [
+      {
+        "timestamp" : "13:03:34 19.11.2025",
+        "parseResult" : "success",
+        "data" : "0000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "parseErrors" : [
+
+    ]
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overcurrent" : false,
+      "overtemperature" : false,
+      "undervoltage" : false,
+      "shortCircuit" : false,
+      "overvoltage" : false
+    }
+  },
+  "appInfo" : {
+    "build" : "40",
+    "version" : "1.4.1"
+  },
+  "batteryInfo" : {
+    "cellCount" : 0,
+    "voltage" : 0,
+    "status" : "Standby",
+    "cellVoltages" : [
+
+    ],
+    "soh" : 0,
+    "tempEnv" : 0,
+    "current" : 0,
+    "cellTemps" : [
+
+    ],
+    "soc" : 0,
+    "timestamp" : "13:03:34 19.11.2025",
+    "tempPCB" : 0
+  },
+  "systemInfo" : {
+    "batteryLevel" : 90,
+    "isLowPowerMode" : false,
+    "availableMemory" : 5910085632,
+    "cpuUsage" : 0
+  },
+  "timestamp" : "13:03:34 19.11.2025"
+}

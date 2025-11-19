@@ -83,7 +83,7 @@ public class ZetaraManager: NSObject {
     public let protocolDataManager = ProtocolDataManager()
 
     // UUID текущего подключенного устройства (для проверки валидности)
-    private var cachedDeviceUUID: String?
+    public var cachedDeviceUUID: String?
 
     // MARK: - Build 38: Persistent Storage for Auto-Reconnect
     // Persistent storage keys for auto-reconnection feature
@@ -527,7 +527,7 @@ public class ZetaraManager: NSObject {
     /// KEEPS peripheral UUID and connection state for auto-reconnect capability
     /// Used during disconnect to preserve reconnection foundation
     /// Apple docs: "All services, characteristics become invalidated after disconnect"
-    private func cleanConnectionPartial() {
+    public func cleanConnectionPartial() {
         protocolDataManager.logProtocolEvent("[CLEANUP] Partial cleanup - preserving UUID for auto-reconnect")
 
         // Останавливаем мониторинг подключения
@@ -574,7 +574,7 @@ public class ZetaraManager: NSObject {
     /// Uses retrievePeripherals(withIdentifiers:) to get fresh peripheral instance
     /// Establishes persistent connection request that survives battery power cycles
     /// - Parameter peripheralUUID: UUID string of peripheral to reconnect
-    private func attemptAutoReconnect(peripheralUUID: String) {
+    public func attemptAutoReconnect(peripheralUUID: String) {
         protocolDataManager.logProtocolEvent("[RECONNECT] ⚡ Starting auto-reconnect sequence")
         protocolDataManager.logProtocolEvent("[RECONNECT] Target UUID: \(peripheralUUID)")
 

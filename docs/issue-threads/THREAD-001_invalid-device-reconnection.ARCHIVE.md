@@ -1,4 +1,18 @@
-# THREAD-001: Invalid Device Error After Battery Reconnection
+# ⚠️ ARCHIVED FILE - See New Structure Below
+
+**This file has been archived on 2025-11-19 and is kept for historical reference only.**
+
+**New location:** This documentation has been refactored into a modular structure for better navigation:
+- **Main index:** [THREAD-001.md](THREAD-001.md)
+- **Build documentation:** [THREAD-001/](THREAD-001/) directory
+  - Individual build files: `build-28.md` through `build-40.md`
+  - Supporting files: `initial-report.md`, `root-cause-evolution.md`
+
+**Why refactored:** The original 2706-line file was difficult to navigate. The new structure allows quick access to specific builds or ranges of builds.
+
+---
+
+# THREAD-001: Invalid Device Error After Battery Reconnection (ARCHIVED)
 
 **Status:** 🟢 SETTINGS DISPLAY RESOLVED | 🔴 CONNECTION STABILITY (separate issue)
 **Severity:** CRITICAL

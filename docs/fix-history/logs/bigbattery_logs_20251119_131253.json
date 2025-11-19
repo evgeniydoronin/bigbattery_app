@@ -1,0 +1,342 @@
+{
+  "systemInfo" : {
+    "cpuUsage" : 0,
+    "batteryLevel" : 90,
+    "availableMemory" : 5910085632,
+    "isLowPowerMode" : false
+  },
+  "deviceInfo" : {
+    "systemName" : "iOS",
+    "name" : "iPhone",
+    "systemVersion" : "26.2",
+    "model" : "iPhone"
+  },
+  "bluetoothInfo" : {
+    "state" : "poweredOn",
+    "connectionAttempts" : 0
+  },
+  "events" : [
+    {
+      "message" : "New battery data received",
+      "type" : "Data Update",
+      "timestamp" : "13:12:52 19.11.2025"
+    },
+    {
+      "timestamp" : "13:12:52 19.11.2025",
+      "message" : "No device connected",
+      "type" : "Connection"
+    },
+    {
+      "message" : "New battery data received",
+      "timestamp" : "13:12:51 19.11.2025",
+      "type" : "Data Update"
+    },
+    {
+      "message" : "New battery data received",
+      "type" : "Data Update",
+      "timestamp" : "13:12:49 19.11.2025"
+    },
+    {
+      "message" : "No device connected",
+      "type" : "Connection",
+      "timestamp" : "13:12:49 19.11.2025"
+    },
+    {
+      "type" : "Data Update",
+      "timestamp" : "13:12:48 19.11.2025",
+      "message" : "New battery data received"
+    },
+    {
+      "type" : "Data Update",
+      "message" : "New battery data received",
+      "timestamp" : "13:12:47 19.11.2025"
+    },
+    {
+      "message" : "No device connected",
+      "timestamp" : "13:12:47 19.11.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "13:12:45 19.11.2025",
+      "message" : "New battery data received",
+      "type" : "Data Update"
+    },
+    {
+      "timestamp" : "13:12:45 19.11.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "timestamp" : "13:12:45 19.11.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "message" : "New battery data received",
+      "timestamp" : "13:12:43 19.11.2025",
+      "type" : "Data Update"
+    },
+    {
+      "type" : "Data Update",
+      "message" : "New battery data received",
+      "timestamp" : "13:12:40 19.11.2025"
+    },
+    {
+      "message" : "New battery data received",
+      "type" : "Data Update",
+      "timestamp" : "13:12:38 19.11.2025"
+    },
+    {
+      "timestamp" : "13:12:37 19.11.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "timestamp" : "13:12:27 19.11.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "timestamp" : "13:12:17 19.11.2025",
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "timestamp" : "13:12:16 19.11.2025",
+      "type" : "Disconnection",
+      "message" : "Device disconnected"
+    },
+    {
+      "timestamp" : "13:12:16 19.11.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "type" : "Disconnection",
+      "message" : "Device disconnected",
+      "timestamp" : "13:11:59 19.11.2025"
+    },
+    {
+      "message" : "New battery data received",
+      "timestamp" : "13:11:59 19.11.2025",
+      "type" : "Data Update"
+    },
+    {
+      "timestamp" : "13:11:43 19.11.2025",
+      "type" : "Disconnection",
+      "message" : "Device disconnected"
+    },
+    {
+      "timestamp" : "13:11:43 19.11.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    },
+    {
+      "message" : "Logs sent successfully",
+      "timestamp" : "13:11:40 19.11.2025",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "13:11:34 19.11.2025",
+      "message" : "New battery data received",
+      "type" : "Data Update"
+    },
+    {
+      "type" : "Data Update",
+      "timestamp" : "13:11:30 19.11.2025",
+      "message" : "New battery data received"
+    },
+    {
+      "timestamp" : "13:11:29 19.11.2025",
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "message" : "New battery data received",
+      "timestamp" : "13:11:29 19.11.2025",
+      "type" : "Data Update"
+    },
+    {
+      "timestamp" : "13:11:29 19.11.2025",
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "type" : "Connection"
+    },
+    {
+      "timestamp" : "13:11:29 19.11.2025",
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched"
+    }
+  ],
+  "timestamp" : "13:12:53 19.11.2025",
+  "appInfo" : {
+    "build" : "40",
+    "version" : "1.4.1"
+  },
+  "batteryInfo" : {
+    "soc" : 0,
+    "cellVoltages" : [
+
+    ],
+    "current" : 0,
+    "status" : "Standby",
+    "tempEnv" : 0,
+    "cellTemps" : [
+
+    ],
+    "soh" : 0,
+    "cellCount" : 0,
+    "tempPCB" : 0,
+    "voltage" : 0,
+    "timestamp" : "13:12:53 19.11.2025"
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "status" : "success",
+        "step" : "connection",
+        "message" : "No device connected",
+        "timestamp" : "13:12:52 19.11.2025"
+      },
+      {
+        "timestamp" : "13:12:49 19.11.2025",
+        "status" : "success",
+        "message" : "No device connected",
+        "step" : "connection"
+      },
+      {
+        "message" : "No device connected",
+        "timestamp" : "13:12:47 19.11.2025",
+        "step" : "connection",
+        "status" : "success"
+      },
+      {
+        "timestamp" : "13:12:45 19.11.2025",
+        "step" : "connection",
+        "message" : "No device connected",
+        "status" : "success"
+      },
+      {
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "timestamp" : "13:12:17 19.11.2025",
+        "step" : "connection",
+        "status" : "success"
+      },
+      {
+        "step" : "disconnection",
+        "status" : "success",
+        "timestamp" : "13:12:16 19.11.2025",
+        "message" : "Device disconnected"
+      },
+      {
+        "step" : "disconnection",
+        "status" : "success",
+        "timestamp" : "13:11:59 19.11.2025",
+        "message" : "Device disconnected"
+      },
+      {
+        "step" : "disconnection",
+        "status" : "success",
+        "timestamp" : "13:11:43 19.11.2025",
+        "message" : "Device disconnected"
+      },
+      {
+        "message" : "Logs sent successfully",
+        "timestamp" : "13:11:40 19.11.2025",
+        "step" : "connection",
+        "status" : "success"
+      },
+      {
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "status" : "success",
+        "step" : "connection",
+        "timestamp" : "13:11:29 19.11.2025"
+      },
+      {
+        "step" : "connection",
+        "status" : "success",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "timestamp" : "13:11:29 19.11.2025"
+      },
+      {
+        "step" : "connection",
+        "timestamp" : "13:11:29 19.11.2025",
+        "status" : "success",
+        "message" : "Diagnostics screen launched"
+      }
+    ]
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overvoltage" : false,
+      "undervoltage" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false,
+      "overcurrent" : false
+    }
+  },
+  "rawDataInfo" : {
+    "packetHistory" : [
+      {
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "timestamp" : "13:12:53 19.11.2025",
+        "parseResult" : "success"
+      }
+    ],
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000"
+  },
+  "protocolInfo" : {
+    "statistics" : {
+      "successes" : 0,
+      "totalLogs" : 30,
+      "warnings" : 0,
+      "errors" : 2
+    },
+    "currentValues" : {
+      "canProtocol" : "--",
+      "moduleId" : "--",
+      "rs485Protocol" : "--"
+    },
+    "lastUpdateTime" : "13:12:53 19.11.2025",
+    "recentLogs" : [
+      "[13:12:52] [CONNECTION] Connection state cleaned",
+      "[13:12:52] [CONNECTION] Cached device UUID cleared (memory)",
+      "[13:12:52] [CONNECTION] All Bluetooth characteristics cleared",
+      "[13:12:52] [CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)",
+      "[13:12:52] [CONNECTION] Scanned peripherals cleared",
+      "[13:12:52] [PROTOCOL MANAGER] Clearing all protocols",
+      "[13:12:52] [CONNECTION] BMS data cleared",
+      "[13:12:52] [CONNECTION] 🛑 BMS timer stopped",
+      "[13:12:52] [QUEUE] Request queue cleared",
+      "[13:12:52] [CLEANUP] This will clear ALL connection data including persistent UUID",
+      "[13:12:52] [CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)",
+      "[13:12:52] [BMS] ❌ No peripheral\/characteristics available",
+      "[13:12:52] [BMS] Device connected: false",
+      "[13:12:52] [BMS] 📡 getBMSData() called",
+      "[13:12:52] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[13:12:51] [CONNECTION] Connection state cleaned",
+      "[13:12:51] [CONNECTION] Cached device UUID cleared (memory)",
+      "[13:12:51] [CONNECTION] All Bluetooth characteristics cleared",
+      "[13:12:51] [CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)",
+      "[13:12:51] [CONNECTION] Scanned peripherals cleared",
+      "[13:12:51] [PROTOCOL MANAGER] Clearing all protocols",
+      "[13:12:51] [CONNECTION] BMS data cleared",
+      "[13:12:51] [CONNECTION] 🛑 BMS timer stopped",
+      "[13:12:51] [QUEUE] Request queue cleared",
+      "[13:12:51] [CLEANUP] This will clear ALL connection data including persistent UUID",
+      "[13:12:51] [CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)",
+      "[13:12:51] [BMS] ❌ No peripheral\/characteristics available",
+      "[13:12:51] [BMS] Device connected: false",
+      "[13:12:51] [BMS] 📡 getBMSData() called",
+      "[13:12:51] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)"
+    ]
+  },
+  "communicationErrorsInfo" : {
+    "timeouts" : 0,
+    "crcErrors" : 0,
+    "retries" : 0,
+    "packetLoss" : 0
+  }
+}

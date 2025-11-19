@@ -127,9 +127,23 @@ class ConnectivityViewController : UIViewController {
             ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Peripheral state: \(peripheralState.rawValue)")
 
             if peripheralState != .connected {
-                // Peripheral is NOT connected (disconnected/disconnecting) - force cleanup
-                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] ⚠️ Peripheral state is \(peripheralState.rawValue), not connected - forcing cleanup")
-                ZetaraManager.shared.cleanConnection()
+                // Build 41 FIX: Use partial cleanup + auto-reconnect instead of full cleanup
+                ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] ⚠️ Peripheral state is \(peripheralState.rawValue), not connected - triggering auto-reconnect")
+
+                ZetaraManager.shared.cleanConnectionPartial()
+
+                // Attempt auto-reconnect if enabled and UUID available
+                if ZetaraManager.shared.autoReconnectEnabled {
+                    if let uuid = ZetaraManager.shared.cachedDeviceUUID {
+                        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Triggering auto-reconnect with UUID: \(uuid)")
+                        ZetaraManager.shared.attemptAutoReconnect(peripheralUUID: uuid)
+                    } else {
+                        ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] ⚠️ Cannot auto-reconnect: No cached UUID")
+                    }
+                } else {
+                    ZetaraManager.shared.protocolDataManager.logProtocolEvent("[CONNECTIVITY] Auto-reconnect disabled - manual scan required")
+                }
+
                 scannedPeripherals = []
                 tableView.reloadData()
             } else {
