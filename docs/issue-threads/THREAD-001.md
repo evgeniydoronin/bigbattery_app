@@ -1,41 +1,43 @@
 # THREAD-001: Invalid Device Error After Battery Reconnection
 
-**Status:** ⏳ BUILD 41 TESTING
+**Status:** BUILD 42 TESTING
 **Severity:** CRITICAL
 **First Reported:** 2025-10-10
-**Last Updated:** 2025-11-19
+**Last Updated:** 2025-11-25
 **Client:** Joshua (BigBattery ETHOS module BB-51.2V100Ah-0855)
 
 ---
 
 ## Quick Summary
 
-### Current Status (Build 41):
+### Current Status (Build 42):
 
-**Testing Phase:** Build 41 currently being tested by Joshua
+**Testing Phase:** Build 42 currently being tested by Joshua
 
 **What's Fixed:**
-- ✅ Build 31: Initial reconnection issue (scan list validation)
-- ✅ Build 34-35: Fresh peripheral retrieval at launch
-- ✅ Build 36: Settings screen protocol display
-- ✅ Build 37: DiagnosticsViewController crash fix
-- ✅ Build 38: Persistent connection request pattern
-- ✅ Build 39: Startup auto-reconnect (works correctly!)
-- ✅ Build 40: Health monitor partial cleanup (correct but incomplete)
+- Build 31: Initial reconnection issue (scan list validation)
+- Build 34-35: Fresh peripheral retrieval at launch
+- Build 36: Settings screen protocol display
+- Build 37: DiagnosticsViewController crash fix
+- Build 38: Persistent connection request pattern
+- Build 39: Startup auto-reconnect (works correctly!)
+- Build 40: Health monitor partial cleanup
+- Build 41: viewWillAppear partial cleanup
 
-**What's Being Fixed (Build 41):**
-- 🔧 ConnectivityViewController.viewWillAppear() destroying UUID
-- 🔧 Mid-session auto-reconnect failing when user navigates to Settings
+**What's Being Fixed (Build 42):**
+- writeControlData() calling cleanConnection() when peripheral nil
+- getBMSData() calling cleanConnection() when peripheral nil
+- Mid-session auto-reconnect failing due to UUID destruction
 
-**Root Cause (Build 40 → 41):**
-- Build 40 fixed health monitor (correct!) but tests still failed
-- Investigation revealed: viewWillAppear() calls cleanConnection() when checking peripheral state
-- This destroys UUID even after observeDisconnect() correctly preserved it!
+**Root Cause (Build 41 -> 42):**
+- Build 41 fixed viewWillAppear (correct!) but tests still failed
+- Logs showed: `[BLUETOOTH] No peripheral for writeControlData` followed by `[CLEANUP] Full cleanup`
+- writeControlData() and getBMSData() destroy UUID before health monitor can act
 
 **Expected Outcome:**
-- ✅ Complete auto-reconnect feature (mid-session + startup)
-- ✅ No manual scans required
-- ✅ Works across app sessions and Settings navigation
+- Complete auto-reconnect feature (mid-session + startup)
+- No manual scans required
+- Health monitor handles disconnect detection and auto-reconnect
 
 ---
 
@@ -54,9 +56,10 @@
 | 36 | 2025-11-07 | ✅ SUCCESS | Settings Display | [build-36.md](THREAD-001/build-36.md) |
 | 37 | 2025-11-14 | ❌ FAILED | Connection Stability | [build-37.md](THREAD-001/build-37.md) |
 | 38 | 2025-11-17 | ⏳ TESTING | Persistent Connection | [build-38.md](THREAD-001/build-38.md) |
-| 39 | 2025-11-18 | 🔄 PARTIAL | Startup Auto-Reconnect | [build-39.md](THREAD-001/build-39.md) |
-| 40 | 2025-11-19 | 🔄 PARTIAL | Health Monitor Fix | [build-40.md](THREAD-001/build-40.md) |
-| 41 | 2025-11-19 | ⏳ TESTING | ViewWillAppear Fix | [build-41.md](THREAD-001/build-41.md) |
+| 39 | 2025-11-18 | PARTIAL | Startup Auto-Reconnect | [build-39.md](THREAD-001/build-39.md) |
+| 40 | 2025-11-19 | PARTIAL | Health Monitor Fix | [build-40.md](THREAD-001/build-40.md) |
+| 41 | 2025-11-19 | PARTIAL | ViewWillAppear Fix | [build-41.md](THREAD-001/build-41.md) |
+| 42 | 2025-11-25 | TESTING | writeControlData/getBMSData Fix | [build-42.md](THREAD-001/build-42.md) |
 
 ---
 

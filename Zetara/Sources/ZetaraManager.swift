@@ -1098,8 +1098,7 @@ public class ZetaraManager: NSObject {
               let notifyCharacteristic = notifyCharacteristic else {
             protocolDataManager.logProtocolEvent("[BMS] ❌ No peripheral/characteristics available")
             print("!!! ОШИБКА: Нет подключенного устройства !!!")
-            // 清理连接状态
-            cleanConnection()
+            // Build 42: Don't call cleanConnection() here - let health monitor handle auto-reconnect
             return Maybe.error(ZetaraManager.Error.connectionError)
         }
 
@@ -1198,7 +1197,7 @@ public class ZetaraManager: NSObject {
               let notifyCharacteristic = notifyCharacteristic else {
             print("send data error. no connected peripheral")
             protocolDataManager.logProtocolEvent("[BLUETOOTH] ❌ No peripheral for writeControlData")
-            cleanConnection()
+            // Build 42: Don't call cleanConnection() here - let health monitor handle auto-reconnect
             return Maybe.error(Error.writeControlDataError)
         }
 

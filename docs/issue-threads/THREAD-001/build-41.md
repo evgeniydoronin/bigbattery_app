@@ -1,7 +1,7 @@
 # Build 41: Fix viewWillAppear Auto-Reconnect Destroyer
 
 **Date:** 2025-11-19
-**Status:** ⏳ TESTING (awaiting results)
+**Status:** PARTIAL (2/4 tests)
 **Attempt:** #11
 
 **Navigation:**
@@ -366,7 +366,46 @@ The difference from Build 40: We found and fixed the REAL source of UUID destruc
 
 ---
 
+## Test Results (2025-11-20):
+
+### Summary:
+| Test | Result | Issue |
+|------|--------|-------|
+| Test 1 (Battery restart) | FAILED | Full cleanup triggered, UUID destroyed |
+| Test 2 (Settings navigation) | FAILED | Full cleanup triggered, protocols "--" |
+| Test 3 (App restart) | SUCCESS | Cross-session reconnect works |
+| Test 4 (Walk away) | Observation | "tap to connect" appears correctly |
+
+**Pattern:** Mid-session reconnect still broken, startup reconnect works.
+
+### Root Cause Discovery:
+
+**Build 41 fixed viewWillAppear, BUT logs show FULL cleanup from OTHER sources:**
+
+```
+[BLUETOOTH] No peripheral for writeControlData
+[CLEANUP] Full cleanup requested (MANUAL disconnect)
+[CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)
+```
+
+The issue: `writeControlData()` and `getBMSData()` call `cleanConnection()` when peripheral is nil, which destroys the UUID before health monitor can trigger auto-reconnect.
+
+### Diagnostic Logs:
+
+- Test 1: `docs/fix-history/logs/bigbattery_logs_20251120_113824.json`
+- Test 2: `docs/fix-history/logs/bigbattery_logs_20251120_114127.json`
+- Test 3: `docs/fix-history/logs/bigbattery_logs_20251120_114417.json`
+- Test 4: `docs/fix-history/logs/bigbattery_logs_20251120_114444.json`
+
+### Conclusion:
+
+Build 41 viewWillAppear fix was CORRECT but INCOMPLETE.
+Additional cleanConnection() calls found in writeControlData() and getBMSData() that still destroy UUID.
+Fix continues in Build 42.
+
+---
+
 **Navigation:**
-- ⬅️ Previous: [Build 40](build-40.md)
-- ➡️ Next: [Build 42](build-42.md)
-- 🏠 Main: [../THREAD-001.md](../THREAD-001.md)
+- Previous: [Build 40](build-40.md)
+- Next: [Build 42](build-42.md)
+- Main: [../THREAD-001.md](../THREAD-001.md)
