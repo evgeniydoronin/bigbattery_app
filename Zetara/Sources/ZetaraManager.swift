@@ -957,8 +957,14 @@ public class ZetaraManager: NSObject {
             print("[CONNECTION] ⚠️ PHANTOM CONNECTION: No peripheral but BMS timer is running!")
             protocolDataManager.logProtocolEvent("[CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!")
 
-            // Принудительная очистка
-            cleanConnection()
+            // Build 43: Use partial cleanup to preserve UUID for auto-reconnect
+            cleanConnectionPartial()
+
+            // Trigger auto-reconnect if UUID available
+            if autoReconnectEnabled, let uuid = cachedDeviceUUID {
+                protocolDataManager.logProtocolEvent("[PHANTOM] Triggering auto-reconnect with UUID: \(uuid)")
+                attemptAutoReconnect(peripheralUUID: uuid)
+            }
             return
         }
 
@@ -977,12 +983,18 @@ public class ZetaraManager: NSObject {
             print("[CONNECTION] Device: \(peripheralName)")
             print("[CONNECTION] Expected state: connected")
             print("[CONNECTION] Actual state: \(currentState)")
-            print("[CONNECTION] Action: Cleaning connection automatically")
+            print("[CONNECTION] Action: Using partial cleanup for auto-reconnect")
 
             protocolDataManager.logProtocolEvent("[CONNECTION] ⚠️ Phantom connection detected! Device: \(peripheralName), State: \(currentState)")
 
-            // Принудительная очистка
-            cleanConnection()
+            // Build 43: Use partial cleanup to preserve UUID for auto-reconnect
+            cleanConnectionPartial()
+
+            // Trigger auto-reconnect if UUID available
+            if autoReconnectEnabled, let uuid = cachedDeviceUUID {
+                protocolDataManager.logProtocolEvent("[PHANTOM] Triggering auto-reconnect with UUID: \(uuid)")
+                attemptAutoReconnect(peripheralUUID: uuid)
+            }
         }
     }
 

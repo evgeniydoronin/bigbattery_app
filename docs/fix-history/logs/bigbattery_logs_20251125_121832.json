@@ -1,0 +1,147 @@
+{
+  "timestamp" : "12:18:32 25.11.2025",
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "42"
+  },
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overvoltage" : false,
+      "undervoltage" : false,
+      "overcurrent" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false
+    }
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "step" : "connection",
+        "status" : "success",
+        "timestamp" : "12:18:31 25.11.2025",
+        "message" : "No device connected"
+      },
+      {
+        "status" : "success",
+        "timestamp" : "12:18:31 25.11.2025",
+        "message" : "Diagnostics screen launched",
+        "step" : "connection"
+      }
+    ]
+  },
+  "bluetoothInfo" : {
+    "state" : "poweredOn",
+    "connectionAttempts" : 0
+  },
+  "protocolInfo" : {
+    "statistics" : {
+      "totalLogs" : 30,
+      "errors" : 3,
+      "successes" : 0,
+      "warnings" : 1
+    },
+    "currentValues" : {
+      "canProtocol" : "--",
+      "moduleId" : "--",
+      "rs485Protocol" : "--"
+    },
+    "recentLogs" : [
+      "[12:18:30] [BMS] ❌ No peripheral\/characteristics available",
+      "[12:18:30] [BMS] Device connected: false",
+      "[12:18:30] [BMS] 📡 getBMSData() called",
+      "[12:18:30] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[12:18:30] [CONNECTION] Connection state cleaned",
+      "[12:18:30] [CONNECTION] Cached device UUID cleared (memory)",
+      "[12:18:30] [CONNECTION] All Bluetooth characteristics cleared",
+      "[12:18:30] [CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)",
+      "[12:18:30] [CONNECTION] Scanned peripherals cleared",
+      "[12:18:30] [PROTOCOL MANAGER] Clearing all protocols",
+      "[12:18:30] [CONNECTION] BMS data cleared",
+      "[12:18:30] [CONNECTION] 🛑 BMS timer stopped",
+      "[12:18:30] [QUEUE] Request queue cleared",
+      "[12:18:30] [CLEANUP] This will clear ALL connection data including persistent UUID",
+      "[12:18:30] [CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)",
+      "[12:18:30] [CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!",
+      "[12:17:49] [BMS] ❌ No peripheral\/characteristics available",
+      "[12:17:49] [BMS] Device connected: false",
+      "[12:17:49] [BMS] 📡 getBMSData() called",
+      "[12:17:49] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[12:17:41] [BMS] ❌ No peripheral\/characteristics available",
+      "[12:17:41] [BMS] Device connected: false",
+      "[12:17:41] [BMS] 📡 getBMSData() called",
+      "[12:17:41] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[12:17:22] [CONNECTION] Connection state cleaned",
+      "[12:17:22] [CONNECTION] Cached device UUID cleared (memory)",
+      "[12:17:22] [CONNECTION] All Bluetooth characteristics cleared",
+      "[12:17:22] [CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)",
+      "[12:17:22] [CONNECTION] Scanned peripherals cleared",
+      "[12:17:22] [PROTOCOL MANAGER] Clearing all protocols"
+    ],
+    "lastUpdateTime" : "12:18:32 25.11.2025"
+  },
+  "deviceInfo" : {
+    "model" : "iPhone",
+    "systemVersion" : "26.2",
+    "name" : "iPhone",
+    "systemName" : "iOS"
+  },
+  "rawDataInfo" : {
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "timestamp" : "12:18:32 25.11.2025",
+        "parseResult" : "success",
+        "data" : "0000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "systemInfo" : {
+    "isLowPowerMode" : false,
+    "cpuUsage" : 0,
+    "batteryLevel" : 100,
+    "availableMemory" : 5910020096
+  },
+  "events" : [
+    {
+      "timestamp" : "12:18:31 25.11.2025",
+      "message" : "No device connected",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "12:18:31 25.11.2025"
+    },
+    {
+      "type" : "Data Update",
+      "message" : "New battery data received",
+      "timestamp" : "12:18:31 25.11.2025"
+    }
+  ],
+  "batteryInfo" : {
+    "cellVoltages" : [
+
+    ],
+    "tempEnv" : 0,
+    "cellTemps" : [
+
+    ],
+    "cellCount" : 0,
+    "timestamp" : "12:18:32 25.11.2025",
+    "current" : 0,
+    "soc" : 0,
+    "soh" : 0,
+    "voltage" : 0,
+    "tempPCB" : 0,
+    "status" : "Standby"
+  },
+  "communicationErrorsInfo" : {
+    "packetLoss" : 0,
+    "retries" : 0,
+    "crcErrors" : 0,
+    "timeouts" : 0
+  }
+}

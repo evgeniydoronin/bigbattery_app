@@ -1,0 +1,152 @@
+{
+  "extendedBatteryInfo" : {
+    "protectionStatus" : {
+      "overcurrent" : false,
+      "overvoltage" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false,
+      "undervoltage" : false
+    }
+  },
+  "deviceInfo" : {
+    "name" : "iPhone",
+    "model" : "iPhone",
+    "systemVersion" : "26.2",
+    "systemName" : "iOS"
+  },
+  "rawDataInfo" : {
+    "parseErrors" : [
+
+    ],
+    "lastReceivedPacket" : "0000000000000000000000000000000000000000000000000000",
+    "packetHistory" : [
+      {
+        "data" : "0000000000000000000000000000000000000000000000000000",
+        "parseResult" : "success",
+        "timestamp" : "12:21:03 25.11.2025"
+      }
+    ]
+  },
+  "communicationErrorsInfo" : {
+    "crcErrors" : 0,
+    "packetLoss" : 0,
+    "retries" : 0,
+    "timeouts" : 0
+  },
+  "timestamp" : "12:21:03 25.11.2025",
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "state" : "poweredOn"
+  },
+  "batteryInfo" : {
+    "current" : 0,
+    "voltage" : 0,
+    "cellTemps" : [
+
+    ],
+    "timestamp" : "12:21:03 25.11.2025",
+    "status" : "Standby",
+    "tempEnv" : 0,
+    "tempPCB" : 0,
+    "cellCount" : 0,
+    "soc" : 0,
+    "cellVoltages" : [
+
+    ],
+    "soh" : 0
+  },
+  "events" : [
+    {
+      "message" : "New battery data received",
+      "timestamp" : "12:21:03 25.11.2025",
+      "type" : "Data Update"
+    },
+    {
+      "timestamp" : "12:21:02 25.11.2025",
+      "type" : "Connection",
+      "message" : "No device connected"
+    },
+    {
+      "timestamp" : "12:21:02 25.11.2025",
+      "message" : "Diagnostics screen launched",
+      "type" : "Connection"
+    },
+    {
+      "type" : "Data Update",
+      "message" : "New battery data received",
+      "timestamp" : "12:21:02 25.11.2025"
+    }
+  ],
+  "appInfo" : {
+    "build" : "42",
+    "version" : "1.4.1"
+  },
+  "protocolInfo" : {
+    "statistics" : {
+      "totalLogs" : 30,
+      "errors" : 1,
+      "successes" : 1,
+      "warnings" : 1
+    },
+    "currentValues" : {
+      "rs485Protocol" : "--",
+      "moduleId" : "--",
+      "canProtocol" : "--"
+    },
+    "lastUpdateTime" : "12:21:03 25.11.2025",
+    "recentLogs" : [
+      "[12:21:03] [CONNECTION] Connection state cleaned",
+      "[12:21:03] [CONNECTION] Cached device UUID cleared (memory)",
+      "[12:21:03] [CONNECTION] All Bluetooth characteristics cleared",
+      "[12:21:03] [CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)",
+      "[12:21:03] [CONNECTION] Scanned peripherals cleared",
+      "[12:21:03] [PROTOCOL MANAGER] Clearing all protocols",
+      "[12:21:03] [CONNECTION] BMS data cleared",
+      "[12:21:03] [CONNECTION] 🛑 BMS timer stopped",
+      "[12:21:03] [QUEUE] Request queue cleared",
+      "[12:21:03] [CLEANUP] This will clear ALL connection data including persistent UUID",
+      "[12:21:03] [CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)",
+      "[12:21:03] [CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!",
+      "[12:21:02] [BMS] ❌ No peripheral\/characteristics available",
+      "[12:21:02] [BMS] Device connected: false",
+      "[12:21:02] [BMS] 📡 getBMSData() called",
+      "[12:21:02] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[12:20:59] [CONNECTION] UUID: 1997B63E-02F2-BB1F-C0DE-63B68D347427",
+      "[12:20:59] [CONNECTION] Device UUID saved (memory + persistent storage)",
+      "[12:20:59] [CONNECTION] Notify UUID: 1007",
+      "[12:20:59] [CONNECTION] Write UUID: 1008",
+      "[12:20:59] [CONNECTION] ✅ Characteristics configured",
+      "[12:20:59] [CONNECT] Service UUID: 1006",
+      "[12:20:59] [CONNECT] Services discovered: 1",
+      "[12:20:58] [CONNECTIVITY] Connection failed: Connection error: The operation couldn’t be completed. (RxBluetoothKit2.BluetoothError error 4.)",
+      "[12:20:58] [CONNECTION] Connection state cleaned",
+      "[12:20:58] [CONNECTION] Cached device UUID cleared (memory)",
+      "[12:20:58] [CONNECTION] All Bluetooth characteristics cleared",
+      "[12:20:58] [CLEANUP] Cleared persistent UUID from storage (auto-reconnect disabled)",
+      "[12:20:58] [CONNECTION] Scanned peripherals cleared",
+      "[12:20:58] [PROTOCOL MANAGER] Clearing all protocols"
+    ]
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "status" : "success",
+        "timestamp" : "12:21:02 25.11.2025",
+        "message" : "No device connected",
+        "step" : "connection"
+      },
+      {
+        "step" : "connection",
+        "timestamp" : "12:21:02 25.11.2025",
+        "message" : "Diagnostics screen launched",
+        "status" : "success"
+      }
+    ]
+  },
+  "systemInfo" : {
+    "availableMemory" : 5910020096,
+    "batteryLevel" : 100,
+    "isLowPowerMode" : false,
+    "cpuUsage" : 0
+  }
+}

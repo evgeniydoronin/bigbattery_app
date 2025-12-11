@@ -1,7 +1,7 @@
 # Build 42: Fix writeControlData/getBMSData Cleanup (Minimal Approach)
 
 **Date:** 2025-11-25
-**Status:** TESTING (awaiting results)
+**Status:** PARTIAL (1/3 tests) - Fix was correct but incomplete
 **Attempt:** #12
 
 **Navigation:**
@@ -203,6 +203,49 @@ We just need to stop writeControlData/getBMSData from destroying UUID before hea
 - LOW risk: Only removing 2 cleanup calls
 - Health monitor already handles detection and auto-reconnect
 - Minimal change = easy to track and rollback if needed
+
+---
+
+## Test Results (2025-11-25):
+
+### Summary:
+| Test | Result | Issue |
+|------|--------|-------|
+| Test 1 (Mid-session) | FAILED | Does not reconnect, stuck in disconnection status |
+| Test 2 (Settings nav) | FAILED | Same as test 1 |
+| Test 3 (Cross-session) | SUCCESS | ID takes time to show, works after Settings |
+
+### Build 42 Fix Verification:
+
+**Did Build 42 fix work?** YES - Logs confirm no cleanup after getBMSData error:
+```
+[12:17:41] [BMS] No peripheral/characteristics available
+           ← NO cleanConnection() called! Build 42 fix works ✅
+
+[12:21:02] [BMS] No peripheral/characteristics available
+           ← NO cleanConnection() called! Build 42 fix works ✅
+```
+
+**But UUID still destroyed by PHANTOM detection:**
+```
+[12:18:30] [CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!
+[12:18:30] [CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)
+
+[12:21:03] [CONNECTION] ⚠️ PHANTOM: No peripheral but BMS timer running!
+[12:21:03] [CLEANUP] 🔴 Full cleanup requested (MANUAL disconnect)
+```
+
+### Diagnostic Logs:
+
+- Test 1: `docs/fix-history/logs/bigbattery_logs_20251125_121832.json`
+- Test 2: `docs/fix-history/logs/bigbattery_logs_20251125_122103.json`
+- Test 3: `docs/fix-history/logs/bigbattery_logs_20251125_122157.json`
+
+### Conclusion:
+
+Build 42 fix was CORRECT but INCOMPLETE.
+PHANTOM detection (lines 961, 985) still calls cleanConnection().
+Fix continues in Build 43.
 
 ---
 

@@ -1,6 +1,6 @@
 # THREAD-001: Invalid Device Error After Battery Reconnection
 
-**Status:** BUILD 42 TESTING
+**Status:** BUILD 43 TESTING
 **Severity:** CRITICAL
 **First Reported:** 2025-10-10
 **Last Updated:** 2025-11-25
@@ -10,9 +10,9 @@
 
 ## Quick Summary
 
-### Current Status (Build 42):
+### Current Status (Build 43):
 
-**Testing Phase:** Build 42 currently being tested by Joshua
+**Testing Phase:** Build 43 currently being tested by Joshua
 
 **What's Fixed:**
 - Build 31: Initial reconnection issue (scan list validation)
@@ -23,21 +23,21 @@
 - Build 39: Startup auto-reconnect (works correctly!)
 - Build 40: Health monitor partial cleanup
 - Build 41: viewWillAppear partial cleanup
+- Build 42: writeControlData/getBMSData cleanup removed
 
-**What's Being Fixed (Build 42):**
-- writeControlData() calling cleanConnection() when peripheral nil
-- getBMSData() calling cleanConnection() when peripheral nil
+**What's Being Fixed (Build 43):**
+- PHANTOM detection (lines 961, 985) calling cleanConnection()
 - Mid-session auto-reconnect failing due to UUID destruction
 
-**Root Cause (Build 41 -> 42):**
-- Build 41 fixed viewWillAppear (correct!) but tests still failed
-- Logs showed: `[BLUETOOTH] No peripheral for writeControlData` followed by `[CLEANUP] Full cleanup`
-- writeControlData() and getBMSData() destroy UUID before health monitor can act
+**Root Cause (Build 42 -> 43):**
+- Build 42 fix worked (no cleanup after getBMSData error in logs)
+- But PHANTOM detection still calls cleanConnection() and destroys UUID
+- Logs showed: `[PHANTOM: No peripheral but BMS timer running!]` followed by `[CLEANUP] Full cleanup`
 
 **Expected Outcome:**
 - Complete auto-reconnect feature (mid-session + startup)
 - No manual scans required
-- Health monitor handles disconnect detection and auto-reconnect
+- PHANTOM detection preserves UUID and triggers auto-reconnect
 
 ---
 
@@ -59,7 +59,8 @@
 | 39 | 2025-11-18 | PARTIAL | Startup Auto-Reconnect | [build-39.md](THREAD-001/build-39.md) |
 | 40 | 2025-11-19 | PARTIAL | Health Monitor Fix | [build-40.md](THREAD-001/build-40.md) |
 | 41 | 2025-11-19 | PARTIAL | ViewWillAppear Fix | [build-41.md](THREAD-001/build-41.md) |
-| 42 | 2025-11-25 | TESTING | writeControlData/getBMSData Fix | [build-42.md](THREAD-001/build-42.md) |
+| 42 | 2025-11-25 | PARTIAL | writeControlData/getBMSData Fix | [build-42.md](THREAD-001/build-42.md) |
+| 43 | 2025-11-25 | TESTING | PHANTOM Detection Fix | [build-43.md](THREAD-001/build-43.md) |
 
 ---
 
