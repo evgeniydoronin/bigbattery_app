@@ -696,6 +696,14 @@ public class ZetaraManager: NSObject {
                         self.notifyCharacteristic = notifyCharacteristic
                         self.identifier = identifier
 
+                        // Build 44: Save UUID to memory for mid-session auto-reconnect
+                        // This was missing - rediscover path never saved cachedDeviceUUID!
+                        self.cachedDeviceUUID = peripheral.identifier.uuidString
+                        self.protocolDataManager.logProtocolEvent("[RECONNECT] UUID saved to memory: \(peripheral.identifier.uuidString)")
+
+                        // Also ensure UserDefaults is up to date
+                        UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: self.lastConnectedUUIDKey)
+
                         self.protocolDataManager.logProtocolEvent("[RECONNECT] ✅ Characteristics rediscovered successfully")
                         self.protocolDataManager.logProtocolEvent("[RECONNECT] Write UUID: \(writeCharacteristic.uuid.uuidString)")
                         self.protocolDataManager.logProtocolEvent("[RECONNECT] Notify UUID: \(notifyCharacteristic.uuid.uuidString)")
