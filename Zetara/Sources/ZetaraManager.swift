@@ -1211,9 +1211,7 @@ public class ZetaraManager: NSObject {
     }
 
     // Build 45: Dictionary of DisposeBags to prevent request cancellation
-    // OLD BUG: Single moduleIdDisposeBag was shared by all requests
-    // When RS485 started (500ms after Module ID), it created a new DisposeBag,
-    // cancelling the Module ID subscription before response arrived (~900-1000ms)
+    // Build 46: Fixed observation-before-write timing issue
     var controlDataDisposeBags: [UUID: DisposeBag] = [:]
 
     func writeControlData(_ data: Foundation.Data) -> Maybe<[UInt8]> {
@@ -1231,12 +1229,8 @@ public class ZetaraManager: NSObject {
         let disposeBag = DisposeBag()
         controlDataDisposeBags[requestId] = disposeBag
 
-        protocolDataManager.logProtocolEvent("[BLUETOOTH] 📤 Writing control data: \(data.toHexString())")
+        protocolDataManager.logProtocolEvent("[BLUETOOTH] 📤 Preparing control data: \(data.toHexString())")
         print("write control data: \(data.toHexString())")
-
-        peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
-            .subscribe()
-            .disposed(by: disposeBag)
 
         return Maybe.create { [weak self] observer in
             guard let self = self else {
@@ -1244,7 +1238,9 @@ public class ZetaraManager: NSObject {
                 return Disposables.create()
             }
 
-            self.protocolDataManager.logProtocolEvent("[BLUETOOTH] 📡 Started observing notifications...")
+            // Build 46: Set up observation FIRST, then write
+            // This ensures we don't miss fast responses from the device
+            self.protocolDataManager.logProtocolEvent("[BLUETOOTH] 📡 Setting up notification observation...")
 
             peripheral.observeValueUpdateAndSetNotification(for: notifyCharacteristic)
                 .do(onNext: { characteristic in
@@ -1283,6 +1279,12 @@ public class ZetaraManager: NSObject {
                             observer(.error(ZetaraManager.Error.writeControlDataError))
                     }
                 }
+                .disposed(by: disposeBag)
+
+            // Build 46: Write AFTER observation is set up to catch fast responses
+            self.protocolDataManager.logProtocolEvent("[BLUETOOTH] 📤 Now writing request...")
+            peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
+                .subscribe()
                 .disposed(by: disposeBag)
 
             // Build 45: Cleanup this request's DisposeBag when Maybe completes or is disposed

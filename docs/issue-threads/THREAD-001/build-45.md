@@ -1,7 +1,7 @@
 # Build 45: Fix Module ID Not Loading After Reconnect
 
 **Date:** 2025-12-15
-**Status:** Ready for testing
+**Status:** FAILED
 **Attempt:** #15
 
 **Navigation:**
@@ -167,7 +167,30 @@ T=1336ms:  CAN response -> SUCCESS
 
 - Build 44 Test 2 (FAILED): `docs/fix-history/logs/bigbattery_logs_20251211_144112.json`
 - Build 44 Test 3 (FAILED): `docs/fix-history/logs/bigbattery_logs_20251211_144213.json`
-- Build 45 Test: (pending)
+- Build 45 Test (FAILED): `docs/fix-history/logs/bigbattery_logs_20251215_131251.json`
+
+---
+
+## Test Results (2025-12-15):
+
+### Joshua's Report: FAILED
+
+| Test | Result | Module ID | RS485 | CAN | Battery |
+|------|--------|-----------|-------|-----|---------|
+| Mid-Session Reconnect | FAILED | "--" | P02-LUX | P06-LUX | 79%, 53.25V |
+
+### Analysis:
+
+**Build 45 fix did NOT work.** Module ID still shows "--" after reconnect.
+
+- RS485 and CAN load correctly (P02-LUX, P06-LUX)
+- Battery data works (79%, 53.25V)
+- Only Module ID fails
+
+**Root Cause Update:**
+The per-request DisposeBag fix was correct but insufficient. The real issue is that the write happens BEFORE observation is set up, so fast responses can be missed.
+
+**Next Step:** Build 46 will move observation setup BEFORE the write.
 
 ---
 
