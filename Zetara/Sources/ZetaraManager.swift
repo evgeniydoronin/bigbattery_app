@@ -1210,7 +1210,12 @@ public class ZetaraManager: NSObject {
         return writeControlData(.init(hex: data)).compactMap { Data.ResponseData($0)?.success ?? false }
     }
 
-    var moduleIdDisposeBag: DisposeBag?
+    // Build 45: Dictionary of DisposeBags to prevent request cancellation
+    // OLD BUG: Single moduleIdDisposeBag was shared by all requests
+    // When RS485 started (500ms after Module ID), it created a new DisposeBag,
+    // cancelling the Module ID subscription before response arrived (~900-1000ms)
+    var controlDataDisposeBags: [UUID: DisposeBag] = [:]
+
     func writeControlData(_ data: Foundation.Data) -> Maybe<[UInt8]> {
         guard let peripheral = try? connectedPeripheralSubject.value(),
               let writeCharacteristic = writeCharacteristic,
@@ -1221,17 +1226,20 @@ public class ZetaraManager: NSObject {
             return Maybe.error(Error.writeControlDataError)
         }
 
-        moduleIdDisposeBag = DisposeBag()
+        // Build 45: Each request gets its own DisposeBag that lives independently
+        let requestId = UUID()
+        let disposeBag = DisposeBag()
+        controlDataDisposeBags[requestId] = disposeBag
 
         protocolDataManager.logProtocolEvent("[BLUETOOTH] 📤 Writing control data: \(data.toHexString())")
         print("write control data: \(data.toHexString())")
 
         peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
             .subscribe()
-            .disposed(by: moduleIdDisposeBag!)
+            .disposed(by: disposeBag)
 
         return Maybe.create { [weak self] observer in
-            guard let self = self, let bag = self.moduleIdDisposeBag else {
+            guard let self = self else {
                 observer(.error(Error.writeControlDataError))
                 return Disposables.create()
             }
@@ -1275,10 +1283,11 @@ public class ZetaraManager: NSObject {
                             observer(.error(ZetaraManager.Error.writeControlDataError))
                     }
                 }
-                .disposed(by: bag)
+                .disposed(by: disposeBag)
 
+            // Build 45: Cleanup this request's DisposeBag when Maybe completes or is disposed
             return Disposables.create { [weak self] in
-                self?.moduleIdDisposeBag = nil
+                self?.controlDataDisposeBags.removeValue(forKey: requestId)
             }
         }
     }
