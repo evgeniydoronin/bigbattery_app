@@ -1,0 +1,202 @@
+{
+  "communicationErrorsInfo" : {
+    "packetLoss" : 0,
+    "retries" : 0,
+    "crcErrors" : 0,
+    "timeouts" : 0
+  },
+  "bluetoothInfo" : {
+    "state" : "unknown",
+    "connectionAttempts" : 0,
+    "peripheralName" : "BB-51.2V100Ah-0855",
+    "peripheralIdentifier" : "19E1C7EB-FBBC-3B70-3601-AA4530662FA8"
+  },
+  "protocolInfo" : {
+    "statistics" : {
+      "successes" : 8,
+      "totalLogs" : 30,
+      "warnings" : 0,
+      "errors" : 0
+    },
+    "lastUpdateTime" : "14:46:03 11.12.2025",
+    "currentValues" : {
+      "moduleId" : "--",
+      "canProtocol" : "P06-LUX",
+      "rs485Protocol" : "P02-LUX"
+    },
+    "recentLogs" : [
+      "[14:46:03] [BMS] ✅ BMS data parsed successfully",
+      "[14:46:03] [BMS] Validation - CRC: true, isBMSData: true",
+      "[14:46:03] [BMS] 📥 Received BMS response: 01034e14ce00000d000d020d010d010d010d010d000d010d000d010d010d010d000d020d000d00001800170017004f00640064004f00000000000000000000000115752a00171717170000001003e8000007fa",
+      "[14:46:03] [BMS] 📤 Writing BMS request: 01030000002705d0",
+      "[14:46:03] [BMS] ✅ Using real device data",
+      "[14:46:03] [BMS] Device connected: true",
+      "[14:46:03] [BMS] 📡 getBMSData() called",
+      "[14:46:03] [BMS] ✅ BMS data parsed successfully",
+      "[14:46:03] [BMS] Validation - CRC: true, isBMSData: true",
+      "[14:46:03] [BMS] 📥 Received BMS response: 01034e14cd00000d000d010d000d010d010d010d000d010d000d010d010d010d000d010d000d01001800170017004f00640064004f00000000000000000000000115752a00171717170000001003e80000f058",
+      "[14:46:02] [BMS] 📤 Writing BMS request: 01030000002705d0",
+      "[14:46:02] [BMS] ✅ Using real device data",
+      "[14:46:02] [BMS] Device connected: true",
+      "[14:46:02] [BMS] 📡 getBMSData() called",
+      "[14:46:02] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[14:45:58] [BMS] ✅ BMS data parsed successfully",
+      "[14:45:58] [BMS] Validation - CRC: true, isBMSData: true",
+      "[14:45:58] [BMS] 📥 Received BMS response: 01034e14cd00000d000d010d000d010d000d010d000d010d000d010d010d010d000d020d000d01001800170017004f00640064004f00000000000000000000000115752a00171717170000001003e80000757c",
+      "[14:45:58] [BMS] 📤 Writing BMS request: 01030000002705d0",
+      "[14:45:58] [BMS] ✅ Using real device data",
+      "[14:45:58] [BMS] Device connected: true",
+      "[14:45:58] [BMS] 📡 getBMSData() called",
+      "[14:45:58] [BMS] ✅ BMS data parsed successfully",
+      "[14:45:58] [BMS] Validation - CRC: true, isBMSData: true",
+      "[14:45:58] [BMS] 📥 Received BMS response: 01034e14cd00000d000d010d000d010d000d010d000d010d000d010d010d010d000d020d000d01001800170017004f00640064004f00000000000000000000000115752a00171717170000001003e80000757c",
+      "[14:45:57] [BMS] 📤 Writing BMS request: 01030000002705d0",
+      "[14:45:57] [BMS] ✅ Using real device data",
+      "[14:45:57] [BMS] Device connected: true",
+      "[14:45:57] [BMS] 📡 getBMSData() called",
+      "[14:45:57] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)"
+    ]
+  },
+  "timestamp" : "14:46:03 11.12.2025",
+  "systemInfo" : {
+    "availableMemory" : 12263014400,
+    "isLowPowerMode" : false,
+    "cpuUsage" : 0,
+    "batteryLevel" : 95
+  },
+  "extendedBatteryInfo" : {
+    "cellVoltageMax" : 3.3289999961853027,
+    "cellVoltageDelta" : 0.00099992752075195312,
+    "tempMax" : 23,
+    "cellVoltageAverage" : 3.3286247253417969,
+    "protectionStatus" : {
+      "overvoltage" : false,
+      "overcurrent" : false,
+      "undervoltage" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false
+    },
+    "cellVoltageMin" : 3.3280000686645508,
+    "tempMin" : 23,
+    "cellVoltageStdDev" : 0.00048408792114816134,
+    "tempDelta" : 0
+  },
+  "events" : [
+    {
+      "timestamp" : "14:46:03 11.12.2025",
+      "message" : "New battery data received",
+      "type" : "Data Update"
+    },
+    {
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "type" : "Connection",
+      "timestamp" : "14:46:02 11.12.2025"
+    },
+    {
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "14:45:58 11.12.2025"
+    },
+    {
+      "message" : "Diagnostics screen launched",
+      "type" : "Connection",
+      "timestamp" : "14:45:58 11.12.2025"
+    },
+    {
+      "timestamp" : "14:45:58 11.12.2025",
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "timestamp" : "14:45:58 11.12.2025",
+      "type" : "Data Update",
+      "message" : "New battery data received"
+    }
+  ],
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "44"
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "status" : "success",
+        "timestamp" : "14:46:02 11.12.2025",
+        "step" : "connection"
+      },
+      {
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "timestamp" : "14:45:58 11.12.2025",
+        "status" : "success",
+        "step" : "connection"
+      },
+      {
+        "step" : "connection",
+        "status" : "success",
+        "message" : "Diagnostics screen launched",
+        "timestamp" : "14:45:58 11.12.2025"
+      },
+      {
+        "timestamp" : "14:45:58 11.12.2025",
+        "step" : "connection",
+        "status" : "success",
+        "message" : "Device connected: BB-51.2V100Ah-0855"
+      }
+    ]
+  },
+  "deviceInfo" : {
+    "name" : "iPhone",
+    "systemName" : "iOS",
+    "systemVersion" : "26.1",
+    "model" : "iPhone"
+  },
+  "batteryInfo" : {
+    "voltage" : 53.25,
+    "status" : "Standby",
+    "tempPCB" : 24,
+    "cellCount" : 16,
+    "cellVoltages" : [
+      3.3280000686645508,
+      3.3289999961853027,
+      3.3280000686645508,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3280000686645508,
+      3.3289999961853027,
+      3.3280000686645508,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3280000686645508,
+      3.3289999961853027,
+      3.3280000686645508,
+      3.3289999961853027
+    ],
+    "cellTemps" : [
+      23,
+      23,
+      23,
+      23
+    ],
+    "current" : 0,
+    "timestamp" : "14:46:03 11.12.2025",
+    "soh" : 100,
+    "tempEnv" : 23,
+    "soc" : 79
+  },
+  "rawDataInfo" : {
+    "lastReceivedPacket" : "00005542000000004F000000000000006400000000000000F4FD5440560E5540F4FD5440560E5540560E5540560E5540F4FD5440560E5540F4FD5440560E5540560E5540560E5540F4FD5440560E5540F4FD5440560E5540171717171817",
+    "packetHistory" : [
+      {
+        "timestamp" : "14:46:03 11.12.2025",
+        "data" : "00005542000000004F000000000000006400000000000000F4FD5440560E5540F4FD5440560E5540560E5540560E5540F4FD5440560E5540F4FD5440560E5540560E5540560E5540F4FD5440560E5540F4FD5440560E5540171717171817",
+        "parseResult" : "success"
+      }
+    ],
+    "parseErrors" : [
+
+    ]
+  }
+}

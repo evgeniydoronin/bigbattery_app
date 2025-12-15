@@ -149,49 +149,52 @@ self.protocolDataManager.logProtocolEvent("[RECONNECT] Characteristics rediscove
 ## Diagnostic Logs:
 
 - Build 43 Test (FAILED): `docs/fix-history/logs/bigbattery_logs_20251211_111645.json`
-- Build 44 Test (SUCCESS): `docs/fix-history/logs/bigbattery_logs_20251211_120358.json`
+- Build 44 Initial Test: `docs/fix-history/logs/bigbattery_logs_20251211_120358.json`
+- Build 44 Full Test 1 (Fresh): `docs/fix-history/logs/bigbattery_logs_20251211_142456.json`
+- Build 44 Full Test 2 (Mid-Session): `docs/fix-history/logs/bigbattery_logs_20251211_144112.json`
+- Build 44 Full Test 3 (Cross-Session): `docs/fix-history/logs/bigbattery_logs_20251211_144213.json`
+- Build 44 Full Test 5 (Protocol Change): `docs/fix-history/logs/bigbattery_logs_20251211_144603.json`
 
 ---
 
-## Test Results (2025-12-11):
+## Full Test Results (2025-12-11):
 
 ### Joshua's Report: SUCCESS!
 
-| Test | Result |
-|------|--------|
-| Test 1 (Mid-session reconnect) | PASS |
+| Test | Result | Protocols | Module ID | Battery Data |
+|------|--------|-----------|-----------|--------------|
+| Test 1 (Fresh Connection) | PASS | P01-GRW | ID 1 | 79%, 53.26V |
+| Test 2 (Mid-Session Reconnect) | PASS | P01-GRW | "--" | 79%, 53.25V |
+| Test 3 (Cross-Session Reconnect) | PASS | P01-GRW | "--" | 79%, 53.25V |
+| Test 5 (Protocol Change) | PASS | P02-LUX/P06-LUX | "--" | 79%, 53.25V |
 
-### Log Analysis:
+### Key Findings:
 
-**Battery data received (was zeros in Build 43):**
-- SOC: 79%
-- Voltage: 53.26V
-- Cell count: 16
-- Cell voltages: 3.328V - 3.330V
+**Auto-reconnect FIXED:**
+- Mid-session reconnect works (Test 2)
+- Cross-session reconnect works (Test 3)
+- No "Cannot auto-reconnect: No cached UUID" errors
+- Battery data received correctly in all tests
 
-**Protocols loaded:**
-- CAN: P01-GRW
-- RS485: P01-GRW
-- Module ID: ID 1
-
-**Statistics:**
-- Errors: 0
-- Warnings: 0
-- Successes: 9
-
-**Reconnect path confirmed:**
+**Reconnect path confirmed in Test 3 logs:**
 ```
-[12:03:57] [RECONNECT] Starting BMS timer after reconnection
+[14:42:10] [RECONNECT] Starting BMS timer after reconnection
 ```
 
-**No errors from Build 43:**
-- No "Cannot auto-reconnect: No cached UUID"
-- No health monitor warnings
-- No cleanup events
+**Protocol change works (Test 5):**
+- RS485: P02-LUX
+- CAN: P06-LUX
+
+**Minor Issue Found:**
+- Module ID shows "--" after reconnect (Tests 2, 3, 5)
+- Module ID loads correctly on fresh connect (Test 1)
+- This is a separate issue for Build 45
 
 ### Conclusion:
 
-Build 44 fix WORKS! The missing UUID save in `rediscoverServicesAndCharacteristics()` was the root cause. Mid-session auto-reconnect now functions correctly.
+Build 44 SUCCESS! The auto-reconnect issue (THREAD-001) is now RESOLVED.
+
+Minor issue discovered: Module ID not loading after reconnect - will be addressed in Build 45.
 
 ---
 

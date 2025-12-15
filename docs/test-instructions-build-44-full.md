@@ -5,22 +5,13 @@
 **Tester:** Joshua
 **Purpose:** Complete app verification after auto-reconnect fix
 
----
-
-## Test Priority Legend
-
-- **[CRITICAL]** - Must pass. Core functionality.
-- **[IMPORTANT]** - Should pass. Key user scenarios.
-- **[OPTIONAL]** - Nice to have. Edge cases.
-
----
 
 ## Test 1: Fresh Connection [CRITICAL]
 
 **Purpose:** Verify first-time connection works.
 
 **Steps:**
-1. Delete app and reinstall (or clear app data)
+1. Delete app and reinstall
 2. Open app
 3. Tap "Connect" button
 4. Select battery from list (BB-51.2V100Ah-0855)
@@ -33,8 +24,6 @@
 - No errors in Diagnostics screen
 
 **If FAILED:** Send logs from Diagnostics screen
-
----
 
 ## Test 2: Mid-Session Reconnect [CRITICAL]
 
@@ -54,7 +43,6 @@
 
 **If FAILED:** Send logs, note if "Tap to Connect" appeared
 
----
 
 ## Test 3: Cross-Session Reconnect [CRITICAL]
 
@@ -73,7 +61,6 @@
 
 **If FAILED:** Send logs, note what screen appeared on launch
 
----
 
 ## Test 4: Settings Navigation [IMPORTANT]
 
@@ -91,7 +78,6 @@
 
 **If FAILED:** Send logs, note if protocols show "--"
 
----
 
 ## Test 5: Protocol Change [IMPORTANT]
 
@@ -129,34 +115,11 @@
 
 **If FAILED:** Send logs, note app behavior
 
----
-
-## Summary Checklist
-
-| # | Test | Priority | Result |
-|---|------|----------|--------|
-| 1 | Fresh Connection | CRITICAL | |
-| 2 | Mid-Session Reconnect | CRITICAL | |
-| 3 | Cross-Session Reconnect | CRITICAL | |
-| 4 | Settings Navigation | IMPORTANT | |
-| 5 | Protocol Change | IMPORTANT | |
-| 6 | Walk Away | OPTIONAL | |
-
----
 
 ## How to Report
 
 For each test:
 1. Write PASS or FAIL
 2. If FAIL: Describe what happened
-3. Send logs from Diagnostics screen (tap "Send Logs")
+3. Send logs from Diagnostics screen
 
-**Estimated time:** 10-15 minutes for all tests
-
----
-
-## Logs Location
-
-Diagnostics screen -> Send Logs button
-
-Send logs after completing ALL tests (or after any failure).
