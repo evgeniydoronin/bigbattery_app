@@ -1,0 +1,186 @@
+{
+  "bluetoothInfo" : {
+    "connectionAttempts" : 0,
+    "peripheralName" : "BB-51.2V100Ah-0855",
+    "state" : "poweredOn",
+    "peripheralIdentifier" : "19E1C7EB-FBBC-3B70-3601-AA4530662FA8"
+  },
+  "timestamp" : "13:50:21 15.12.2025",
+  "protocolInfo" : {
+    "statistics" : {
+      "errors" : 0,
+      "totalLogs" : 30,
+      "warnings" : 0,
+      "successes" : 8
+    },
+    "lastUpdateTime" : "13:50:21 15.12.2025",
+    "currentValues" : {
+      "moduleId" : "--",
+      "canProtocol" : "P06-LUX",
+      "rs485Protocol" : "P02-LUX"
+    },
+    "recentLogs" : [
+      "[13:50:21] [BMS] ✅ BMS data parsed successfully",
+      "[13:50:21] [BMS] Validation - CRC: true, isBMSData: true",
+      "[13:50:21] [BMS] 📥 Received BMS response: 01034e14ce00000d000d010d000d010d010d010d000d020d000d010d010d010d010d020d000d01001500120015004f00640064004f00000000000000000000000115752a00151515150000001003e800002dc9",
+      "[13:50:20] [BMS] 📤 Writing BMS request: 01030000002705d0",
+      "[13:50:20] [BMS] ✅ Using real device data",
+      "[13:50:20] [BMS] Device connected: true",
+      "[13:50:20] [BMS] 📡 getBMSData() called",
+      "[13:50:18] [BMS] ✅ BMS data parsed successfully",
+      "[13:50:18] [BMS] Validation - CRC: true, isBMSData: true",
+      "[13:50:18] [BMS] 📥 Received BMS response: 01034e14cd00000cff0d010d000d010d000d010d000d010d000d010d010d000d000d010d000d00001500120015004f00640064004f00000000000000000000000115752a00151515150000001003e80000dccf",
+      "[13:50:18] [BMS] 📤 Writing BMS request: 01030000002705d0",
+      "[13:50:18] [BMS] ✅ Using real device data",
+      "[13:50:18] [BMS] Device connected: true",
+      "[13:50:18] [BMS] 📡 getBMSData() called",
+      "[13:50:18] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)",
+      "[13:50:16] [BMS] ✅ BMS data parsed successfully",
+      "[13:50:16] [BMS] Validation - CRC: true, isBMSData: true",
+      "[13:50:16] [BMS] 📥 Received BMS response: 01034e14cd00000cff0d010d000d010d000d010d000d010d000d010d010d010d000d010d000d00001500120015004f00640064004f00000000000000000000000115752a00151515150000001003e800000042",
+      "[13:50:15] [BMS] 📤 Writing BMS request: 01030000002705d0",
+      "[13:50:15] [BMS] ✅ Using real device data",
+      "[13:50:15] [BMS] Device connected: true",
+      "[13:50:15] [BMS] 📡 getBMSData() called",
+      "[13:50:12] [BMS] ✅ BMS data parsed successfully",
+      "[13:50:12] [BMS] Validation - CRC: true, isBMSData: true",
+      "[13:50:12] [BMS] 📥 Received BMS response: 01034e14cd00000d000d010d000d010d000d010d000d010d000d010d010d010d000d010d000d00001500120015004f00640064004f00000000000000000000000115752a00151515150000001003e800007581",
+      "[13:50:12] [BMS] 📤 Writing BMS request: 01030000002705d0",
+      "[13:50:12] [BMS] ✅ Using real device data",
+      "[13:50:12] [BMS] Device connected: true",
+      "[13:50:12] [BMS] 📡 getBMSData() called",
+      "[13:50:12] [BMS] 🚀 Starting BMS data refresh timer (interval: 5.0s)"
+    ]
+  },
+  "communicationErrorsInfo" : {
+    "retries" : 0,
+    "timeouts" : 0,
+    "crcErrors" : 0,
+    "packetLoss" : 0
+  },
+  "systemInfo" : {
+    "cpuUsage" : 0,
+    "batteryLevel" : 70,
+    "isLowPowerMode" : false,
+    "availableMemory" : 12263014400
+  },
+  "deviceInfo" : {
+    "systemName" : "iOS",
+    "systemVersion" : "26.1",
+    "name" : "iPhone",
+    "model" : "iPhone"
+  },
+  "extendedBatteryInfo" : {
+    "cellVoltageMax" : 3.3299999237060547,
+    "cellVoltageDelta" : 0.0019998550415039062,
+    "protectionStatus" : {
+      "overvoltage" : false,
+      "undervoltage" : false,
+      "overtemperature" : false,
+      "shortCircuit" : false,
+      "overcurrent" : false
+    },
+    "tempMax" : 21,
+    "tempDelta" : 0,
+    "cellVoltageMin" : 3.3280000686645508,
+    "cellVoltageStdDev" : 0.00063425986714504411,
+    "tempMin" : 21,
+    "cellVoltageAverage" : 3.3288121223449707
+  },
+  "rawDataInfo" : {
+    "lastReceivedPacket" : "3D0A5542000000004F000000000000006400000000000000F4FD5440560E5540F4FD5440560E5540560E5540560E5540F4FD5440B81E5540F4FD5440560E5540560E5540560E5540560E5540B81E5540F4FD5440560E5540151515151515",
+    "parseErrors" : [
+
+    ],
+    "packetHistory" : [
+      {
+        "data" : "3D0A5542000000004F000000000000006400000000000000F4FD5440560E5540F4FD5440560E5540560E5540560E5540F4FD5440B81E5540F4FD5440560E5540560E5540560E5540560E5540B81E5540F4FD5440560E5540151515151515",
+        "timestamp" : "13:50:21 15.12.2025",
+        "parseResult" : "success"
+      }
+    ]
+  },
+  "events" : [
+    {
+      "timestamp" : "13:50:21 15.12.2025",
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855"
+    },
+    {
+      "type" : "Connection",
+      "message" : "Diagnostics screen launched",
+      "timestamp" : "13:50:21 15.12.2025"
+    },
+    {
+      "type" : "Connection",
+      "message" : "Device connected: BB-51.2V100Ah-0855",
+      "timestamp" : "13:50:21 15.12.2025"
+    },
+    {
+      "type" : "Data Update",
+      "timestamp" : "13:50:21 15.12.2025",
+      "message" : "New battery data received"
+    }
+  ],
+  "batteryInfo" : {
+    "soh" : 100,
+    "soc" : 79,
+    "cellCount" : 16,
+    "status" : "Standby",
+    "voltage" : 53.259998321533203,
+    "cellVoltages" : [
+      3.3280000686645508,
+      3.3289999961853027,
+      3.3280000686645508,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3280000686645508,
+      3.3299999237060547,
+      3.3280000686645508,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3289999961853027,
+      3.3299999237060547,
+      3.3280000686645508,
+      3.3289999961853027
+    ],
+    "cellTemps" : [
+      21,
+      21,
+      21,
+      21
+    ],
+    "current" : 0,
+    "tempPCB" : 21,
+    "timestamp" : "13:50:21 15.12.2025",
+    "tempEnv" : 21
+  },
+  "connectionProcessInfo" : {
+    "steps" : [
+      {
+        "timestamp" : "13:50:21 15.12.2025",
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "step" : "connection",
+        "status" : "success"
+      },
+      {
+        "timestamp" : "13:50:21 15.12.2025",
+        "status" : "success",
+        "message" : "Diagnostics screen launched",
+        "step" : "connection"
+      },
+      {
+        "message" : "Device connected: BB-51.2V100Ah-0855",
+        "step" : "connection",
+        "timestamp" : "13:50:21 15.12.2025",
+        "status" : "success"
+      }
+    ]
+  },
+  "appInfo" : {
+    "version" : "1.4.1",
+    "build" : "46"
+  }
+}

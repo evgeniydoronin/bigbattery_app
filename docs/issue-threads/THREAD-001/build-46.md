@@ -1,7 +1,7 @@
 # Build 46: Fix Module ID - Observation Before Write
 
 **Date:** 2025-12-15
-**Status:** Ready for testing
+**Status:** FAILED
 **Attempt:** #16
 
 **Navigation:**
@@ -140,7 +140,32 @@ T=???:    Device response arrives - observation is READY to catch it!
 ## Diagnostic Logs:
 
 - Build 45 Test (FAILED): `docs/fix-history/logs/bigbattery_logs_20251215_131251.json`
-- Build 46 Test: (pending)
+- Build 46 Test (FAILED): `docs/fix-history/logs/bigbattery_logs_20251215_135021.json`
+
+---
+
+## Test Results (2025-12-15):
+
+### Joshua's Report: FAILED
+
+| Test | Result | Module ID | RS485 | CAN | Battery |
+|------|--------|-----------|-------|-----|---------|
+| Mid-Session Reconnect | FAILED | "--" | P02-LUX | P06-LUX | 79%, 53.26V |
+
+### Analysis:
+
+**Build 46 fix did NOT work.** Module ID still shows "--" after reconnect.
+
+**Observations from logs:**
+- Two BMS timer starts (13:50:12 and 13:50:18) - indicates two reconnect events
+- RS485 and CAN load correctly (P02-LUX, P06-LUX)
+- Battery data works (79%, 53.26V, 16 cells)
+- Only Module ID fails to load
+
+**Root Cause Update:**
+The observation-before-write fix was correct but insufficient. The real issue is that `observeValueUpdateAndSetNotification` is **ASYNCHRONOUS** - it needs time to enable notifications before we can write.
+
+**Next Step:** Build 47 will add 100ms delay between observation setup and write.
 
 ---
 

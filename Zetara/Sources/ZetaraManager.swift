@@ -1212,6 +1212,7 @@ public class ZetaraManager: NSObject {
 
     // Build 45: Dictionary of DisposeBags to prevent request cancellation
     // Build 46: Fixed observation-before-write timing issue
+    // Build 47: Added 100ms delay for notification setup to complete
     var controlDataDisposeBags: [UUID: DisposeBag] = [:]
 
     func writeControlData(_ data: Foundation.Data) -> Maybe<[UInt8]> {
@@ -1281,11 +1282,15 @@ public class ZetaraManager: NSObject {
                 }
                 .disposed(by: disposeBag)
 
-            // Build 46: Write AFTER observation is set up to catch fast responses
-            self.protocolDataManager.logProtocolEvent("[BLUETOOTH] 📤 Now writing request...")
-            peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
-                .subscribe()
-                .disposed(by: disposeBag)
+            // Build 47: Wait for notification setup to complete before writing
+            // observeValueUpdateAndSetNotification is async - needs time to enable notifications
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                guard let self = self else { return }
+                self.protocolDataManager.logProtocolEvent("[BLUETOOTH] 📤 Now writing request (after 100ms delay)...")
+                peripheral.writeValue(data, for: writeCharacteristic, type: writeCharacteristic.writeType)
+                    .subscribe()
+                    .disposed(by: disposeBag)
+            }
 
             // Build 45: Cleanup this request's DisposeBag when Maybe completes or is disposed
             return Disposables.create { [weak self] in
