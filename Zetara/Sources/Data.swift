@@ -56,7 +56,8 @@ public struct Data {
             case protecting
             case chargingLimit
             case standby
-            
+            case notConnected
+
             public init(rawValue: Int) {
                 switch rawValue {
                     case 1:
@@ -71,7 +72,7 @@ public struct Data {
                         self = .standby
                 }
             }
-            
+
             public var description: String {
                 switch self {
                     case .charging: return "Charging"
@@ -79,6 +80,7 @@ public struct Data {
                     case .protecting: return "Protecting"
                     case .chargingLimit: return "Charging Limit"
                     case .standby: return "Standby"
+                    case .notConnected: return "Not Connected"
                 }
             }
         }

@@ -57,8 +57,8 @@ class BatteryStatusView: UIView {
         
         // Настройка ограничений
         containerView.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(UIEdgeInsets(top: -10, left: 150, bottom: 8, right: 150))
-            make.height.equalTo(35) // Высота контейнера
+            make.edges.equalToSuperview().inset(UIEdgeInsets(top: -10, left: 50, bottom: 8, right: 50))
+            make.height.equalTo(40) // Увеличиваем высоту контейнера для лучшего отображения
         }
         
         statusLabel.snp.makeConstraints { make in
@@ -93,6 +93,9 @@ class BatteryStatusView: UIView {
         case .standby:
             backgroundColor = UIColor.systemGray.withAlphaComponent(0.2)
             textColor = UIColor.systemGray
+        case .notConnected:
+            backgroundColor = UIColor.systemRed.withAlphaComponent(0.2)
+            textColor = UIColor.systemRed
         }
         
         containerView.backgroundColor = backgroundColor

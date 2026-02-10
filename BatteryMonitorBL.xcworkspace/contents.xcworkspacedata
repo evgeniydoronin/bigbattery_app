@@ -7,4 +7,16 @@
    <FileRef
       location = "group:Pods/Pods.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:ZetaraLogger.swift">
+   </FileRef>
+   <FileRef
+      location = "group:ZetaraLoggerBridge.swift">
+   </FileRef>
+   <FileRef
+      location = "group:ZetaraLoggerTest.swift">
+   </FileRef>
+   <FileRef
+      location = "group:ZetaraLoggerIntegrationGuide.md">
+   </FileRef>
 </Workspace>
